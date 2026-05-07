@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const User = require('../models/User');
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/jwt');
 const { generateOTP, hashOTP, verifyOTP, getOTPExpiry, isOTPExpired } = require('../utils/otp');
+const { OTP_PURPOSES, canRequestNewOtp, hasExceededOtpAttempts } = require('../utils/otpPolicy');
 const { sendOTPEmail, sendPasswordResetEmail } = require('../services/email.service');
 const { sendSuccess, sendError } = require('../utils/response');
 
@@ -32,12 +33,14 @@ const signup = async (req, res, next) => {
     user.otp = {
       code: hashedOtp,
       expiresAt: getOTPExpiry(),
-      purpose: 'email_verification',
+      purpose: OTP_PURPOSES.EMAIL_VERIFICATION,
+      attempts: 0,
+      lastSentAt: new Date(),
     };
     await user.save();
 
     // Fire and forget — don't let email failure block signup response
-    sendOTPEmail(email, otp, 'email_verification').catch((err) =>
+    sendOTPEmail(email, otp, OTP_PURPOSES.EMAIL_VERIFICATION).catch((err) =>
       console.error('[EMAIL] Failed to send verification OTP:', err.message)
     );
 
@@ -144,13 +147,22 @@ const verifyOTPHandler = async (req, res, next) => {
     }
 
     // Guard: purpose must be email_verification (this endpoint is for signup flow)
-    if (user.otp.purpose !== 'email_verification') {
+    if (user.otp.purpose !== OTP_PURPOSES.EMAIL_VERIFICATION) {
       return sendError(res, { statusCode: 400, message: 'Invalid OTP purpose for this action.' });
+    }
+
+    if (hasExceededOtpAttempts({ attempts: user.otp.attempts, purpose: user.otp.purpose })) {
+      return sendError(res, {
+        statusCode: 429,
+        message: 'Too many invalid OTP attempts. Please request a new OTP.',
+      });
     }
 
     // Verify
     const isValid = await verifyOTP(otp, user.otp.code);
     if (!isValid) {
+      user.otp.attempts = (user.otp.attempts || 0) + 1;
+      await user.save();
       return sendError(res, { statusCode: 400, message: 'Invalid OTP' });
     }
 
@@ -182,17 +194,31 @@ const resendOTP = async (req, res, next) => {
       return sendError(res, { statusCode: 400, message: 'Email already verified.' });
     }
 
+    const cooldown = canRequestNewOtp({
+      lastSentAt: user.otp?.lastSentAt,
+      purpose: user.otp?.purpose || OTP_PURPOSES.EMAIL_VERIFICATION,
+    });
+
+    if (!cooldown.allowed) {
+      return sendError(res, {
+        statusCode: 429,
+        message: `Please wait ${cooldown.retryAfterSeconds} second(s) before requesting another OTP.`,
+      });
+    }
+
     const otp = generateOTP();
     const hashedOtp = await hashOTP(otp);
 
     user.otp = {
       code: hashedOtp,
       expiresAt: getOTPExpiry(),
-      purpose: 'email_verification',
+      purpose: OTP_PURPOSES.EMAIL_VERIFICATION,
+      attempts: 0,
+      lastSentAt: new Date(),
     };
     await user.save();
 
-    sendOTPEmail(email, otp, 'email_verification').catch((err) =>
+    sendOTPEmail(email, otp, OTP_PURPOSES.EMAIL_VERIFICATION).catch((err) =>
       console.error('[EMAIL] Failed to resend OTP:', err.message)
     );
 

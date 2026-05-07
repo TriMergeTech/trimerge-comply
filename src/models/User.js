@@ -44,6 +44,8 @@ const userSchema = new mongoose.Schema(
         enum: ['email_verification', 'login', 'password_reset'],
         select: false,
       },
+      attempts: { type: Number, default: 0, select: false },
+      lastSentAt: { type: Date, select: false },
     },
 
     // ----- Password reset -----
