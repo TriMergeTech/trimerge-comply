@@ -7,7 +7,7 @@ export default function Dashboard() {
     <div className="flex flex-col gap-6">
 
       {/* Dashboard header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
         {/* Welcome message */}
         <div>
@@ -27,7 +27,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard label="Total Audits" value={3} linkText="View all audits" linkHref="/audits" />
         <StatsCard label="Pending Flags" value={0} linkText="No pending reviews" linkHref="/flags" />
         <StatsCard label="Confirmed Findings" value={0} linkText="No findings yet" linkHref="/flags" />
