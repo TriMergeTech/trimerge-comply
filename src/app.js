@@ -1,4 +1,6 @@
 require('dotenv').config();
+const setupSwagger = require('./config/swagger');
+    
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -69,6 +71,7 @@ app.get('/health', (req, res) => {
 
 // ─── API routes ──────────────────────────────────────────────
 app.use('/api/auth', authLimiter, authRoutes);
+setupSwagger(app);
 
 // ─── 404 + global error handler ─────────────────────────────
 app.use(notFound);
