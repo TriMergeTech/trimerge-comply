@@ -40,7 +40,7 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 // ─── Global rate limiter (Illia will layer AI-based limiting on top) ─
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20,
+  max: 50,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests, please try again later.' },

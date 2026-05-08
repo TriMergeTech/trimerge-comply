@@ -2,3 +2,7 @@ node_modules/
 .env
 logs/
 *.log
+debug.js
+test.js
+full_test.sh
+.DS_Store
