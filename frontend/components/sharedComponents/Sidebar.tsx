@@ -12,7 +12,7 @@ import {
   DollarSign,
   LogOut,
   Menu,
-  X,
+  X as CloseIcon,
 } from 'lucide-react'
 
 // Navigation links configuration
@@ -37,7 +37,7 @@ export default function Sidebar() {
         className="fixed top-4 left-4 z-50 p-2 bg-[#0f1535] text-white rounded-lg md:hidden"
         onClick={() => setIsOpen(!isOpen)}
       >
-        {isOpen ? <X size={20} /> : <Menu size={20} />}
+        {isOpen ? <CloseIcon size={20} /> : <Menu size={20} />}
       </button>
 
       {/* Overlay — dark background behind sidebar on mobile */}
