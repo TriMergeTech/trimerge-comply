@@ -48,6 +48,16 @@ export default function PayEquity() {
 
       </div>
 
+      {/* Temporary link to reports and export */}
+      <div className="flex justify-start">
+        <a
+          href="/pay-equity/reports"
+          className="text-sm text-indigo-500 hover:underline"
+        >
+          View Reports & Export →
+        </a>
+      </div>
+
     </div>
   )
 }

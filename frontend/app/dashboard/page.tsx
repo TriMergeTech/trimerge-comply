@@ -34,8 +34,18 @@ export default function Dashboard() {
         <StatsCard label="Open Tasks" value={0} linkText="Nothing assigned" linkHref="/audits" />
       </div>
 
-       {/* Recent audits table */}
+      {/* Recent audits table */}
       <RecentAudits />
+
+      {/* Temporary link to compliance dashboard */}
+      <div className="flex justify-start">
+        <a
+          href="/dashboard/compliance"
+          className="text-sm text-indigo-500 hover:underline"
+        >
+          View Compliance Dashboard →
+        </a>
+      </div>
 
     </div>
   )
