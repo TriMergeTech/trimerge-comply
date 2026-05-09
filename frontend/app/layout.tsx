@@ -20,19 +20,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} h-full antialiased`}>
-      <body className="flex flex-row bg-slate-50 h-screen overflow-hidden">
+      <body className="flex flex-row h-screen overflow-hidden bg-slate-50">
 
-        {/* Sidebar */}
+        {/* Sidebar — client component, manages its own state */}
         <Sidebar />
 
         {/* Main content area */}
         <main className="flex-1 flex flex-col overflow-y-auto">
-          <div className="p-6 flex-1">
+          <div className="p-6 pt-16 md:pt-6 flex-1">
             {children}
           </div>
         </main>
 
       </body>
     </html>
-  );
+  )
 }

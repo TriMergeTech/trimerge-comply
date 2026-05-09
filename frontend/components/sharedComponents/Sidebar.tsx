@@ -34,7 +34,7 @@ export default function Sidebar() {
     <>
       {/* Mobile hamburger button — only visible on mobile */}
       <button
-        className="fixed top-4 left-4 z-50 p-2 bg-[#0f1535] text-white rounded-lg md:hidden"
+        className="fixed top-4 left-4 z-[100] p-2 bg-[#0f1535] text-white rounded-lg md:hidden"
         onClick={() => setIsOpen(!isOpen)}
       >
         {isOpen ? <CloseIcon size={20} /> : <Menu size={20} />}
@@ -77,8 +77,8 @@ export default function Sidebar() {
                   href={href}
                   onClick={() => setIsOpen(false)}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${isActive
-                      ? 'bg-indigo-600 text-white font-medium'
-                      : 'text-slate-400 hover:bg-white/10 hover:text-white'
+                    ? 'bg-indigo-600 text-white font-medium'
+                    : 'text-slate-400 hover:bg-white/10 hover:text-white'
                     }`}
                 >
                   <Icon size={18} />
