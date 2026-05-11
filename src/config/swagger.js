@@ -22,6 +22,7 @@ const options = {
             email: { type: 'string', example: 'ibrahim@trimerge.com' },
             phone: { type: 'string', nullable: true },
             isVerified: { type: 'boolean', example: true },
+            role: { type: 'string', enum: ['admin', 'analyst', 'viewer'], example: 'viewer' },
             createdAt: { type: 'string', format: 'date-time' },
           },
         },
@@ -70,6 +71,46 @@ const options = {
       },
       '/api/auth/logout': {
         post: { tags: ['Authentication'], summary: 'Log out', description: 'Invalidates refresh token. Requires valid access token.', security: [{ bearerAuth: [] }], responses: { 200: { description: 'Logged out successfully' }, 401: { description: 'Unauthorized' } } }
+      },
+      '/api/auth/me': {
+        get: {
+          tags: ['Authentication'],
+          summary: 'Get current user',
+          description: 'Returns the authenticated user profile. Requires valid access token.',
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: {
+              description: 'User profile returned',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      data: {
+                        type: 'object',
+                        properties: {
+                          user: {
+                            type: 'object',
+                            properties: {
+                              id: { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1' },
+                              email: { type: 'string', example: 'ibrahim@trimerge.com' },
+                              phone: { type: 'string', nullable: true },
+                              isVerified: { type: 'boolean', example: true },
+                              role: { type: 'string', enum: ['admin', 'analyst', 'viewer'], example: 'viewer' },
+                              createdAt: { type: 'string', format: 'date-time' },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            401: { description: 'Unauthorized — missing or invalid token' },
+          },
+        },
       },
     },
   },

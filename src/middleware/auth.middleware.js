@@ -2,21 +2,14 @@ const { verifyAccessToken } = require('../utils/jwt');
 const { sendError } = require('../utils/response');
 const User = require('../models/User');
 
-/**
- * Protect middleware — attaches req.user on valid JWT.
- * Usage: router.get('/profile', protect, controller)
- */
 const protect = async (req, res, next) => {
   try {
-    // 1. Extract token from Authorization header
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return sendError(res, { statusCode: 401, message: 'No token provided' });
     }
-
     const token = authHeader.split(' ')[1];
 
-    // 2. Verify signature + expiry
     let decoded;
     try {
       decoded = verifyAccessToken(token);
@@ -26,8 +19,9 @@ const protect = async (req, res, next) => {
       return sendError(res, { statusCode: 401, message });
     }
 
-    // 3. Confirm user still exists and is active
-    const user = await User.findById(decoded.sub).select('-password -refreshToken -otp -passwordResetToken -passwordResetExpires');
+    const user = await User.findById(decoded.sub).select(
+      '-password -refreshToken -passwordResetToken -passwordResetExpires -otpCode -otpExpiresAt -otpPurpose -otpAttempts -otpLastSentAt'
+    );
     if (!user || !user.isActive) {
       return sendError(res, { statusCode: 401, message: 'User not found or deactivated' });
     }
@@ -39,10 +33,6 @@ const protect = async (req, res, next) => {
   }
 };
 
-/**
- * requireVerified — use AFTER protect.
- * Blocks unverified accounts from accessing sensitive routes.
- */
 const requireVerified = (req, res, next) => {
   if (!req.user.isVerified) {
     return sendError(res, {
@@ -53,4 +43,16 @@ const requireVerified = (req, res, next) => {
   next();
 };
 
-module.exports = { protect, requireVerified };
+const requireRole = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return sendError(res, { statusCode: 401, message: 'Unauthorized' });
+    }
+    if (!roles.includes(req.user.role)) {
+      return sendError(res, { statusCode: 403, message: 'Forbidden: insufficient role' });
+    }
+    next();
+  };
+};
+
+module.exports = { protect, requireVerified, requireRole };

@@ -8,9 +8,10 @@ const {
   resetPassword,
   refreshTokens,
   logout,
+  getMe,   
 } = require('../controllers/auth.controller');
 
-const { protect } = require('../middleware/auth.middleware');
+const { protect, requireRole } = require('../middleware/auth.middleware');
 const {
   validate,
   signupRules,
@@ -50,5 +51,6 @@ router.post('/refresh', refreshTokenRules, validate, refreshTokens);
 
 // POST /api/auth/logout
 router.post('/logout', protect, logout);
+router.get('/me', protect, getMe);    
 
 module.exports = router;

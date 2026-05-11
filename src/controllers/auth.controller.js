@@ -233,4 +233,21 @@ const logout = async (req, res, next) => {
   }
 };
 
-module.exports = { signup, login, verifyOTPHandler, resendOTP, forgotPassword, resetPassword, refreshTokens, logout };
+
+const getMe = async (req, res, next) => {
+  try {
+    
+    const user = await User.findById(req.user._id).select(
+      '-password -refreshToken -passwordResetToken -passwordResetExpires -otpCode -otpExpiresAt -otpPurpose -otpAttempts -otpLastSentAt -failedLoginAttempts -lockedUntil -isActive -__v'
+    );
+    if (!user) {
+      return sendError(res, { statusCode: 404, message: 'User not found' });
+    }
+    return sendSuccess(res, { data: { user } });
+  } catch (err) {
+    next(err);
+  }
+};
+    
+
+module.exports = { signup, login, verifyOTPHandler, resendOTP, forgotPassword, resetPassword, refreshTokens, logout, getMe };

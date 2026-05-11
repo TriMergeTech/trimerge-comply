@@ -30,6 +30,11 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    role: {                                          
+      type: String,
+      enum: ['admin', 'analyst', 'viewer'],
+      default: 'viewer',
+    },
     otpCode: { type: String, select: false },
     otpExpiresAt: { type: Date, select: false },
     otpPurpose: { type: String, select: false },
@@ -67,6 +72,7 @@ userSchema.methods.toPublicJSON = function () {
     email: this.email,
     phone: this.phone,
     isVerified: this.isVerified,
+    role: this.role,    
     createdAt: this.createdAt,
   };
 };
