@@ -13,16 +13,20 @@ import {
   LogOut,
   Menu,
   X as CloseIcon,
+  ShieldCheck,
+  BarChart2,
 } from 'lucide-react'
 
 // Navigation links configuration
 const navLinks = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { label: 'Compliance', href: '/compliance', icon: ShieldCheck },
   { label: 'Audits', href: '/audits', icon: FileText },
   { label: 'Upload Data', href: '/upload', icon: Upload },
   { label: 'Flags', href: '/flags', icon: Flag },
   { label: 'Position Analysis', href: '/position-analysis', icon: BriefcaseBusiness },
   { label: 'Pay Equity', href: '/pay-equity', icon: DollarSign },
+  { label: 'Reports', href: '/reports', icon: BarChart2 },
 ]
 
 export default function Sidebar() {
