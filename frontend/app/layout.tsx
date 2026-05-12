@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import AppShell from "./AppShell";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-Inter",
   subsets: ["latin"],
 });
 
@@ -19,8 +19,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} h-full antialiased`}>
-      <body><AppShell>{children}</AppShell></body>
+    <html lang="en" className={`${inter.variable} h-full antialiased`}>
+      <body>
+        <AppShell>{children}</AppShell>
+      </body>
     </html>
   );
 }

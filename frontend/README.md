@@ -11,7 +11,8 @@ HR Compliance Audit Platform for Government Clients, built for TriMerge Consulti
 - **Styling:** Tailwind CSS
 - **Component Library:** shadcn/ui
 - **Icons:** Lucide React
-- **Font:** Geist
+- **Charts:** Recharts
+- **Font:** Inter
 
 ---
 
@@ -34,35 +35,71 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to see the a
 ---
 
 ## Project Structure
-
 frontend/
-├── app/                        # App Router pages
-│   ├── layout.tsx              # Root layout with sidebar
-│   ├── page.tsx                # Redirects to /dashboard
-│   ├── dashboard/              # Dashboard page
-│   ├── audits/                 # Audits management page
-│   ├── flags/                  # Compliance flags page
-│   ├── upload/                 # Data upload page
-│   ├── position-analysis/      # Position analysis page
-│   └── pay-equity/             # Pay equity analysis page
+├── app/                              # App Router pages
+│   ├── (auth)/                       # Auth route group — no sidebar
+│   │   ├── layout.tsx                # Auth layout
+│   │   ├── login/                    # Login page
+│   │   ├── signup/                   # Signup page
+│   │   ├── forgot-password/          # Forgot password page
+│   │   ├── verify-otp/               # OTP verification page
+│   │   ├── reset-password/           # Reset password page
+│   │   └── security/                 # Security page
+│   ├── compliance/                   # Compliance dashboard page
+│   ├── dashboard/                    # Main dashboard page
+│   ├── audits/                       # Audits management page
+│   ├── flags/                        # Adverse impact flag results
+│   │   ├── queue/                    # Flag queue page
+│   │   └── [id]/                     # Flag detail and decision page
+│   ├── upload/                       # Data upload page
+│   ├── position-analysis/            # Position analysis page
+│   ├── pay-equity/                   # Pay equity analysis page
+│   ├── reports/                      # Reports and export page
+│   ├── globals.css                   # Global styles
+│   ├── layout.tsx                    # Root layout with sidebar
+│   └── page.tsx                      # Redirects to /dashboard
 ├── components/
-│   ├── sharedComponents/       # Reusable components across pages
-│   │   ├── Sidebar.tsx         # Navigation sidebar (mobile responsive)
-│   │   └── UserInfo.tsx        # Bell notification and user avatar
-│   ├── dashboard/              # Dashboard specific components
-│   │   ├── StatsCard.tsx       # Metric cards (Total Audits, Flags etc)
-│   │   └── RecentAudits.tsx    # Recent audits table with status badges
-│   └── ui/                     # shadcn/ui base components
+│   ├── sharedComponents/             # Reusable components across pages
+│   │   ├── Sidebar.tsx               # Navigation sidebar (mobile responsive)
+│   │   └── UserInfo.tsx              # Bell notification and user avatar
+│   ├── dashboard/                    # Dashboard specific components
+│   │   ├── StatsCard.tsx             # Metric cards (Total Audits, Flags etc)
+│   │   └── RecentAudits.tsx          # Recent audits table with status badges
+│   ├── audits/                       # Audits specific components
+│   │   └── AuditsTable.tsx           # Audits table with search and filters
+│   ├── flags/                        # Flags specific components
+│   │   ├── FlagStatsSummary.tsx      # Flag stats summary cards
+│   │   ├── FlagResultsTable.tsx      # Adverse impact results table
+│   │   ├── FlagQueueTable.tsx        # Flag queue table
+│   │   ├── FlagDetail.tsx            # Flag detail with tabs
+│   │   └── DecisionPanel.tsx         # Analyst decision panel
+│   ├── upload/                       # Upload specific components
+│   │   ├── UploadZone.tsx            # Drag and drop upload zone
+│   │   └── RecentUploads.tsx         # Recent uploads table
+│   ├── position-analysis/            # Position analysis specific components
+│   │   ├── DocumentsTable.tsx        # Documents table with filters
+│   │   └── DocumentTabs.tsx          # Document filter tabs
+│   ├── pay-equity/                   # Pay equity specific components
+│   │   ├── PayEquityStats.tsx        # Pay equity summary stats
+│   │   ├── PayGapsChart.tsx          # Pay gaps horizontal bar chart
+│   │   └── DemographicGapsTable.tsx  # Demographic gaps table
+│   ├── compliance/                   # Compliance dashboard specific components
+│   │   ├── ComplianceStats.tsx       # Compliance summary stats
+│   │   ├── FlagsByEngine.tsx         # Flags by engine donut chart
+│   │   ├── FlagsBySeverity.tsx       # Flags by severity donut chart
+│   │   └── RecentFlagActivity.tsx    # Recent flag activity table
+│   ├── reports/                      # Reports specific components
+│   │   ├── ExportPanel.tsx           # Export confirmed findings panel
+│   │   └── ActivityLogTable.tsx      # Activity log table
+│   └── ui/                           # shadcn/ui base components
 │       ├── avatar.tsx
 │       ├── Badge.tsx
 │       ├── Button.tsx
 │       ├── Card.tsx
 │       └── Table.tsx
 ├── lib/
-│   └── utils.ts                # Utility functions
-└── public/                     # Static assets
-
-
+│   └── utils.ts                      # Utility functions
+└── public/                           # Static assets
 
 ---
 
@@ -70,12 +107,21 @@ frontend/
 
 | Route | Page | Status |
 |---|---|---|
-| `/dashboard` | Compliance Dashboard | ✅ Complete |
-| `/audits` | Audit Management | 🔄 In Progress |
-| `/flags` | Flag Review Queue | 🔄 In Progress |
-| `/upload` | Data Upload & Validation | 🔄 In Progress |
-| `/position-analysis` | Position Description Analysis | 🔄 In Progress |
-| `/pay-equity` | Pay Equity Analysis | 🔄 In Progress |
+| `/dashboard` | Main Dashboard | ✅ Complete |
+| `/compliance` | Compliance Dashboard | ✅ Complete |
+| `/audits` | Audit Management | ✅ Complete |
+| `/flags` | Adverse Impact Flag Results | ✅ Complete |
+| `/flags/queue` | Flag Queue | ✅ Complete |
+| `/flags/[id]` | Flag Detail & Decision | ✅ Complete |
+| `/upload` | Data Upload & Validation | ✅ Complete |
+| `/position-analysis` | Position Description Analysis | ✅ Complete |
+| `/pay-equity` | Pay Equity Analysis | ✅ Complete |
+| `/reports` | Reports & Export | ✅ Complete |
+| `/login` | Login | ✅ Complete |
+| `/signup` | Sign Up | ✅ Complete |
+| `/forgot-password` | Forgot Password | ✅ Complete |
+| `/verify-otp` | OTP Verification | ✅ Complete |
+| `/reset-password` | Reset Password | ✅ Complete |
 
 ---
 
@@ -85,8 +131,16 @@ frontend/
 - ✅ Persistent sidebar with active link highlighting
 - ✅ Mobile responsive layout with hamburger menu
 - ✅ Dashboard with stats cards and recent audits table
-- ✅ Role-based user info display (UserInfo component)
-- ✅ Status badges with color coding
+- ✅ Compliance dashboard with donut charts and activity log
+- ✅ Audits page with search and filters
+- ✅ Upload page with drag and drop and step indicator
+- ✅ Flags — Adverse Impact Results, Flag Queue, Flag Detail & Decision
+- ✅ Position Analysis with document tabs and filtering
+- ✅ Pay Equity with bar chart and demographic gaps table
+- ✅ Reports & Export with audit selector and activity log
+- ✅ Authentication flow — Login, Signup, OTP, Forgot Password, Reset Password
+- ✅ Role-based user info display
+- ✅ Status and severity badges with color coding
 
 ---
 
@@ -94,7 +148,25 @@ frontend/
 
 | Name | Branch | Scope |
 |---|---|---|
-| Jackenson Charles | `Dashboard-Frontend-Jackenson` | Dashboard, Audits, Flags, Upload, Position Analysis, Pay Equity |
+| Jackenson Charles | `Dashboard-Frontend-Jackenson` | Dashboard, Compliance, Audits, Flags, Upload, Position Analysis, Pay Equity, Reports |
+| [Partner Name] | `Dashboard-Frontend-Jackenson` | Authentication Flow (Login, Signup, OTP, Forgot Password, Reset Password) |
+
+---
+
+## Backend
+
+See the `/src` directory at the root of the repo for backend code.
+
+
+
+---
+
+## Notes
+
+- Static/mock data is used throughout the UI — will be replaced with real API data once backend endpoints are ready
+- Auth integration pending — user info is currently hardcoded
+- Activity Log page is pending scope confirmation from lead
+- Compliance Dashboard and Reports & Export pages are currently accessible via sidebar — final placement pending lead confirmation
 
 
 
