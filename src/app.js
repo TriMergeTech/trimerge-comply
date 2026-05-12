@@ -9,6 +9,7 @@ const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth.routes');
 const auditRoutes = require('./routes/audit.routes');           // 👈 add
+const uploadRoutes = require('./routes/upload.routes');
 const { errorHandler, notFound } = require('./middleware/error.middleware');
 const { sendSuccess } = require('./utils/response');
 
@@ -71,6 +72,7 @@ app.get('/health', (req, res) => {
 // ─── API routes ──────────────────────────────────────────────
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/audits', auditRoutes);                           // 👈 add
+app.use('/api/upload', uploadRoutes);
 
 setupSwagger(app);
 
