@@ -1,5 +1,5 @@
 import { Search } from 'lucide-react'
-import AuditsTable from '../../components/audits/AuditsTable'
+import AuditsTable from '@/components/audits/AuditsTable'
 
 export default function Audits() {
   return (
