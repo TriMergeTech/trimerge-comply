@@ -26,6 +26,19 @@ const options = {
             createdAt: { type: 'string', format: 'date-time' },
           },
         },
+        Audit: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1' },
+            name: { type: 'string', example: 'Q1 2026 Pay Equity Review' },
+            description: { type: 'string', nullable: true, example: 'Initial audit for Q1 payroll data' },
+            status: { type: 'string', enum: ['draft', 'processing', 'completed', 'flagged'], example: 'draft' },
+            organization: { type: 'string', nullable: true, example: 'TriMerge Consulting' },
+            createdBy: { type: 'object', properties: { email: { type: 'string' }, role: { type: 'string' } } },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
         SuccessResponse: {
           type: 'object',
           properties: {
@@ -90,17 +103,7 @@ const options = {
                       data: {
                         type: 'object',
                         properties: {
-                          user: {
-                            type: 'object',
-                            properties: {
-                              id: { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1' },
-                              email: { type: 'string', example: 'ibrahim@trimerge.com' },
-                              phone: { type: 'string', nullable: true },
-                              isVerified: { type: 'boolean', example: true },
-                              role: { type: 'string', enum: ['admin', 'analyst', 'viewer'], example: 'viewer' },
-                              createdAt: { type: 'string', format: 'date-time' },
-                            },
-                          },
+                          user: { $ref: '#/components/schemas/User' },
                         },
                       },
                     },
@@ -109,6 +112,101 @@ const options = {
               },
             },
             401: { description: 'Unauthorized — missing or invalid token' },
+          },
+        },
+      },
+      '/api/audits': {
+        post: {
+          tags: ['Audits'],
+          summary: 'Create audit',
+          description: 'Create a new audit. Requires analyst or admin role.',
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['name'],
+                  properties: {
+                    name: { type: 'string', example: 'Q1 2026 Pay Equity Review' },
+                    description: { type: 'string', example: 'Initial audit for Q1 payroll data' },
+                    organization: { type: 'string', example: 'TriMerge Consulting' },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            201: { description: 'Audit created successfully' },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Forbidden — insufficient role' },
+          },
+        },
+        get: {
+          tags: ['Audits'],
+          summary: 'List all audits',
+          description: 'Returns all audits. Requires any authenticated role.',
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: { description: 'Audits retrieved successfully' },
+            401: { description: 'Unauthorized' },
+          },
+        },
+      },
+      '/api/audits/{id}': {
+        get: {
+          tags: ['Audits'],
+          summary: 'Get audit by ID',
+          description: 'Returns a single audit by ID.',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '64f1a2b3c4d5e6f7a8b9c0d1' }],
+          responses: {
+            200: { description: 'Audit retrieved successfully' },
+            401: { description: 'Unauthorized' },
+            404: { description: 'Audit not found' },
+          },
+        },
+        patch: {
+          tags: ['Audits'],
+          summary: 'Update audit',
+          description: 'Update audit fields. Requires analyst or admin role.',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '64f1a2b3c4d5e6f7a8b9c0d1' }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string', example: 'Q1 2026 Pay Equity Review — Updated' },
+                    description: { type: 'string', example: 'Updated description' },
+                    organization: { type: 'string', example: 'TriMerge Consulting' },
+                    status: { type: 'string', enum: ['draft', 'processing', 'completed', 'flagged'], example: 'processing' },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: 'Audit updated successfully' },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Forbidden — insufficient role' },
+            404: { description: 'Audit not found' },
+          },
+        },
+        delete: {
+          tags: ['Audits'],
+          summary: 'Delete audit',
+          description: 'Permanently delete an audit. Requires admin role.',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '64f1a2b3c4d5e6f7a8b9c0d1' }],
+          responses: {
+            200: { description: 'Audit deleted successfully' },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Forbidden — admin only' },
+            404: { description: 'Audit not found' },
           },
         },
       },

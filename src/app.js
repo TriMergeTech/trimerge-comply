@@ -6,9 +6,9 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
-
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth.routes');
+const auditRoutes = require('./routes/audit.routes');           // 👈 add
 const { errorHandler, notFound } = require('./middleware/error.middleware');
 const { sendSuccess } = require('./utils/response');
 
@@ -34,19 +34,18 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 // ─── Body parsing ────────────────────────────────────────────
-app.use(express.json({ limit: '10kb' })); // cap payload size
+app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
-// ─── Global rate limiter (Illia will layer AI-based limiting on top) ─
+// ─── Rate limiters ───────────────────────────────────────────
 const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: 50,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests, please try again later.' },
 });
 
-// Stricter limiter for auth endpoints
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -71,6 +70,8 @@ app.get('/health', (req, res) => {
 
 // ─── API routes ──────────────────────────────────────────────
 app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/audits', auditRoutes);                           // 👈 add
+
 setupSwagger(app);
 
 // ─── 404 + global error handler ─────────────────────────────
