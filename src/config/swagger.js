@@ -39,6 +39,26 @@ const options = {
             updatedAt: { type: 'string', format: 'date-time' },
           },
         },
+        Flag: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1' },
+            auditId: { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1' },
+            group: { type: 'string', example: 'Female' },
+            referenceGroup: { type: 'string', example: 'Male' },
+            selected: { type: 'number', example: 30 },
+            total: { type: 'number', example: 50 },
+            selectionRate: { type: 'number', example: 0.6 },
+            impactRatio: { type: 'number', example: 0.75 },
+            threshold: { type: 'number', example: 0.8 },
+            testType: { type: 'string', enum: ['four_fifths', 'fisher_exact', 'chi_square'], example: 'fisher_exact' },
+            pValue: { type: 'number', example: 0.032 },
+            severity: { type: 'string', enum: ['low', 'medium', 'high'], example: 'medium' },
+            status: { type: 'string', enum: ['open', 'reviewed', 'dismissed'], example: 'open' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
         SuccessResponse: {
           type: 'object',
           properties: {
@@ -207,6 +227,67 @@ const options = {
             401: { description: 'Unauthorized' },
             403: { description: 'Forbidden — admin only' },
             404: { description: 'Audit not found' },
+          },
+        },
+      },
+      '/api/flags': {
+        get: {
+          tags: ['Flags'],
+          summary: 'List all flags',
+          description: 'Returns flags with optional filters and pagination. Requires authentication.',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'auditId', in: 'query', schema: { type: 'string' }, description: 'Filter by audit ID' },
+            { name: 'status', in: 'query', schema: { type: 'string', enum: ['open', 'reviewed', 'dismissed'] }, description: 'Filter by status' },
+            { name: 'severity', in: 'query', schema: { type: 'string', enum: ['low', 'medium', 'high'] }, description: 'Filter by severity' },
+            { name: 'testType', in: 'query', schema: { type: 'string', enum: ['four_fifths', 'fisher_exact', 'chi_square'] }, description: 'Filter by test type' },
+            { name: 'page', in: 'query', schema: { type: 'integer', default: 1 }, description: 'Page number' },
+            { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 }, description: 'Results per page' },
+          ],
+          responses: {
+            200: {
+              description: 'Flags retrieved successfully',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      data: {
+                        type: 'object',
+                        properties: {
+                          flags: { type: 'array', items: { $ref: '#/components/schemas/Flag' } },
+                          pagination: {
+                            type: 'object',
+                            properties: {
+                              total: { type: 'integer', example: 42 },
+                              page: { type: 'integer', example: 1 },
+                              limit: { type: 'integer', example: 20 },
+                              totalPages: { type: 'integer', example: 3 },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            401: { description: 'Unauthorized' },
+          },
+        },
+      },
+      '/api/flags/{id}': {
+        get: {
+          tags: ['Flags'],
+          summary: 'Get flag by ID',
+          description: 'Returns a single flag by ID.',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '64f1a2b3c4d5e6f7a8b9c0d1' }],
+          responses: {
+            200: { description: 'Flag retrieved successfully' },
+            401: { description: 'Unauthorized' },
+            404: { description: 'Flag not found' },
           },
         },
       },
