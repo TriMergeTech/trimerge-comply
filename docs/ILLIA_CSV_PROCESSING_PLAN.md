@@ -6,15 +6,34 @@ Create a small CSV processing layer that can later plug into the shared backend 
 
 This version does not include AI or Claude integration. It focuses only on validating CSV-style analytics data and preparing it for adverse impact analysis.
 
-## Expected CSV Columns
+## Supported CSV Columns
 
-The first test format is group-level data:
+The endpoint supports group-level adverse-impact data:
 
 ```csv
 group,selected,total
 Male,80,100
 Female,30,50
 ```
+
+It also supports applicant-flow data from the supervisor's sample file:
+
+```csv
+job,stage,demographicGroup,selected
+Software Engineer,screening,Asian,False
+HR Analyst,application,Female,True
+```
+
+Applicant-flow data is aggregated by `demographicGroup`, then passed into the 4/5ths Rule engine.
+
+It also validates pay-equity data:
+
+```csv
+salary,grade,tenure,performance,gender,race,department
+86704,8,1.7,2.2,Male,Black,Operations
+```
+
+Pay-equity CSVs return a validation/preview response. OLS regression and pay gap analysis are planned for the pay equity engine.
 
 ## Code Added
 
@@ -29,7 +48,8 @@ Female,30,50
 3. Validate required columns.
 4. Validate numeric fields.
 5. Return structured validation errors if the CSV is not usable.
-6. Run the 4/5ths Rule analysis if validation passes.
+6. Run the 4/5ths Rule analysis if the file is adverse-impact/applicant-flow data.
+7. Return a validation preview if the file is pay-equity data.
 
 ## Service Test Strategy
 
@@ -53,7 +73,14 @@ The first backend test endpoint is:
 POST /api/upload/csv
 ```
 
-This endpoint accepts either JSON with a `csvText` field or raw `text/csv`.
+This endpoint accepts a CSV file upload from Swagger, JSON with a `csvText` field, or raw `text/csv`.
+
+Swagger test:
+
+1. Start the backend.
+2. Open `http://localhost:4000/api/docs`.
+3. Use `POST /api/upload/csv`.
+4. Upload a CSV file using the `file` field.
 
 Example JSON request:
 
@@ -73,8 +100,8 @@ Male,80,100
 Female,30,50"
 ```
 
-Expected result: the response is valid and flags `Female` because its impact ratio is `0.75`, below the 4/5ths threshold of `0.8`.
+Expected result for applicant-flow/adverse-impact data: the response is valid and includes 4/5ths Rule analysis.
 
 ## Later Upload Upgrade
 
-The final upload version should receive an actual CSV file, optionally store the original file in Cloudinary, read its contents, call `processAdverseImpactCsv`, and return or persist validation/analysis results.
+The final storage version can optionally store the original uploaded file in Cloudinary and persist validation/analysis results to MongoDB. The current version is focused on Swagger-testable processing.

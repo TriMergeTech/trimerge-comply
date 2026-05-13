@@ -7,7 +7,10 @@ const router = express.Router();
 // middleware and Cloudinary storage while keeping the analytics service call.
 router.post(
   '/csv',
-  express.text({ type: ['text/csv', 'text/plain'], limit: '1mb' }),
+  express.raw({
+    type: ['multipart/form-data', 'text/csv', 'text/plain'],
+    limit: '2mb',
+  }),
   processCsvUpload
 );
 

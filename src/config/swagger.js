@@ -135,6 +135,60 @@ const options = {
           },
         },
       },
+      '/api/upload/csv': {
+        post: {
+          tags: ['CSV Upload'],
+          summary: 'Process adverse impact CSV',
+          description: 'Upload a CSV file and run validation plus analytics processing. Supports grouped adverse-impact CSVs with group, selected, total; applicant-flow CSVs with job, stage, demographicGroup, selected; and pay-equity CSV validation with salary, grade, tenure, performance, gender, race, department.',
+          requestBody: {
+            required: true,
+            content: {
+              'multipart/form-data': {
+                schema: {
+                  type: 'object',
+                  required: ['file'],
+                  properties: {
+                    file: {
+                      type: 'string',
+                      format: 'binary',
+                      description: 'CSV file with columns: group, selected, total',
+                    },
+                  },
+                },
+              },
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['csvText'],
+                  properties: {
+                    csvText: {
+                      type: 'string',
+                      example: 'job,stage,demographicGroup,selected\nSoftware Engineer,screening,Asian,False\nHR Analyst,application,Female,True',
+                    },
+                  },
+                },
+              },
+              'text/csv': {
+                schema: {
+                  type: 'string',
+                  example: 'job,stage,demographicGroup,selected\nSoftware Engineer,screening,Asian,False\nHR Analyst,application,Female,True',
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: 'CSV processed successfully',
+            },
+            400: {
+              description: 'Missing CSV content',
+            },
+            422: {
+              description: 'CSV validation failed',
+            },
+          },
+        },
+      },
       '/api/audits': {
         post: {
           tags: ['Audits'],
