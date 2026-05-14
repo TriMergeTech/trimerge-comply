@@ -25,7 +25,11 @@ app.use(helmet());
 // ─── CORS ────────────────────────────────────────────────────
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: [
+      'http://localhost:3000',
+      'https://trimerge-comply.onrender.com',
+      process.env.CORS_ORIGIN,
+    ].filter(Boolean),
     credentials: true,
   })
 );
