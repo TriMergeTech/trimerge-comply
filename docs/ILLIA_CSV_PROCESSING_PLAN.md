@@ -50,6 +50,7 @@ Pay-equity CSVs return a validation/preview response. OLS regression and pay gap
 5. Return structured validation errors if the CSV is not usable.
 6. Run the 4/5ths Rule analysis if the file is adverse-impact/applicant-flow data.
 7. Return a validation preview if the file is pay-equity data.
+8. Store valid uploaded CSV files in Cloudinary.
 
 ## Service Test Strategy
 
@@ -100,8 +101,14 @@ Male,80,100
 Female,30,50"
 ```
 
-Expected result for applicant-flow/adverse-impact data: the response is valid and includes 4/5ths Rule analysis.
+Expected result for applicant-flow/adverse-impact data: the response is valid, includes 4/5ths Rule analysis, and includes Cloudinary storage metadata under `data.upload.storage`.
+
+## Cloudinary Storage
+
+The endpoint reads `CLOUDINARY_URL` from `.env` and stores valid uploaded CSV files in the `trimerge-comply/csv-uploads` Cloudinary folder.
+
+Do not commit real Cloudinary credentials. Keep them only in local `.env`.
 
 ## Later Upload Upgrade
 
-The final storage version can optionally store the original uploaded file in Cloudinary and persist validation/analysis results to MongoDB. The current version is focused on Swagger-testable processing.
+The next storage upgrade is saving upload metadata and validation/analysis results to MongoDB so the dashboard and flags pages can retrieve past uploads.

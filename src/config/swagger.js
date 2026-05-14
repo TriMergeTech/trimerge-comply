@@ -167,9 +167,18 @@ const options = {
             },
           },
           responses: {
-            200: { description: 'CSV processed successfully' },
-            400: { description: 'Missing CSV content' },
-            422: { description: 'CSV validation failed' },
+            200: {
+              description: 'CSV processed and stored successfully',
+            },
+            400: {
+              description: 'Missing CSV content',
+            },
+            422: {
+              description: 'CSV validation failed',
+            },
+            500: {
+              description: 'CSV processing or Cloudinary storage failed',
+            },
           },
         },
       },

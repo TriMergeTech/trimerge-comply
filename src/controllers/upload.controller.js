@@ -1,4 +1,5 @@
 const { processAdverseImpactCsv } = require('../services/analytics/csvAdverseImpactProcessor');
+const { uploadCsvToCloudinary } = require('../services/storage/cloudinary.service');
 const { sendSuccess, sendError } = require('../utils/response');
 
 const getBoundary = (contentType = '') => {
@@ -10,7 +11,7 @@ const extractCsvFromMultipart = (bodyBuffer, contentType) => {
   const boundary = getBoundary(contentType);
 
   if (!boundary) {
-    return '';
+    return { csvText: '', fileName: 'upload.csv', mimeType: 'text/csv' };
   }
 
   const body = bodyBuffer.toString('utf8');
@@ -24,24 +25,36 @@ const extractCsvFromMultipart = (bodyBuffer, contentType) => {
     const [rawHeaders, ...contentParts] = part.split('\r\n\r\n');
     const contentDisposition = rawHeaders || '';
     const isFileField = /name="file"/i.test(contentDisposition);
+    const fileNameMatch = contentDisposition.match(/filename="([^"]+)"/i);
+    const contentTypeMatch = rawHeaders.match(/Content-Type:\s*([^\r\n]+)/i);
 
     if (!isFileField) {
       continue;
     }
 
-    return contentParts
+    const csvText = contentParts
       .join('\r\n\r\n')
       .replace(/\r\n--$/, '')
       .replace(/\r\n$/, '')
       .trim();
+
+    return {
+      csvText,
+      fileName: fileNameMatch?.[1] || 'upload.csv',
+      mimeType: contentTypeMatch?.[1] || 'text/csv',
+    };
   }
 
-  return '';
+  return { csvText: '', fileName: 'upload.csv', mimeType: 'text/csv' };
 };
 
-const getCsvTextFromRequest = (req) => {
+const getCsvPayloadFromRequest = (req) => {
   if (typeof req.body === 'string') {
-    return req.body;
+    return {
+      csvText: req.body,
+      fileName: 'raw-upload.csv',
+      mimeType: req.headers['content-type'] || 'text/csv',
+    };
   }
 
   if (Buffer.isBuffer(req.body)) {
@@ -51,20 +64,29 @@ const getCsvTextFromRequest = (req) => {
       return extractCsvFromMultipart(req.body, contentType);
     }
 
-    return req.body.toString('utf8');
+    return {
+      csvText: req.body.toString('utf8'),
+      fileName: 'raw-upload.csv',
+      mimeType: contentType || 'text/csv',
+    };
   }
 
   if (req.body && typeof req.body.csvText === 'string') {
-    return req.body.csvText;
+    return {
+      csvText: req.body.csvText,
+      fileName: req.body.fileName || 'json-upload.csv',
+      mimeType: 'application/json',
+    };
   }
 
-  return '';
+  return { csvText: '', fileName: 'upload.csv', mimeType: 'text/csv' };
 };
 
 // POST /api/upload/csv
-const processCsvUpload = (req, res, next) => {
+const processCsvUpload = async (req, res, next) => {
   try {
-    const csvText = getCsvTextFromRequest(req);
+    const csvPayload = getCsvPayloadFromRequest(req);
+    const { csvText, fileName, mimeType } = csvPayload;
 
     if (!csvText.trim()) {
       return sendError(res, {
@@ -83,9 +105,21 @@ const processCsvUpload = (req, res, next) => {
       });
     }
 
+    const storage = await uploadCsvToCloudinary({
+      csvText,
+      fileName,
+    });
+
     return sendSuccess(res, {
-      message: 'CSV processed successfully.',
-      data: result,
+      message: 'CSV processed and stored successfully.',
+      data: {
+        ...result,
+        upload: {
+          fileName,
+          mimeType,
+          storage,
+        },
+      },
     });
   } catch (err) {
     next(err);
