@@ -82,7 +82,7 @@ const options = {
         get: { tags: ['Health'], summary: 'Health check', responses: { 200: { description: 'Server is running' } } }
       },
       '/api/auth/signup': {
-        post: { tags: ['Authentication'], summary: 'Create a new account', description: 'Register a new user. Sends an OTP to email for verification.', requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['email', 'password'], properties: { email: { type: 'string', format: 'email', example: 'ibrahim@trimerge.com' }, password: { type: 'string', example: 'Password123', description: 'Min 8 chars, 1 uppercase, 1 number' }, phone: { type: 'string', example: '+13051234567' } } } } } }, responses: { 201: { description: 'Account created. OTP sent to email.' }, 409: { description: 'Email already registered' }, 422: { description: 'Validation failed' } } }
+        post: { tags: ['Authentication'], summary: 'Create a new account', description: 'Register a new user. Sends an OTP to email for verification.', requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['email', 'password', 'name'], properties: { name: { type: 'string', example: 'Ibrahim Chhapra' }, email: { type: 'string', format: 'email', example: 'ibrahim@trimerge.com' }, password: { type: 'string', example: 'Password123', description: 'Min 8 chars, 1 uppercase, 1 number' }, phone: { type: 'string', example: '+13051234567' } } } } } }, responses: { 201: { description: 'Account created. OTP sent to email.' }, 409: { description: 'Email already registered' }, 422: { description: 'Validation failed' } } }
       },
       '/api/auth/verify-otp': {
         post: { tags: ['Authentication'], summary: 'Verify OTP', description: 'Verify the 6-digit OTP sent after signup.', requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['email', 'otp'], properties: { email: { type: 'string', format: 'email', example: 'ibrahim@trimerge.com' }, otp: { type: 'string', example: '847291' } } } } } }, responses: { 200: { description: 'Email verified' }, 400: { description: 'Invalid OTP' }, 410: { description: 'OTP expired' }, 429: { description: 'Too many attempts' } } }
@@ -139,7 +139,7 @@ const options = {
         post: {
           tags: ['CSV Upload'],
           summary: 'Process adverse impact CSV',
-          description: 'Upload a CSV file and run validation plus analytics processing. Supports grouped adverse-impact CSVs with group, selected, total; applicant-flow CSVs with job, stage, demographicGroup, selected; and pay-equity CSV validation with salary, grade, tenure, performance, gender, race, department.',
+          description: 'Upload a CSV file and run validation plus analytics processing.',
           requestBody: {
             required: true,
             content: {
@@ -148,11 +148,7 @@ const options = {
                   type: 'object',
                   required: ['file'],
                   properties: {
-                    file: {
-                      type: 'string',
-                      format: 'binary',
-                      description: 'CSV file with columns: group, selected, total',
-                    },
+                    file: { type: 'string', format: 'binary', description: 'CSV file with columns: group, selected, total' },
                   },
                 },
               },
@@ -161,31 +157,16 @@ const options = {
                   type: 'object',
                   required: ['csvText'],
                   properties: {
-                    csvText: {
-                      type: 'string',
-                      example: 'job,stage,demographicGroup,selected\nSoftware Engineer,screening,Asian,False\nHR Analyst,application,Female,True',
-                    },
+                    csvText: { type: 'string', example: 'group,selected,total\nMale,80,100\nFemale,30,50' },
                   },
-                },
-              },
-              'text/csv': {
-                schema: {
-                  type: 'string',
-                  example: 'job,stage,demographicGroup,selected\nSoftware Engineer,screening,Asian,False\nHR Analyst,application,Female,True',
                 },
               },
             },
           },
           responses: {
-            200: {
-              description: 'CSV processed successfully',
-            },
-            400: {
-              description: 'Missing CSV content',
-            },
-            422: {
-              description: 'CSV validation failed',
-            },
+            200: { description: 'CSV processed successfully' },
+            400: { description: 'Missing CSV content' },
+            422: { description: 'CSV validation failed' },
           },
         },
       },
@@ -288,7 +269,7 @@ const options = {
         get: {
           tags: ['Flags'],
           summary: 'List all flags',
-          description: 'Returns flags with optional filters and pagination. Requires authentication.',
+          description: 'Returns flags with optional filters and pagination.',
           security: [{ bearerAuth: [] }],
           parameters: [
             { name: 'auditId', in: 'query', schema: { type: 'string' }, description: 'Filter by audit ID' },
@@ -299,34 +280,7 @@ const options = {
             { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 }, description: 'Results per page' },
           ],
           responses: {
-            200: {
-              description: 'Flags retrieved successfully',
-              content: {
-                'application/json': {
-                  schema: {
-                    type: 'object',
-                    properties: {
-                      success: { type: 'boolean', example: true },
-                      data: {
-                        type: 'object',
-                        properties: {
-                          flags: { type: 'array', items: { $ref: '#/components/schemas/Flag' } },
-                          pagination: {
-                            type: 'object',
-                            properties: {
-                              total: { type: 'integer', example: 42 },
-                              page: { type: 'integer', example: 1 },
-                              limit: { type: 'integer', example: 20 },
-                              totalPages: { type: 'integer', example: 3 },
-                            },
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
+            200: { description: 'Flags retrieved successfully' },
             401: { description: 'Unauthorized' },
           },
         },
@@ -341,6 +295,67 @@ const options = {
           responses: {
             200: { description: 'Flag retrieved successfully' },
             401: { description: 'Unauthorized' },
+            404: { description: 'Flag not found' },
+          },
+        },
+      },
+      '/api/flags/{id}/decide': {
+        post: {
+          tags: ['Analyst Workflow'],
+          summary: 'Decide on a flag',
+          description: 'Analyst approves or dismisses a flag. Requires analyst or admin role.',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a04821729a246ff21797b80' }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['decision'],
+                  properties: {
+                    decision: { type: 'string', enum: ['approved', 'dismissed'], example: 'approved' },
+                    reason: { type: 'string', example: 'Reviewed and confirmed no adverse impact.' },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: 'Flag decided successfully' },
+            400: { description: 'Invalid decision or flag already reviewed' },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Forbidden — insufficient role' },
+            404: { description: 'Flag not found' },
+          },
+        },
+      },
+      '/api/flags/{id}/assign': {
+        patch: {
+          tags: ['Analyst Workflow'],
+          summary: 'Assign flag to analyst',
+          description: 'Assign a flag to a specific analyst. Requires analyst or admin role.',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a04821729a246ff21797b80' }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['assignedTo'],
+                  properties: {
+                    assignedTo: { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1', description: 'User ID of the analyst to assign' },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: 'Flag assigned successfully' },
+            400: { description: 'Missing assignedTo field' },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Forbidden — insufficient role' },
             404: { description: 'Flag not found' },
           },
         },

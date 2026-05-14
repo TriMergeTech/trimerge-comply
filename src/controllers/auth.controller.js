@@ -12,12 +12,12 @@ const OTP_COOLDOWN_SECONDS = 60;
 
 const signup = async (req, res, next) => {
   try {
-    const { email, password, phone } = req.body;
+    const { email, password, phone, name } = req.body;
     const existing = await User.findOne({ email });
     if (existing) {
       return sendError(res, { statusCode: 409, message: 'Email already registered' });
     }
-    const user = await User.create({ email, password, phone });
+    const user = await User.create({ email, password, phone, name });
     const otp = generateOTP();
     const hashedOtp = await hashOTP(otp);
     user.otpCode = hashedOtp;

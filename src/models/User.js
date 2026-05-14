@@ -11,6 +11,11 @@ const userSchema = new mongoose.Schema(
       trim: true,
       match: [/^\S+@\S+\.\S+$/, 'Invalid email format'],
     },
+    name: {
+      type: String,
+      required: [true, 'Name is required'],
+      trim: true,
+    },
     phone: {
       type: String,
       trim: true,
@@ -69,10 +74,11 @@ userSchema.methods.isLocked = function () {
 userSchema.methods.toPublicJSON = function () {
   return {
     id: this._id,
+    name: this.name,
     email: this.email,
     phone: this.phone,
     isVerified: this.isVerified,
-    role: this.role,    
+    role: this.role,
     createdAt: this.createdAt,
   };
 };
