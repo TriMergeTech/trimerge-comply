@@ -9,7 +9,10 @@ const options = {
       version: '1.0.0',
       description: 'Secure authentication API for TriMerge Consulting Group.',
     },
-    servers: [{ url: 'http://localhost:4000', description: 'Development server' }],
+    servers: [
+      { url: 'https://trimerge-comply.onrender.com', description: 'Production server' },
+      { url: 'http://localhost:4000', description: 'Development server' },
+    ],
     components: {
       securitySchemes: {
         bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
