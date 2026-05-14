@@ -13,6 +13,9 @@ const OTP_COOLDOWN_SECONDS = 60;
 const signup = async (req, res, next) => {
   try {
     const { email, password, phone, name } = req.body;
+    if (!name || !name.trim()) {                    
+      return sendError(res, { statusCode: 400, message: 'Name is required.' });
+    }
     const existing = await User.findOne({ email });
     if (existing) {
       return sendError(res, { statusCode: 409, message: 'Email already registered' });
