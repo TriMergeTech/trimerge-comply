@@ -37,15 +37,7 @@ export default function Dashboard() {
       {/* Recent audits table */}
       <RecentAudits />
 
-      {/* Temporary link to compliance dashboard */}
-      <div className="flex justify-start">
-        <a
-          href="/dashboard/compliance"
-          className="text-sm text-indigo-500 hover:underline"
-        >
-          View Compliance Dashboard →
-        </a>
-      </div>
+      
 
     </div>
   )
