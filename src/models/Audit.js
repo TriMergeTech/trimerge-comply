@@ -24,6 +24,16 @@ const auditSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
+    clientName: {                                    // 👈 add
+      type: String,
+      trim: true,
+      default: null,
+    },
+    auditType: {                                     // 👈 add
+      type: String,
+      trim: true,
+      default: null,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

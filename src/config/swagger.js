@@ -213,8 +213,12 @@ const options = {
         get: {
           tags: ['Audits'],
           summary: 'List all audits',
-          description: 'Returns all audits. Requires any authenticated role.',
+          description: 'Returns all audits. Supports filtering by clientName and auditType.',
           security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'clientName', in: 'query', schema: { type: 'string' }, description: 'Filter by client name (case-insensitive, partial match)' },
+            { name: 'auditType', in: 'query', schema: { type: 'string' }, description: 'Filter by audit type (case-insensitive, partial match)' },
+          ],
           responses: {
             200: { description: 'Audits retrieved successfully' },
             401: { description: 'Unauthorized' },

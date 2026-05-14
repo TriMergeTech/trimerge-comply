@@ -4,11 +4,13 @@ const { sendSuccess, sendError } = require('../utils/response');
 // POST /api/audits
 const createAudit = async (req, res, next) => {
   try {
-    const { name, description, organization } = req.body;
+    const { name, description, organization, clientName, auditType } = req.body;
     const audit = await Audit.create({
       name,
       description,
       organization,
+      clientName,
+      auditType,
       createdBy: req.user._id,
     });
     return sendSuccess(res, {
@@ -24,9 +26,22 @@ const createAudit = async (req, res, next) => {
 // GET /api/audits
 const getAudits = async (req, res, next) => {
   try {
-    const audits = await Audit.find()
+    const { clientName, auditType } = req.query;
+
+    const filter = {};
+
+    if (clientName) {
+      filter.clientName = { $regex: clientName, $options: 'i' };
+    }
+
+    if (auditType) {
+      filter.auditType = { $regex: auditType, $options: 'i' };
+    }
+
+    const audits = await Audit.find(filter)
       .populate('createdBy', 'email role')
       .sort({ createdAt: -1 });
+
     return sendSuccess(res, {
       message: 'Audits retrieved successfully',
       data: { audits, total: audits.length },
@@ -55,7 +70,7 @@ const getAuditById = async (req, res, next) => {
 // PATCH /api/audits/:id
 const updateAudit = async (req, res, next) => {
   try {
-    const { name, description, organization, status } = req.body;
+    const { name, description, organization, status, clientName, auditType } = req.body;
     const audit = await Audit.findById(req.params.id);
     if (!audit) {
       return sendError(res, { statusCode: 404, message: 'Audit not found' });
@@ -64,6 +79,8 @@ const updateAudit = async (req, res, next) => {
     if (description !== undefined) audit.description = description;
     if (organization !== undefined) audit.organization = organization;
     if (status !== undefined) audit.status = status;
+    if (clientName !== undefined) audit.clientName = clientName;
+    if (auditType !== undefined) audit.auditType = auditType;
     await audit.save();
     return sendSuccess(res, {
       message: 'Audit updated successfully',
