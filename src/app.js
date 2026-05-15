@@ -11,6 +11,7 @@ const authRoutes = require('./routes/auth.routes');
 const auditRoutes = require('./routes/audit.routes');           // 👈 add
 const uploadRoutes = require('./routes/upload.routes');
 const flagRoutes = require('./routes/flag.routes');
+const positionRoutes = require('./routes/position.routes');
 const { errorHandler, notFound } = require('./middleware/error.middleware');
 const { sendSuccess } = require('./utils/response');
 
@@ -79,6 +80,7 @@ app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/audits', auditRoutes);                           // 👈 add
 app.use('/api/upload', uploadRoutes);
 app.use('/api/flags', flagRoutes);
+app.use('/api/position', positionRoutes);
 
 setupSwagger(app);
 
