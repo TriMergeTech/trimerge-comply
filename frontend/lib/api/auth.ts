@@ -1,4 +1,4 @@
-const BASE = "http://localhost:4000/api";
+const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
 
 async function post<T>(path: string, body: unknown, token?: string): Promise<T> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -10,7 +10,20 @@ async function post<T>(path: string, body: unknown, token?: string): Promise<T> 
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.message ?? "Request failed");
-  return data as T;
+  return (data.data ?? data) as T;
+}
+
+async function get<T>(path: string, token: string): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message ?? "Request failed");
+  return (data.data ?? data) as T;
 }
 
 export interface AuthUser {
@@ -39,7 +52,7 @@ export function signup(data: {
   name: string;
   email: string;
   password: string;
-  role: string;
+  phone: string;
 }) {
   return post<SignupResponse>("/auth/signup", data);
 }
@@ -66,4 +79,12 @@ export function resetPassword(data: { token: string; newPassword: string }) {
 
 export function logout(accessToken: string) {
   return post<MessageResponse>("/auth/logout", {}, accessToken);
+}
+
+export function getMe(accessToken: string) {
+  return get<{ user: AuthUser }>("/auth/me", accessToken);
+}
+
+export function refreshTokens(refreshToken: string) {
+  return post<LoginResponse>("/auth/refresh", { refreshToken });
 }

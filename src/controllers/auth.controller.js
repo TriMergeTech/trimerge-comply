@@ -128,7 +128,7 @@ const verifyOTPHandler = async (req, res, next) => {
   try {
     const { email, otp } = req.body;
 
-    const user = await User.findOne({ email }).select('+otp');
+    const user = await User.findOne({ email }).select('+otp.code +otp.expiresAt +otp.purpose');
     if (!user) {
       return sendError(res, { statusCode: 404, message: 'User not found' });
     }
@@ -172,7 +172,7 @@ const resendOTP = async (req, res, next) => {
   try {
     const { email } = req.body;
 
-    const user = await User.findOne({ email }).select('+otp');
+    const user = await User.findOne({ email }).select('+otp.code +otp.expiresAt +otp.purpose');
     if (!user) {
       // Vague — don't leak whether email exists
       return sendSuccess(res, { message: 'If that account exists, a new OTP has been sent.' });

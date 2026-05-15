@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { login } from "@/lib/api/auth";
 import { setTokens } from "@/lib/authTokens";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const params = useSearchParams();
+  const verified = params.get("verified") === "1";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -91,6 +94,12 @@ export default function LoginPage() {
         </div>
 
         <form className="form-stack login-stack" onSubmit={handleSubmit}>
+          {verified && (
+            <p className="success-msg">
+              Your email has been verified. You can now sign in.
+            </p>
+          )}
+
           <label className="field">
             <span>Work Email</span>
             <div className="input-wrap">
@@ -179,5 +188,13 @@ export default function LoginPage() {
         </form>
       </main>
     </section>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

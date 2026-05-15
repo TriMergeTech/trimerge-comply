@@ -26,25 +26,25 @@ const router = Router();
 // ── Public routes ────────────────────────────────────────────
 
 // POST /api/auth/signup
-router.post('/signup', signupRules, validate, signup);
+router.post('/signup', ...signupRules, validate, signup);
 
 // POST /api/auth/login
-router.post('/login', loginRules, validate, login);
+router.post('/login', ...loginRules, validate, login);
 
 // POST /api/auth/verify-otp
-router.post('/verify-otp', verifyOTPRules, validate, verifyOTPHandler);
+router.post('/verify-otp', ...verifyOTPRules, validate, verifyOTPHandler);
 
 // POST /api/auth/resend-otp
-router.post('/resend-otp', forgotPasswordRules, validate, resendOTP);
+router.post('/resend-otp', ...forgotPasswordRules, validate, resendOTP);
 
 // POST /api/auth/forgot-password
-router.post('/forgot-password', forgotPasswordRules, validate, forgotPassword);
+router.post('/forgot-password', ...forgotPasswordRules, validate, forgotPassword);
 
 // POST /api/auth/reset-password
-router.post('/reset-password', resetPasswordRules, validate, resetPassword);
+router.post('/reset-password', ...resetPasswordRules, validate, resetPassword);
 
 // POST /api/auth/refresh
-router.post('/refresh', refreshTokenRules, validate, refreshTokens);
+router.post('/refresh', ...refreshTokenRules, validate, refreshTokens);
 
 // ── Protected routes (require valid access token) ────────────
 

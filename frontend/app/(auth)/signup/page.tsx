@@ -5,13 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signup } from "@/lib/api/auth";
 
-const ROLES = ["Analyst", "Compliance Manager", "Auditor", "Administrator"];
-
 export default function SignupPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState(ROLES[0]);
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -33,7 +31,7 @@ export default function SignupPage() {
     }
     setLoading(true);
     try {
-      await signup({ name, email, password, role });
+      await signup({ name, email, password, phone });
       router.push(`/verify-otp?email=${encodeURIComponent(email)}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Signup failed");
@@ -161,22 +159,22 @@ export default function SignupPage() {
           </label>
 
           <label className="field">
-            <span>Role</span>
+            <span>Phone Number</span>
             <div className="input-wrap">
               <svg viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="4" y="10" width="16" height="11" rx="2" fill="none" stroke="currentColor" strokeWidth="2.2" />
-                <path d="M8 10V7a4 4 0 1 1 8 0v3" fill="none" stroke="currentColor" strokeWidth="2.2" />
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92Z" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              <select value={role} onChange={(e) => setRole(e.target.value)}>
-                {ROLES.map((r) => (
-                  <option key={r}>{r}</option>
-                ))}
-              </select>
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-              </svg>
+              <input
+                name="phone"
+                type="tel"
+                placeholder="+1 (305) 123-4567"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+              />
             </div>
           </label>
+
 
           <label className="field">
             <span>Password</span>
