@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 import {
   LayoutDashboard,
@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   BarChart2,
 } from 'lucide-react'
+import { clearTokens } from '@/lib/authTokens'
 
 // Navigation links configuration
 const navLinks = [
@@ -33,6 +34,13 @@ export default function Sidebar() {
   // Controls mobile sidebar open/close state
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
+
+  // Clear tokens and redirect to login on logout
+  function handleLogout() {
+    clearTokens()
+    router.replace('/login')
+  }
 
   return (
     <>
@@ -93,8 +101,11 @@ export default function Sidebar() {
           </nav>
         </div>
 
-        {/* Bottom section — logout */}
-        <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-400 hover:bg-white/10 hover:text-white transition-colors w-full">
+        {/* Bottom section — logout button */}
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-400 hover:bg-white/10 hover:text-white transition-colors w-full"
+        >
           <LogOut size={18} />
           Logout
         </button>
