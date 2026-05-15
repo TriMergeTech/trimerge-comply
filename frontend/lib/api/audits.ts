@@ -59,8 +59,9 @@ export interface UpdateAuditData {
 }
 
 // Get all audits
-export function getAudits() {
-  return auditFetch<Audit[]>("/audits");
+export async function getAudits() {
+  const response = await auditFetch<{ success: boolean; message: string; data: { audits: Audit[], total: number } }>("/audits");
+  return response.data.audits
 }
 
 // Get a single audit by ID
