@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 
 // Recent audits table — displays latest audits with status
 // + New Audit button sits in the top right of this card

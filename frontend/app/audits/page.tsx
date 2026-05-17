@@ -1,7 +1,13 @@
+'use client'
+
+import { useState } from 'react'
 import { Search } from 'lucide-react'
 import AuditsTable from '@/components/audits/AuditsTable'
+import AuditModal from '@/components/audits/AuditModal'
 
 export default function Audits() {
+  const [modalOpen, setModalOpen] = useState(false)
+
   return (
     <div className="flex flex-col gap-6">
 
@@ -13,10 +19,20 @@ export default function Audits() {
         </div>
 
         {/* New Audit button */}
-        <button className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors w-fit">
+        <button
+          onClick={() => setModalOpen(true)}
+          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors w-fit"
+        >
           + New Audit
         </button>
       </div>
+
+      {/* New audit modal */}
+      <AuditModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSuccess={() => setModalOpen(false)}
+      />
 
       {/* Search and filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -34,9 +50,10 @@ export default function Audits() {
         {/* Status filter */}
         <select className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500">
           <option>All Status</option>
-          <option>In Progress</option>
-          <option>Draft</option>
-          <option>Completed</option>
+          <option>processing</option>
+          <option>draft</option>
+          <option>completed</option>
+          <option>flagged</option>
         </select>
 
         {/* Type filter */}
@@ -51,7 +68,7 @@ export default function Audits() {
       </div>
 
       {/* Audits table */}
-      <AuditsTable />
+      <AuditsTable onNewAudit={() => setModalOpen(false)} />
 
     </div>
   )
