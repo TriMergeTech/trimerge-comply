@@ -41,12 +41,12 @@ const uploadPositionDocument = async (req, res, next) => {
     if (!payload?.fileBuffer?.length) {
       return sendError(res, {
         statusCode: 400,
-        message: 'Position document content is required. Upload a .txt/.csv file or send JSON with documentText.',
+        message: 'Position document content is required. Upload a .txt, .csv, .pdf, or .docx file.',
       });
     }
 
     const { fileBuffer, fileName, mimeType } = payload;
-    const extraction = extractPositionText({ fileBuffer, fileName, mimeType });
+    const extraction = await extractPositionText({ fileBuffer, fileName, mimeType });
 
     if (!extraction.supported) {
       return sendError(res, {
@@ -94,6 +94,7 @@ const uploadPositionDocument = async (req, res, next) => {
         documentId: documentRecord._id,
         fileName,
         mimeType,
+        fileType: extraction.fileType,
         storage,
         aiConfigured: aiResult.configured,
         analysisStatus: documentRecord.analysisStatus,

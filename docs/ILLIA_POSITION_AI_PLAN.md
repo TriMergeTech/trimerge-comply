@@ -3,7 +3,7 @@
 ## Current MVP
 
 - Endpoint: `POST /api/position/upload`
-- Accepts `.txt` and `.csv` uploads for now.
+- Accepts `.txt`, `.csv`, `.pdf`, and `.docx` uploads.
 - Stores uploaded documents in Cloudinary under `trimerge-comply/position-documents`.
 - Extracts readable text and saves upload metadata in MongoDB.
 - Uses OpenAI for structured compliance findings when `OPENAI_API_KEY` is configured.
@@ -28,6 +28,4 @@ If `OPENAI_API_KEY` is empty, the endpoint still stores the document and returns
 
 ## Later Additions
 
-- PDF text extraction.
-- DOCX text extraction.
 - Persist AI findings into the shared flag workflow as AI-generated flags.

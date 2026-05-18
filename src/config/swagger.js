@@ -208,7 +208,7 @@ const options = {
         post: {
           tags: ['Position Description AI'],
           summary: 'Upload and analyze a position description',
-          description: 'Upload a .txt or .csv position description. The document is stored in Cloudinary. If OPENAI_API_KEY is configured, OpenAI returns structured compliance findings.',
+          description: 'Upload a .txt, .csv, .pdf, or .docx position description. The document is stored in Cloudinary. If OPENAI_API_KEY is configured, OpenAI returns structured compliance findings.',
           requestBody: {
             required: true,
             content: {
@@ -217,7 +217,7 @@ const options = {
                   type: 'object',
                   required: ['file'],
                   properties: {
-                    file: { type: 'string', format: 'binary', description: 'Position description file (.txt or .csv)' },
+                    file: { type: 'string', format: 'binary', description: 'Position description file (.txt, .csv, .pdf, or .docx)' },
                   },
                 },
               },

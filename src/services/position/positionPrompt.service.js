@@ -5,6 +5,7 @@ const buildPositionSystemPrompt = () => [
   'Review job descriptions for employment compliance risks.',
   'Focus on vague language, possible age discrimination, unnecessary requirements, and KSA misalignment.',
   'Do not make legal conclusions. Identify risk signals and practical improvements for analyst review.',
+  'Before finalizing, check that findings and suggested improvements are consistent with each other.',
   'Return only valid JSON. Do not wrap the JSON in markdown.',
 ].join(' ');
 
@@ -36,6 +37,11 @@ Rules:
 - If the document has no meaningful risks, return an empty findings array and overallRisk "low".
 - Keep evidence short.
 - Every finding must use source "ai" and generatedBy "openai".
+- Do not create multiple findings for the same phrase unless each finding is clearly distinct.
+- If one phrase creates multiple related concerns, prefer one finding with a complete explanation.
+- Suggested improvements must not contradict each other.
+- For experience ranges with an upper cap, do not suggest another capped range as the fix. Prefer minimum experience plus equivalent skills, certifications, or demonstrated competence.
+- Do not invent a new minimum or maximum years-of-experience number unless the document supports it.
 
 File name: ${fileName || 'position-upload.txt'}
 
