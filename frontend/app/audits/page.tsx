@@ -4,9 +4,21 @@ import { useState } from 'react'
 import { Search } from 'lucide-react'
 import AuditsTable from '@/components/audits/AuditsTable'
 import AuditModal from '@/components/audits/AuditModal'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { ChevronDown } from 'lucide-react'
 
 export default function Audits() {
   const [modalOpen, setModalOpen] = useState(false)
+  const [selectedStatus, setSelectedStatus] = useState('All Status')
+  const [selectedType, setSelectedType] = useState('All Types')
+
+  const statusOptions = ['All Status', 'processing', 'draft', 'completed', 'flagged']
+  const typeOptions = ['All Types', 'Full Audit', 'Adverse Impact', 'Pay Equity', 'Position Description']
 
   return (
     <div className="flex flex-col gap-6">
@@ -48,22 +60,42 @@ export default function Audits() {
         </div>
 
         {/* Status filter */}
-        <select className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-          <option>All Status</option>
-          <option>processing</option>
-          <option>draft</option>
-          <option>completed</option>
-          <option>flagged</option>
-        </select>
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex items-center gap-2 text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-600 hover:bg-slate-50 transition-colors">
+            {selectedStatus}
+            <ChevronDown size={14} className="text-slate-400" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            {statusOptions.map((status) => (
+              <DropdownMenuItem
+                key={status}
+                onClick={() => setSelectedStatus(status)}
+                className="cursor-pointer capitalize"
+              >
+                {status}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* Type filter */}
-        <select className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-          <option>All Types</option>
-          <option>Full Audit</option>
-          <option>Adverse Impact</option>
-          <option>Pay Equity</option>
-          <option>Position Description</option>
-        </select>
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex items-center gap-2 text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-600 hover:bg-slate-50 transition-colors">
+            {selectedType}
+            <ChevronDown size={14} className="text-slate-400" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            {typeOptions.map((type) => (
+              <DropdownMenuItem
+                key={type}
+                onClick={() => setSelectedType(type)}
+                className="cursor-pointer"
+              >
+                {type}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
 
       </div>
 

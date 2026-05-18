@@ -5,7 +5,13 @@
 // Layout: audit dropdown, format dropdown and export button in one row
 
 import { useState } from 'react'
-import { Download } from 'lucide-react'
+import { Download, ChevronDown } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 // Temporary audit options — will be replaced with real API data later
 const auditOptions = [
@@ -39,29 +45,45 @@ export default function ExportPanel() {
         {/* Audit selector */}
         <div className="flex flex-col gap-1 flex-1">
           <label className="text-sm text-slate-600 font-medium">Audit</label>
-          <select
-            value={selectedAudit}
-            onChange={(e) => setSelectedAudit(e.target.value)}
-            className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            {auditOptions.map((audit, index) => (
-              <option key={index} value={audit}>{audit}</option>
-            ))}
-          </select>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center justify-between gap-2 text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-600 hover:bg-slate-50 transition-colors w-full">
+              {selectedAudit}
+              <ChevronDown size={14} className="text-slate-400 shrink-0" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-72">
+              {auditOptions.map((audit, index) => (
+                <DropdownMenuItem
+                  key={index}
+                  onClick={() => setSelectedAudit(audit)}
+                  className="cursor-pointer"
+                >
+                  {audit}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Format selector */}
         <div className="flex flex-col gap-1 sm:w-36">
           <label className="text-sm text-slate-600 font-medium">Format</label>
-          <select
-            value={selectedFormat}
-            onChange={(e) => setSelectedFormat(e.target.value)}
-            className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            {formatOptions.map((format, index) => (
-              <option key={index} value={format}>{format}</option>
-            ))}
-          </select>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center justify-between gap-2 text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-600 hover:bg-slate-50 transition-colors w-full">
+              {selectedFormat}
+              <ChevronDown size={14} className="text-slate-400 shrink-0" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {formatOptions.map((format, index) => (
+                <DropdownMenuItem
+                  key={index}
+                  onClick={() => setSelectedFormat(format)}
+                  className="cursor-pointer"
+                >
+                  {format}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Export button */}
