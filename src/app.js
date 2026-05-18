@@ -78,14 +78,11 @@ app.get('/health', (req, res) => {
 
 // ─── API routes ──────────────────────────────────────────────
 app.use('/api/auth', authLimiter, authRoutes);
-app.use('/api/audits', auditRoutes);                           // 👈 add
+app.use('/api/audits', auditRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/flags', flagRoutes);
-<<<<<<< HEAD
 app.use('/api/position', positionRoutes);
-=======
 app.use('/api/dashboard', dashboardRoutes);
->>>>>>> 9400cb7 (wip: local changes before pull)
 
 setupSwagger(app);
 
