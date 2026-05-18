@@ -167,18 +167,10 @@ const options = {
             },
           },
           responses: {
-            200: {
-              description: 'CSV processed and stored successfully',
-            },
-            400: {
-              description: 'Missing CSV content',
-            },
-            422: {
-              description: 'CSV validation failed',
-            },
-            500: {
-              description: 'CSV processing or Cloudinary storage failed',
-            },
+            200: { description: 'CSV processed successfully' },
+            400: { description: 'Missing CSV content' },
+            422: { description: 'CSV validation failed' },
+            500: { description: 'CSV processing or Cloudinary storage failed' },
           },
         },
       },
@@ -247,6 +239,8 @@ const options = {
                     name: { type: 'string', example: 'Q1 2026 Pay Equity Review' },
                     description: { type: 'string', example: 'Initial audit for Q1 payroll data' },
                     organization: { type: 'string', example: 'TriMerge Consulting' },
+                    clientName: { type: 'string', example: 'ABC Corporation' },
+                    auditType: { type: 'string', example: 'Compliance Audit' },
                   },
                 },
               },
@@ -302,6 +296,8 @@ const options = {
                     name: { type: 'string', example: 'Q1 2026 Pay Equity Review — Updated' },
                     description: { type: 'string', example: 'Updated description' },
                     organization: { type: 'string', example: 'TriMerge Consulting' },
+                    clientName: { type: 'string', example: 'ABC Corporation' },
+                    auditType: { type: 'string', example: 'Compliance Audit' },
                     status: { type: 'string', enum: ['draft', 'processing', 'completed', 'flagged'], example: 'processing' },
                   },
                 },
@@ -421,6 +417,74 @@ const options = {
             401: { description: 'Unauthorized' },
             403: { description: 'Forbidden — insufficient role' },
             404: { description: 'Flag not found' },
+          },
+        },
+      },
+      '/api/dashboard/summary': {
+        get: {
+          tags: ['Dashboard'],
+          summary: 'Get dashboard summary',
+          description: 'Returns total counts, breakdowns by status/severity, and recent audits and flags.',
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: {
+              description: 'Dashboard summary retrieved successfully',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      data: {
+                        type: 'object',
+                        properties: {
+                          totalAudits: { type: 'integer', example: 10 },
+                          auditsByStatus: { type: 'object', example: { draft: 3, processing: 2, completed: 4, flagged: 1 } },
+                          totalFlags: { type: 'integer', example: 42 },
+                          flagsBySeverity: { type: 'object', example: { low: 10, medium: 20, high: 12 } },
+                          flagsByStatus: { type: 'object', example: { open: 30, reviewed: 8, dismissed: 4 } },
+                          recentAudits: { type: 'array', items: { $ref: '#/components/schemas/Audit' } },
+                          recentFlags: { type: 'array', items: { $ref: '#/components/schemas/Flag' } },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            401: { description: 'Unauthorized' },
+          },
+        },
+      },
+      '/api/dashboard/export': {
+        get: {
+          tags: ['Dashboard'],
+          summary: 'Export dashboard data',
+          description: 'Returns all audits and flags for export. Requires analyst or admin role.',
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: {
+              description: 'Export data retrieved successfully',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      data: {
+                        type: 'object',
+                        properties: {
+                          audits: { type: 'array', items: { $ref: '#/components/schemas/Audit' } },
+                          flags: { type: 'array', items: { $ref: '#/components/schemas/Flag' } },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Forbidden — insufficient role' },
           },
         },
       },

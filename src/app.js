@@ -14,6 +14,7 @@ const flagRoutes = require('./routes/flag.routes');
 const positionRoutes = require('./routes/position.routes');
 const { errorHandler, notFound } = require('./middleware/error.middleware');
 const { sendSuccess } = require('./utils/response');
+const dashboardRoutes = require('./routes/dashboard.routes');
 
 const app = express();
 
@@ -80,7 +81,11 @@ app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/audits', auditRoutes);                           // 👈 add
 app.use('/api/upload', uploadRoutes);
 app.use('/api/flags', flagRoutes);
+<<<<<<< HEAD
 app.use('/api/position', positionRoutes);
+=======
+app.use('/api/dashboard', dashboardRoutes);
+>>>>>>> 9400cb7 (wip: local changes before pull)
 
 setupSwagger(app);
 
