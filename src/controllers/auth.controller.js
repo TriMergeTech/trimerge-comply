@@ -251,6 +251,30 @@ const getMe = async (req, res, next) => {
     next(err);
   }
 };
-    
 
-module.exports = { signup, login, verifyOTPHandler, resendOTP, forgotPassword, resetPassword, refreshTokens, logout, getMe };
+const updateUserRole = async (req, res, next) => {
+  try {
+    const { role } = req.body;
+
+    if (!['admin', 'analyst', 'viewer'].includes(role)) {
+      return sendError(res, { statusCode: 400, message: 'Role must be admin, analyst, or viewer.' });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return sendError(res, { statusCode: 404, message: 'User not found.' });
+    }
+
+    user.role = role;
+    await user.save();
+
+    return sendSuccess(res, {
+      message: `User role updated to ${role}.`,
+      data: { user: user.toPublicJSON() },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+    
+module.exports = { signup, login, verifyOTPHandler, resendOTP, forgotPassword, resetPassword, refreshTokens, logout, getMe, updateUserRole };

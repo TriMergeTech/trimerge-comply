@@ -138,6 +138,36 @@ const options = {
           },
         },
       },
+      '/api/auth/users/{id}/role': {
+        patch: {
+          tags: ['Authentication'],
+          summary: 'Update user role',
+          description: 'Update a user role. Admin only.',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '64f1a2b3c4d5e6f7a8b9c0d1' }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['role'],
+                  properties: {
+                    role: { type: 'string', enum: ['admin', 'analyst', 'viewer'], example: 'analyst' },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: 'User role updated successfully' },
+            400: { description: 'Invalid role' },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Forbidden — admin only' },
+            404: { description: 'User not found' },
+          },
+        },
+      },
       '/api/upload/csv': {
         post: {
           tags: ['CSV Upload'],
@@ -178,7 +208,7 @@ const options = {
         post: {
           tags: ['Position Description AI'],
           summary: 'Upload and analyze a position description',
-          description: 'Upload a .txt or .csv position description. The document is stored in Cloudinary. If OPENAI_API_KEY is configured, OpenAI returns structured compliance findings. PDF and DOCX support will be added later.',
+          description: 'Upload a .txt or .csv position description. The document is stored in Cloudinary. If OPENAI_API_KEY is configured, OpenAI returns structured compliance findings.',
           requestBody: {
             required: true,
             content: {
@@ -187,38 +217,21 @@ const options = {
                   type: 'object',
                   required: ['file'],
                   properties: {
-                    file: {
-                      type: 'string',
-                      format: 'binary',
-                      description: 'Position description file. Current MVP supports .txt and .csv.',
-                    },
+                    file: { type: 'string', format: 'binary', description: 'Position description file (.txt or .csv)' },
                   },
                 },
               },
               'text/plain': {
-                schema: {
-                  type: 'string',
-                  example: 'Customer Success Manager\nMust be energetic and a digital native with 15 years of experience.',
-                },
+                schema: { type: 'string', example: 'Customer Success Manager\nMust be energetic with 15 years of experience.' },
               },
             },
           },
           responses: {
-            200: {
-              description: 'Position document uploaded and stored. AI analysis runs when OpenAI is configured.',
-            },
-            400: {
-              description: 'Missing position document content',
-            },
-            415: {
-              description: 'Unsupported file type',
-            },
-            422: {
-              description: 'Uploaded document did not contain readable text',
-            },
-            500: {
-              description: 'Position upload, storage, or AI analysis failed',
-            },
+            200: { description: 'Position document uploaded and stored.' },
+            400: { description: 'Missing position document content' },
+            415: { description: 'Unsupported file type' },
+            422: { description: 'Uploaded document did not contain readable text' },
+            500: { description: 'Position upload, storage, or AI analysis failed' },
           },
         },
       },
@@ -349,9 +362,9 @@ const options = {
         get: {
           tags: ['Flags'],
           summary: 'Get flag by ID',
-          description: 'Returns a single flag by ID.',
+          description: 'Returns a single flag by ID with statistical explanation.',
           security: [{ bearerAuth: [] }],
-          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '64f1a2b3c4d5e6f7a8b9c0d1' }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a04821729a246ff21797b80' }],
           responses: {
             200: { description: 'Flag retrieved successfully' },
             401: { description: 'Unauthorized' },

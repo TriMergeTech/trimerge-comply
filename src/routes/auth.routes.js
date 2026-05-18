@@ -8,9 +8,9 @@ const {
   resetPassword,
   refreshTokens,
   logout,
-  getMe,   
+  getMe,
+  updateUserRole,
 } = require('../controllers/auth.controller');
-
 const { protect, requireRole } = require('../middleware/auth.middleware');
 const {
   validate,
@@ -25,32 +25,19 @@ const {
 const router = Router();
 
 // ── Public routes ────────────────────────────────────────────
-
-// POST /api/auth/signup
 router.post('/signup', signupRules, validate, signup);
-
-// POST /api/auth/login
 router.post('/login', loginRules, validate, login);
-
-// POST /api/auth/verify-otp
 router.post('/verify-otp', verifyOTPRules, validate, verifyOTPHandler);
-
-// POST /api/auth/resend-otp
 router.post('/resend-otp', forgotPasswordRules, validate, resendOTP);
-
-// POST /api/auth/forgot-password
 router.post('/forgot-password', forgotPasswordRules, validate, forgotPassword);
-
-// POST /api/auth/reset-password
 router.post('/reset-password', resetPasswordRules, validate, resetPassword);
-
-// POST /api/auth/refresh
 router.post('/refresh', refreshTokenRules, validate, refreshTokens);
 
-// ── Protected routes (require valid access token) ────────────
-
-// POST /api/auth/logout
+// ── Protected routes ─────────────────────────────────────────
 router.post('/logout', protect, logout);
-router.get('/me', protect, getMe);    
+router.get('/me', protect, getMe);
+
+// ── Admin only ───────────────────────────────────────────────
+router.patch('/users/:id/role', protect, requireRole('admin'), updateUserRole);
 
 module.exports = router;
