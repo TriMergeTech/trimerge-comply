@@ -30,6 +30,7 @@ app.use(
     origin: [
       'http://localhost:3000',
       'https://trimerge-comply.onrender.com',
+      'https://trimerge-comply-m8p6.onrender.com',
       process.env.CORS_ORIGIN,
     ].filter(Boolean),
     credentials: true,
