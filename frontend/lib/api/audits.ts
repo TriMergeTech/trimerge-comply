@@ -4,8 +4,7 @@
 
 import { getAccessToken } from "@/lib/authTokens";
 
-const BASE = "http://localhost:4000/api";
-
+const BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 // Shared fetch helper for audits
 // Automatically attaches the access token to every request
 async function auditFetch<T>(
