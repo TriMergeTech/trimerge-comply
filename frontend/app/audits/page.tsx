@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { Search } from 'lucide-react'
+import { useState, useCallback } from 'react'
+import { Search, ChevronDown } from 'lucide-react'
 import AuditsTable from '@/components/audits/AuditsTable'
 import AuditModal from '@/components/audits/AuditModal'
 import {
@@ -10,15 +10,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ChevronDown } from 'lucide-react'
 
 export default function Audits() {
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedStatus, setSelectedStatus] = useState('All Status')
   const [selectedType, setSelectedType] = useState('All Types')
+  const [refreshKey, setRefreshKey] = useState(0)
 
   const statusOptions = ['All Status', 'processing', 'draft', 'completed', 'flagged']
   const typeOptions = ['All Types', 'Full Audit', 'Adverse Impact', 'Pay Equity', 'Position Description']
+
+  // Increment refreshKey to trigger table refresh
+  const handleSuccess = useCallback(() => {
+    setModalOpen(false)
+    setRefreshKey(prev => prev + 1)
+  }, [])
 
   return (
     <div className="flex flex-col gap-6">
@@ -43,7 +49,7 @@ export default function Audits() {
       <AuditModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        onSuccess={() => setModalOpen(false)}
+        onSuccess={handleSuccess}
       />
 
       {/* Search and filters */}
@@ -99,8 +105,10 @@ export default function Audits() {
 
       </div>
 
-      {/* Audits table */}
-      <AuditsTable onNewAudit={() => setModalOpen(false)} />
+      {/* Audits table — refreshKey forces refetch when changed */}
+      <AuditsTable
+        key={refreshKey}
+      />
 
     </div>
   )

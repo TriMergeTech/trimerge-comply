@@ -13,6 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { toast } from 'sonner'
 
 // Status color mapping
 function getStatusColor(status: string) {
@@ -34,11 +35,9 @@ function formatDate(dateString: string) {
   })
 }
 
-type AuditsTableProps = {
-  onNewAudit: () => void
-}
 
-export default function AuditsTable({ onNewAudit }: AuditsTableProps) {
+
+export default function AuditsTable() {
   const [audits, setAudits] = useState<Audit[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -71,23 +70,18 @@ export default function AuditsTable({ onNewAudit }: AuditsTableProps) {
   }
 
   // Handle delete audit
-  async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to delete this audit?')) return
-    try {
-      await deleteAudit(id)
-      // Refresh audits after delete
-      fetchAudits()
-    } catch (err) {
-      console.error(err)
-    }
+ async function handleDelete(id: string) {
+  if (!confirm('Are you sure you want to delete this audit?')) return
+  try {
+    await deleteAudit(id)
+    toast.success('Audit deleted successfully')
+    fetchAudits()
+  } catch (err) {
+    toast.error('Failed to delete audit. Please try again.')
+    console.error(err)
   }
-
-  // Open new audit modal
-  function handleNewAudit() {
-    setSelectedAudit(undefined)
-    setModalOpen(true)
-    onNewAudit()
-  }
+}
+  
 
   // Loading state
   if (loading) {

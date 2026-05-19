@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Audit, CreateAuditData, createAudit, updateAudit } from '@/lib/api/audits'
+import { toast } from 'sonner'
 
 type AuditModalProps = {
   open: boolean
@@ -53,16 +54,17 @@ export default function AuditModal({ open, onClose, onSuccess, audit }: AuditMod
 
     try {
       if (isEditMode && audit) {
-        // Update existing audit
         await updateAudit(audit._id, { name, description, organization })
+        toast.success('Audit updated successfully')
       } else {
-        // Create new audit
         const data: CreateAuditData = { name, description, organization }
         await createAudit(data)
+        toast.success('Audit created successfully')
       }
       onSuccess()
       onClose()
     } catch (err) {
+      toast.error('Something went wrong. Please try again.')
       setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
       setLoading(false)
