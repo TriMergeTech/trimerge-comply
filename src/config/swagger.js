@@ -235,6 +235,51 @@ const options = {
           },
         },
       },
+      '/api/payequity/upload': {
+        post: {
+          tags: ['Pay Equity'],
+          summary: 'Upload and analyze compensation file',
+          description: 'Upload compensation data as .csv, .xlsx, .xls, .pdf, or .docx. The original file is stored in Cloudinary. Spreadsheet files are converted to CSV internally. PDF and DOCX files must contain a readable table with a salary column. The engine runs OLS regression using salary as the outcome and all other available fields as predictors, then returns adjusted pay gap findings.',
+          requestBody: {
+            required: true,
+            content: {
+              'multipart/form-data': {
+                schema: {
+                  type: 'object',
+                  required: ['file'],
+                  properties: {
+                    file: {
+                      type: 'string',
+                      format: 'binary',
+                      description: 'Compensation file (.csv, .xlsx, .xls, .pdf, or .docx). Required column: salary. All other columns are used as regression predictors.',
+                    },
+                  },
+                },
+              },
+              'text/csv': {
+                schema: {
+                  type: 'string',
+                  example: 'salary,grade,tenure,performance,gender,race,department\n85000,4,5,4,Female,Black,Finance\n90000,4,6,4,Male,White,Finance',
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: 'Pay equity file uploaded, stored, and analyzed successfully',
+            },
+            400: {
+              description: 'Missing CSV content',
+            },
+            422: {
+              description: 'Pay equity file validation failed',
+            },
+            500: {
+              description: 'Pay equity upload, storage, or regression analysis failed',
+            },
+          },
+        },
+      },
       '/api/audits': {
         post: {
           tags: ['Audits'],

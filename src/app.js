@@ -12,6 +12,7 @@ const auditRoutes = require('./routes/audit.routes');           // 👈 add
 const uploadRoutes = require('./routes/upload.routes');
 const flagRoutes = require('./routes/flag.routes');
 const positionRoutes = require('./routes/position.routes');
+const payEquityRoutes = require('./routes/payequity.routes');
 const { errorHandler, notFound } = require('./middleware/error.middleware');
 const { sendSuccess } = require('./utils/response');
 const dashboardRoutes = require('./routes/dashboard.routes');
@@ -83,6 +84,7 @@ app.use('/api/audits', auditRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/flags', flagRoutes);
 app.use('/api/position', positionRoutes);
+app.use('/api/payequity', payEquityRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
 setupSwagger(app);
