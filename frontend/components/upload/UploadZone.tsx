@@ -5,12 +5,14 @@
 
 import { useState } from 'react'
 import { Upload, FileSpreadsheet } from 'lucide-react'
+import { uploadCsv } from '@/lib/api/upload'
 
 export default function UploadZone() {
-  // Track drag over state for visual feedback
   const [isDragging, setIsDragging] = useState(false)
-  // Track selected file
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [uploadSuccess, setUploadSuccess] = useState(false)
 
   // Handle drag events
   function handleDragOver(e: React.DragEvent) {
@@ -30,10 +32,25 @@ export default function UploadZone() {
     if (file) setSelectedFile(file)
   }
 
-  // Handle file input change
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    if (file) setSelectedFile(file)
+    if (file) { setSelectedFile(file); setUploadError(null); setUploadSuccess(false); }
+  }
+
+  async function handleUpload() {
+    if (!selectedFile) return
+    setUploading(true)
+    setUploadError(null)
+    setUploadSuccess(false)
+    try {
+      await uploadCsv(selectedFile)
+      setUploadSuccess(true)
+      setSelectedFile(null)
+    } catch (err: unknown) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed')
+    } finally {
+      setUploading(false)
+    }
   }
 
   return (
@@ -86,6 +103,27 @@ export default function UploadZone() {
               <FileSpreadsheet size={16} className="text-green-600" />
               <p className="text-green-700 text-sm font-medium">{selectedFile.name}</p>
             </div>
+          )}
+
+          {/* Upload button */}
+          {selectedFile && !uploadSuccess && (
+            <button
+              onClick={handleUpload}
+              disabled={uploading}
+              className="bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white text-sm font-medium px-6 py-2 rounded-lg transition-colors"
+            >
+              {uploading ? 'Uploading...' : 'Upload & Analyze'}
+            </button>
+          )}
+
+          {uploadError && (
+            <p className="text-red-500 text-sm">{uploadError}</p>
+          )}
+
+          {uploadSuccess && (
+            <p className="text-green-600 text-sm font-medium">
+              Upload complete! Flags have been generated.
+            </p>
           )}
 
         </div>

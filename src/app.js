@@ -7,6 +7,8 @@ const rateLimit = require('express-rate-limit');
 
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth.routes');
+const uploadRoutes = require('./routes/upload.routes');
+const flagRoutes = require('./routes/flag.routes');
 const { errorHandler, notFound } = require('./middleware/error.middleware');
 const { sendSuccess } = require('./utils/response');
 
@@ -69,6 +71,8 @@ app.get('/health', (req, res) => {
 
 // ─── API routes ──────────────────────────────────────────────
 app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/flags', flagRoutes);
 
 // ─── 404 + global error handler ─────────────────────────────
 app.use(notFound);

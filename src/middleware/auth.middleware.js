@@ -27,7 +27,7 @@ const protect = async (req, res, next) => {
     }
 
     // 3. Confirm user still exists and is active
-    const user = await User.findById(decoded.sub).select('-password -refreshToken -otp -passwordResetToken -passwordResetExpires');
+    const user = await User.findById(decoded.sub).select('-password -refreshToken -passwordResetToken -passwordResetExpires');
     if (!user || !user.isActive) {
       return sendError(res, { statusCode: 401, message: 'User not found or deactivated' });
     }

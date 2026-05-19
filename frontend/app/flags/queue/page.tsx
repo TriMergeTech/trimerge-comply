@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Search, ChevronDown } from 'lucide-react'
 import FlagQueueTable from '@/components/flags/FlagQueueTable'
+import { getFlags, FlagItem } from '@/lib/api/flags'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,14 +11,34 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
+const engineMap: Record<string, string> = {
+  'Adverse Impact': 'adverse_impact',
+  'Position Description': 'position_description',
+  'Pay Equity': 'pay_equity',
+}
+
 export default function FlagQueue() {
   const [selectedEngine, setSelectedEngine] = useState('All Engines')
   const [selectedSeverity, setSelectedSeverity] = useState('All Severities')
   const [selectedStatus, setSelectedStatus] = useState('Pending')
 
+  const [flags, setFlags] = useState<FlagItem[]>([])
+  const [loading, setLoading] = useState(true)
+
   const engineOptions = ['All Engines', 'Adverse Impact', 'Position Description', 'Pay Equity']
   const severityOptions = ['All Severities', 'Critical', 'High', 'Medium', 'Low']
   const statusOptions = ['Pending', 'Confirmed', 'Dismissed', 'Escalated']
+
+  useEffect(() => {
+    setLoading(true)
+    getFlags({
+      status: selectedStatus,
+      severity: selectedSeverity !== 'All Severities' ? selectedSeverity : undefined,
+      testType: selectedEngine !== 'All Engines' ? engineMap[selectedEngine] : undefined,
+    })
+      .then((res) => { setFlags(res.flags); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [selectedEngine, selectedSeverity, selectedStatus])
 
   return (
     <div className="flex flex-col gap-6">
@@ -110,7 +131,7 @@ export default function FlagQueue() {
       </div>
 
       {/* Flag queue table */}
-      <FlagQueueTable />
+      <FlagQueueTable flags={flags} loading={loading} />
 
     </div>
   )
