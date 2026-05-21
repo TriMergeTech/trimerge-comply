@@ -1,8 +1,10 @@
 const PositionDocument = require('../models/PositionDocument');
 const { analyzePositionDescription } = require('../services/ai/openai.service');
 const { extractPositionText } = require('../services/position/positionText.service');
+const { buildPositionUiRow } = require('../services/position/positionUi.service');
 const { uploadRawToCloudinary } = require('../services/storage/cloudinary.service');
 const { extractFileFromMultipart } = require('../utils/multipart');
+const { getUploadedBy } = require('../utils/uploadedBy');
 const { sendSuccess, sendError } = require('../utils/response');
 
 const POSITION_DOCUMENT_FOLDER = 'trimerge-comply/position-documents';
@@ -79,6 +81,7 @@ const uploadPositionDocument = async (req, res, next) => {
       mimeType,
       sizeBytes: fileBuffer.length,
       storage,
+      uploadedBy: getUploadedBy(req.user),
       textLength: extraction.text.length,
       extractedTextPreview: extraction.text.slice(0, 500),
       aiConfigured: aiResult.configured,
@@ -98,6 +101,7 @@ const uploadPositionDocument = async (req, res, next) => {
         storage,
         aiConfigured: aiResult.configured,
         analysisStatus: documentRecord.analysisStatus,
+        uiRow: buildPositionUiRow(documentRecord),
         analysis: aiResult.analysis || {
           summary: '',
           overallRisk: null,
@@ -110,6 +114,26 @@ const uploadPositionDocument = async (req, res, next) => {
   }
 };
 
+// GET /api/position
+const listPositionDocuments = async (req, res, next) => {
+  try {
+    const documents = await PositionDocument.find({})
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
+
+    return sendSuccess(res, {
+      message: 'Position documents retrieved successfully.',
+      data: {
+        documents: documents.map(buildPositionUiRow),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
+  listPositionDocuments,
   uploadPositionDocument,
 };

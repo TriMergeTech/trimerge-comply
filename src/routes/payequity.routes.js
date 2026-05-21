@@ -1,10 +1,14 @@
 const express = require('express');
-const { uploadPayEquityCsv } = require('../controllers/payequity.controller');
+const { listPayEquityAnalyses, uploadPayEquityCsv } = require('../controllers/payequity.controller');
+const { optionalProtect } = require('../middleware/auth.middleware');
 
 const router = express.Router();
 
+router.get('/', optionalProtect, listPayEquityAnalyses);
+
 router.post(
   '/upload',
+  optionalProtect,
   express.raw({
     type: [
       'multipart/form-data',

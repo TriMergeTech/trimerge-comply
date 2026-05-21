@@ -35,6 +35,85 @@ const getSeverity = (gapPercent) => {
   return 'low';
 };
 
+const average = (values) =>
+  values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+
+const groupRowsByValue = (rows, field) => {
+  const grouped = new Map();
+
+  rows.forEach((row) => {
+    const value = normalizeCategory(row.data[field]);
+
+    if (!value) {
+      return;
+    }
+
+    if (!grouped.has(value)) {
+      grouped.set(value, []);
+    }
+
+    grouped.get(value).push(row);
+  });
+
+  return grouped;
+};
+
+const buildUnadjustedGapRows = ({ rows, field, labelKey }) => {
+  const grouped = groupRowsByValue(rows, field);
+  const groupAverages = Array.from(grouped.entries()).map(([group, groupRows]) => ({
+    [labelKey]: group,
+    averageSalary: average(groupRows.map((row) => row.salary)),
+    count: groupRows.length,
+  }));
+
+  if (!groupAverages.length) {
+    return [];
+  }
+
+  const reference = groupAverages.reduce((best, current) =>
+    current.averageSalary > best.averageSalary ? current : best
+  );
+
+  return groupAverages
+    .map((item) => {
+      const unadjustedGapPercent = reference.averageSalary
+        ? ((item.averageSalary - reference.averageSalary) / reference.averageSalary) * 100
+        : 0;
+
+      return {
+        ...item,
+        averageSalary: round(item.averageSalary, 2),
+        comparisonGroup: reference[labelKey],
+        unadjustedGapPercent: round(unadjustedGapPercent, 2),
+        flagged: unadjustedGapPercent <= -3,
+      };
+    })
+    .sort((left, right) => left.unadjustedGapPercent - right.unadjustedGapPercent);
+};
+
+const buildPayEquityUiSummary = ({ rows, protectedFields }) => {
+  const departmentRows = rows[0]?.data?.department
+    ? buildUnadjustedGapRows({ rows, field: 'department', labelKey: 'department' })
+    : [];
+  const demographicRows = protectedFields.flatMap((field) =>
+    buildUnadjustedGapRows({ rows, field, labelKey: 'demographicGroup' }).map((gap) => ({
+      ...gap,
+      field,
+    }))
+  );
+  const flaggedDepartmentGaps = departmentRows.filter((gap) => gap.flagged).length;
+  const flaggedDemographicGaps = demographicRows.filter((gap) => gap.flagged).length;
+
+  return {
+    departmentsAnalyzed: departmentRows.length,
+    demographicGroups: demographicRows.length,
+    totalEmployees: rows.length,
+    flagsGenerated: flaggedDepartmentGaps + flaggedDemographicGaps,
+    payGapsByDepartment: departmentRows,
+    demographicGapsOverall: demographicRows,
+  };
+};
+
 const validatePayEquityCsv = (csvText) => {
   const { headers, rows } = parseCsvText(csvText);
   const errors = [];
@@ -210,6 +289,10 @@ const processPayEquityCsv = (csvText) => {
     protectedFields: validation.protectedFieldsFound,
     averageSalary,
   });
+  const uiSummary = buildPayEquityUiSummary({
+    rows: validation.rows,
+    protectedFields: validation.protectedFieldsFound,
+  });
 
   const warnings = [...validation.warnings];
 
@@ -238,8 +321,10 @@ const processPayEquityCsv = (csvText) => {
     },
     model: regression,
     payGaps,
+    uiSummary,
     summary: {
       flaggedPayGaps: payGaps.filter((gap) => gap.flagged).length,
+      flagsGenerated: uiSummary.flagsGenerated,
       highestSeverity: payGaps.some((gap) => gap.severity === 'high')
         ? 'high'
         : payGaps.some((gap) => gap.severity === 'medium')
@@ -250,6 +335,7 @@ const processPayEquityCsv = (csvText) => {
 };
 
 module.exports = {
+  buildPayEquityUiSummary,
   processPayEquityCsv,
   validatePayEquityCsv,
 };

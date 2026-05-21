@@ -3,9 +3,48 @@ const { extractPayEquityCsvFromFile } = require('../services/payequity/payEquity
 const { processPayEquityCsv } = require('../services/payequity/payEquityProcessor');
 const { uploadRawToCloudinary } = require('../services/storage/cloudinary.service');
 const { extractFileFromMultipart } = require('../utils/multipart');
+const { getUploadedBy, getUploaderLabel } = require('../utils/uploadedBy');
 const { sendSuccess, sendError } = require('../utils/response');
 
 const PAY_EQUITY_FOLDER = 'trimerge-comply/pay-equity-uploads';
+
+const buildPayEquityListItem = (analysis) => {
+  const flaggedPayGaps = analysis.payGaps?.filter((gap) => gap.flagged).length || 0;
+  const uiSummary = analysis.uiSummary && Object.keys(analysis.uiSummary).length
+    ? analysis.uiSummary
+    : {
+        departmentsAnalyzed: 0,
+        demographicGroups: analysis.payGaps?.length || 0,
+        totalEmployees: analysis.dataset?.rowCount || 0,
+        flagsGenerated: flaggedPayGaps,
+        payGapsByDepartment: [],
+        demographicGapsOverall: analysis.payGaps?.map((gap) => ({
+          demographicGroup: gap.group,
+          field: gap.field,
+          comparisonGroup: gap.comparisonGroup,
+          unadjustedGapPercent: null,
+          adjustedGapPercent: gap.estimatedGapPercent,
+          flagged: gap.flagged,
+        })) || [],
+      };
+  const summary = analysis.summary && Object.keys(analysis.summary).length
+    ? analysis.summary
+    : {
+        flaggedPayGaps,
+        flagsGenerated: uiSummary.flagsGenerated,
+        highestSeverity: flaggedPayGaps ? 'high' : 'low',
+      };
+
+  return {
+    id: analysis._id,
+    fileName: analysis.fileName,
+    status: analysis.status,
+    uploadedBy: getUploaderLabel(analysis.uploadedBy),
+    date: analysis.createdAt,
+    uiSummary,
+    summary,
+  };
+};
 
 const getPayEquityPayloadFromRequest = async (req) => {
   const contentType = req.headers['content-type'] || '';
@@ -98,10 +137,13 @@ const uploadPayEquityCsv = async (req, res, next) => {
       mimeType,
       sizeBytes: fileBuffer.length,
       storage,
+      uploadedBy: getUploadedBy(req.user),
       dataset: result.dataset,
       model: result.model,
       payGaps: result.payGaps,
+      summary: result.summary,
       warnings: [...extracted.warnings, ...result.warnings],
+      uiSummary: result.uiSummary,
       status: 'processed',
     });
 
@@ -116,6 +158,8 @@ const uploadPayEquityCsv = async (req, res, next) => {
         dataset: result.dataset,
         model: result.model,
         payGaps: result.payGaps,
+        uploadedBy: getUploaderLabel(analysisRecord.uploadedBy),
+        uiSummary: result.uiSummary,
         summary: result.summary,
         warnings: [...extracted.warnings, ...result.warnings],
       },
@@ -125,6 +169,26 @@ const uploadPayEquityCsv = async (req, res, next) => {
   }
 };
 
+// GET /api/payequity
+const listPayEquityAnalyses = async (req, res, next) => {
+  try {
+    const analyses = await PayEquityAnalysis.find({})
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
+
+    return sendSuccess(res, {
+      message: 'Pay equity analyses retrieved successfully.',
+      data: {
+        analyses: analyses.map(buildPayEquityListItem),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
+  listPayEquityAnalyses,
   uploadPayEquityCsv,
 };

@@ -25,6 +25,21 @@ const payEquityAnalysisSchema = new mongoose.Schema(
       createdAt: String,
       originalFilename: String,
     },
+    uploadedBy: {
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null,
+      },
+      email: {
+        type: String,
+        default: 'System Upload',
+      },
+      role: {
+        type: String,
+        default: null,
+      },
+    },
     dataset: {
       type: mongoose.Schema.Types.Mixed,
       default: {},
@@ -37,9 +52,17 @@ const payEquityAnalysisSchema = new mongoose.Schema(
       type: [mongoose.Schema.Types.Mixed],
       default: [],
     },
+    summary: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
     warnings: {
       type: [mongoose.Schema.Types.Mixed],
       default: [],
+    },
+    uiSummary: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
     },
     status: {
       type: String,
@@ -52,5 +75,6 @@ const payEquityAnalysisSchema = new mongoose.Schema(
 
 payEquityAnalysisSchema.index({ createdAt: -1 });
 payEquityAnalysisSchema.index({ status: 1 });
+payEquityAnalysisSchema.index({ 'uploadedBy.userId': 1 });
 
 module.exports = mongoose.model('PayEquityAnalysis', payEquityAnalysisSchema);

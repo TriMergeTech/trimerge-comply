@@ -235,6 +235,18 @@ const options = {
           },
         },
       },
+      '/api/position': {
+        get: {
+          tags: ['Position Description AI'],
+          summary: 'List position description analyses',
+          description: 'Returns position analysis rows for the UI, sorted by newest upload first.',
+          responses: {
+            200: {
+              description: 'Position documents retrieved successfully',
+            },
+          },
+        },
+      },
       '/api/payequity/upload': {
         post: {
           tags: ['Pay Equity'],
@@ -262,6 +274,18 @@ const options = {
             400: { description: 'Missing CSV content' },
             422: { description: 'Pay equity file validation failed' },
             500: { description: 'Pay equity upload or regression analysis failed' },
+          },
+        },
+      },
+      '/api/payequity': {
+        get: {
+          tags: ['Pay Equity'],
+          summary: 'List pay equity analyses',
+          description: 'Returns pay equity analysis records with UI summary metrics, sorted by newest upload first.',
+          responses: {
+            200: {
+              description: 'Pay equity analyses retrieved successfully',
+            },
           },
         },
       },

@@ -25,6 +25,21 @@ const positionDocumentSchema = new mongoose.Schema(
       createdAt: String,
       originalFilename: String,
     },
+    uploadedBy: {
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null,
+      },
+      email: {
+        type: String,
+        default: 'System Upload',
+      },
+      role: {
+        type: String,
+        default: null,
+      },
+    },
     textLength: {
       type: Number,
       default: 0,
@@ -52,5 +67,6 @@ const positionDocumentSchema = new mongoose.Schema(
 
 positionDocumentSchema.index({ analysisStatus: 1 });
 positionDocumentSchema.index({ createdAt: -1 });
+positionDocumentSchema.index({ 'uploadedBy.userId': 1 });
 
 module.exports = mongoose.model('PositionDocument', positionDocumentSchema);

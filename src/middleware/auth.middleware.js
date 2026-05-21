@@ -55,4 +55,28 @@ const requireRole = (...roles) => {
   };
 };
 
-module.exports = { protect, requireVerified, requireRole };
+const optionalProtect = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return next();
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = verifyAccessToken(token);
+    const user = await User.findById(decoded.sub).select(
+      '-password -refreshToken -passwordResetToken -passwordResetExpires -otpCode -otpExpiresAt -otpPurpose -otpAttempts -otpLastSentAt'
+    );
+
+    if (user && user.isActive) {
+      req.user = user;
+    }
+
+    return next();
+  } catch (err) {
+    return next();
+  }
+};
+
+module.exports = { protect, optionalProtect, requireVerified, requireRole };
