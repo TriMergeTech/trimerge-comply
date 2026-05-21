@@ -68,4 +68,7 @@ flagSchema.index({ auditId: 1 });
 flagSchema.index({ status: 1 });
 flagSchema.index({ severity: 1 });
 
+flagSchema.index({ testType: 1 });
+flagSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model('Flag', flagSchema);

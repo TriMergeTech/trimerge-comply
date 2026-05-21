@@ -30,12 +30,13 @@ const decideFlag = async (req, res, next) => {
     await flag.save();
 
     await ActivityLog.create({
+      targetType: 'flag',
+      targetId: flag._id,
       flagId: flag._id,
       auditId: flag.auditId,
       performedBy: req.user._id,
-      action: 'decided',
-      decision,
-      reason: reason || null,
+      action: 'flag_decided',
+      details: { decision, reason: reason || null },
     });
 
     return sendSuccess(res, {
@@ -65,11 +66,13 @@ const assignFlag = async (req, res, next) => {
     }
 
     await ActivityLog.create({
+      targetType: 'flag',
+      targetId: flag._id,
       flagId: flag._id,
       auditId: flag.auditId,
       performedBy: req.user._id,
-      action: 'assigned',
-      assignedTo,
+      action: 'flag_assigned',
+      details: { assignedTo },
     });
 
     return sendSuccess(res, {

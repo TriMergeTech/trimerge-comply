@@ -43,4 +43,10 @@ const auditSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+auditSchema.index({ clientName: 1 });
+auditSchema.index({ auditType: 1 });
+auditSchema.index({ status: 1 });
+auditSchema.index({ createdBy: 1 });
+auditSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model('Audit', auditSchema);

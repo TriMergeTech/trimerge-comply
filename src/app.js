@@ -1,6 +1,7 @@
 require('dotenv').config();
 const setupSwagger = require('./config/swagger');
-    
+const mongoSanitize = require('express-mongo-sanitize');
+const hpp = require('hpp');    
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -16,6 +17,7 @@ const payEquityRoutes = require('./routes/payequity.routes');
 const { errorHandler, notFound } = require('./middleware/error.middleware');
 const { sendSuccess } = require('./utils/response');
 const dashboardRoutes = require('./routes/dashboard.routes');
+const activityRoutes = require('./routes/activity.routes');
 
 const app = express();
 
@@ -24,6 +26,12 @@ connectDB();
 
 // ─── Security headers ────────────────────────────────────────
 app.use(helmet());
+
+// ─── MongoDB injection protection ────────────────────────────
+app.use(mongoSanitize());
+
+// ─── HTTP parameter pollution protection ─────────────────────
+app.use(hpp());
 
 // ─── CORS ────────────────────────────────────────────────────
 app.use(
@@ -86,6 +94,7 @@ app.use('/api/flags', flagRoutes);
 app.use('/api/position', positionRoutes);
 app.use('/api/payequity', payEquityRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/activity', activityRoutes);  
 
 setupSwagger(app);
 

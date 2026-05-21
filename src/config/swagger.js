@@ -239,7 +239,7 @@ const options = {
         post: {
           tags: ['Pay Equity'],
           summary: 'Upload and analyze compensation file',
-          description: 'Upload compensation data as .csv, .xlsx, .xls, .pdf, or .docx. The original file is stored in Cloudinary. Spreadsheet files are converted to CSV internally. PDF and DOCX files must contain a readable table with a salary column. The engine runs OLS regression using salary as the outcome and all other available fields as predictors, then returns adjusted pay gap findings.',
+          description: 'Upload compensation data as .csv, .xlsx, .xls, .pdf, or .docx. Runs OLS regression and returns adjusted pay gap findings.',
           requestBody: {
             required: true,
             content: {
@@ -248,35 +248,20 @@ const options = {
                   type: 'object',
                   required: ['file'],
                   properties: {
-                    file: {
-                      type: 'string',
-                      format: 'binary',
-                      description: 'Compensation file (.csv, .xlsx, .xls, .pdf, or .docx). Required column: salary. All other columns are used as regression predictors.',
-                    },
+                    file: { type: 'string', format: 'binary', description: 'Compensation file. Required column: salary.' },
                   },
                 },
               },
               'text/csv': {
-                schema: {
-                  type: 'string',
-                  example: 'salary,grade,tenure,performance,gender,race,department\n85000,4,5,4,Female,Black,Finance\n90000,4,6,4,Male,White,Finance',
-                },
+                schema: { type: 'string', example: 'salary,grade,tenure,performance,gender,race,department\n85000,4,5,4,Female,Black,Finance\n90000,4,6,4,Male,White,Finance' },
               },
             },
           },
           responses: {
-            200: {
-              description: 'Pay equity file uploaded, stored, and analyzed successfully',
-            },
-            400: {
-              description: 'Missing CSV content',
-            },
-            422: {
-              description: 'Pay equity file validation failed',
-            },
-            500: {
-              description: 'Pay equity upload, storage, or regression analysis failed',
-            },
+            200: { description: 'Pay equity file uploaded and analyzed successfully' },
+            400: { description: 'Missing CSV content' },
+            422: { description: 'Pay equity file validation failed' },
+            500: { description: 'Pay equity upload or regression analysis failed' },
           },
         },
       },
@@ -501,6 +486,8 @@ const options = {
                           totalFlags: { type: 'integer', example: 42 },
                           flagsBySeverity: { type: 'object', example: { low: 10, medium: 20, high: 12 } },
                           flagsByStatus: { type: 'object', example: { open: 30, reviewed: 8, dismissed: 4 } },
+                          overallRisk: { type: 'string', enum: ['high', 'medium', 'low', 'none'], example: 'medium' },
+                          auditRiskSummaries: { type: 'array', items: { type: 'object' } },
                           recentAudits: { type: 'array', items: { $ref: '#/components/schemas/Audit' } },
                           recentFlags: { type: 'array', items: { $ref: '#/components/schemas/Flag' } },
                         },
@@ -534,6 +521,81 @@ const options = {
                         properties: {
                           audits: { type: 'array', items: { $ref: '#/components/schemas/Audit' } },
                           flags: { type: 'array', items: { $ref: '#/components/schemas/Flag' } },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Forbidden — insufficient role' },
+          },
+        },
+      },
+      '/api/activity': {
+        get: {
+          tags: ['Activity Log'],
+          summary: 'Get activity logs',
+          description: 'Returns paginated activity logs for audits and flags. Requires analyst or admin role.',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'targetType', in: 'query', schema: { type: 'string', enum: ['audit', 'flag'] }, description: 'Filter by target type' },
+            { name: 'action', in: 'query', schema: { type: 'string', enum: ['audit_created', 'audit_updated', 'audit_deleted', 'flag_decided', 'flag_assigned'] }, description: 'Filter by action' },
+            { name: 'auditId', in: 'query', schema: { type: 'string' }, description: 'Filter by audit ID' },
+            { name: 'performedBy', in: 'query', schema: { type: 'string' }, description: 'Filter by user ID' },
+            { name: 'page', in: 'query', schema: { type: 'integer', default: 1 }, description: 'Page number' },
+            { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 }, description: 'Results per page' },
+          ],
+          responses: {
+            200: {
+              description: 'Activity logs retrieved successfully',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      data: {
+                        type: 'object',
+                        properties: {
+                          logs: {
+                            type: 'array',
+                            items: {
+                              type: 'object',
+                              properties: {
+                                id: { type: 'string' },
+                                user: {
+                                  type: 'object',
+                                  properties: {
+                                    name: { type: 'string', example: 'Ibrahim Chhapra' },
+                                    email: { type: 'string', example: 'ibrahim@trimerge.com' },
+                                    role: { type: 'string', example: 'admin' },
+                                  },
+                                },
+                                action: { type: 'string', example: 'audit_created' },
+                                target: {
+                                  type: 'object',
+                                  properties: {
+                                    type: { type: 'string', example: 'audit' },
+                                    audit: { type: 'object', nullable: true },
+                                    flag: { type: 'object', nullable: true },
+                                  },
+                                },
+                                details: { type: 'object' },
+                                date: { type: 'string', format: 'date-time' },
+                              },
+                            },
+                          },
+                          pagination: {
+                            type: 'object',
+                            properties: {
+                              total: { type: 'integer', example: 42 },
+                              page: { type: 'integer', example: 1 },
+                              limit: { type: 'integer', example: 20 },
+                              totalPages: { type: 'integer', example: 3 },
+                            },
+                          },
                         },
                       },
                     },

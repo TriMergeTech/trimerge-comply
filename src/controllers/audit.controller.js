@@ -1,4 +1,5 @@
 const Audit = require('../models/Audit');
+const ActivityLog = require('../models/ActivityLog');
 const { sendSuccess, sendError } = require('../utils/response');
 
 // POST /api/audits
@@ -13,6 +14,16 @@ const createAudit = async (req, res, next) => {
       auditType,
       createdBy: req.user._id,
     });
+
+    await ActivityLog.create({
+      targetType: 'audit',
+      targetId: audit._id,
+      auditId: audit._id,
+      performedBy: req.user._id,
+      action: 'audit_created',
+      details: { name: audit.name, organization: audit.organization, clientName: audit.clientName, auditType: audit.auditType },
+    });
+
     return sendSuccess(res, {
       statusCode: 201,
       message: 'Audit created successfully',
@@ -27,16 +38,9 @@ const createAudit = async (req, res, next) => {
 const getAudits = async (req, res, next) => {
   try {
     const { clientName, auditType } = req.query;
-
     const filter = {};
-
-    if (clientName) {
-      filter.clientName = { $regex: clientName, $options: 'i' };
-    }
-
-    if (auditType) {
-      filter.auditType = { $regex: auditType, $options: 'i' };
-    }
+    if (clientName) filter.clientName = { $regex: clientName, $options: 'i' };
+    if (auditType) filter.auditType = { $regex: auditType, $options: 'i' };
 
     const audits = await Audit.find(filter)
       .populate('createdBy', 'email role')
@@ -75,13 +79,26 @@ const updateAudit = async (req, res, next) => {
     if (!audit) {
       return sendError(res, { statusCode: 404, message: 'Audit not found' });
     }
-    if (name !== undefined) audit.name = name;
-    if (description !== undefined) audit.description = description;
-    if (organization !== undefined) audit.organization = organization;
-    if (status !== undefined) audit.status = status;
-    if (clientName !== undefined) audit.clientName = clientName;
-    if (auditType !== undefined) audit.auditType = auditType;
+
+    const changes = {};
+    if (name !== undefined) { changes.name = { from: audit.name, to: name }; audit.name = name; }
+    if (description !== undefined) { changes.description = { from: audit.description, to: description }; audit.description = description; }
+    if (organization !== undefined) { changes.organization = { from: audit.organization, to: organization }; audit.organization = organization; }
+    if (status !== undefined) { changes.status = { from: audit.status, to: status }; audit.status = status; }
+    if (clientName !== undefined) { changes.clientName = { from: audit.clientName, to: clientName }; audit.clientName = clientName; }
+    if (auditType !== undefined) { changes.auditType = { from: audit.auditType, to: auditType }; audit.auditType = auditType; }
+
     await audit.save();
+
+    await ActivityLog.create({
+      targetType: 'audit',
+      targetId: audit._id,
+      auditId: audit._id,
+      performedBy: req.user._id,
+      action: 'audit_updated',
+      details: { changes },
+    });
+
     return sendSuccess(res, {
       message: 'Audit updated successfully',
       data: { audit },
@@ -98,6 +115,16 @@ const deleteAudit = async (req, res, next) => {
     if (!audit) {
       return sendError(res, { statusCode: 404, message: 'Audit not found' });
     }
+
+    await ActivityLog.create({
+      targetType: 'audit',
+      targetId: audit._id,
+      auditId: audit._id,
+      performedBy: req.user._id,
+      action: 'audit_deleted',
+      details: { name: audit.name, organization: audit.organization },
+    });
+
     return sendSuccess(res, { message: 'Audit deleted successfully' });
   } catch (err) {
     next(err);
