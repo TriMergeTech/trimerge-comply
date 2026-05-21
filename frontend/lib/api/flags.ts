@@ -13,14 +13,23 @@ export interface FlagResults {
 
 export interface FlagItem {
   _id: string;
-  name: string;
+  name?: string;              // flag name e.g. "Position - Selection - J"
   testType: string;
   auditId?: string;
+  group: string;              // demographic group e.g. Female
+  referenceGroup: string;     // comparison group e.g. Male
+  selected: number;
+  total: number;
+  selectionRate: number;
+  impactRatio: number;
+  threshold: number;
+  pValue: number;
   severity: 'Critical' | 'High' | 'Medium' | 'Low';
   status: string;
   assignedTo: string;
   results?: FlagResults;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface GetFlagsParams {
@@ -57,3 +66,4 @@ export async function getFlagById(id: string): Promise<FlagItem> {
   const res = await flagFetch<{ data: FlagItem }>(`/flags/${id}`);
   return res.data;
 }
+

@@ -2,18 +2,34 @@
 
 // Flags by severity component
 // Displays a donut chart breakdown of flags by severity level
+// Accepts real API data via props
 
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
-// Temporary mock data — will be replaced with real API data later
-const severityData = [
-  { name: 'Critical', value: 7, color: '#ef4444' },
-  { name: 'High', value: 18, color: '#fb923c' },
-  { name: 'Medium', value: 14, color: '#facc15' },
-  { name: 'Low', value: 9, color: '#4ade80' },
-]
+type Props = {
+  flagsBySeverity?: {
+    low?: number
+    medium?: number
+    high?: number
+  }
+}
 
-export default function FlagsBySeverity() {
+const COLORS = {
+  low: '#4ade80',
+  medium: '#facc15',
+  high: '#fb923c',
+}
+
+export default function FlagsBySeverity({ flagsBySeverity }: Props) {
+  // Build chart data from API response or fall back to zeros
+  const severityData = [
+    { name: 'Low', value: flagsBySeverity?.low ?? 0, color: COLORS.low },
+    { name: 'Medium', value: flagsBySeverity?.medium ?? 0, color: COLORS.medium },
+    { name: 'High', value: flagsBySeverity?.high ?? 0, color: COLORS.high },
+  ]
+
+  const total = severityData.reduce((acc, item) => acc + item.value, 0)
+
   return (
     <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
 
@@ -54,9 +70,7 @@ export default function FlagsBySeverity() {
       {/* Total */}
       <div className="mt-2 pt-4 border-t border-slate-100 flex items-center justify-between">
         <p className="text-sm text-slate-400">Total Flags</p>
-        <p className="text-sm font-bold text-slate-800">
-          {severityData.reduce((acc, item) => acc + item.value, 0)}
-        </p>
+        <p className="text-sm font-bold text-slate-800">{total}</p>
       </div>
 
     </div>

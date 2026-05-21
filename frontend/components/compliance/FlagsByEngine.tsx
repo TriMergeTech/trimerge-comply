@@ -2,17 +2,23 @@
 
 // Flags by engine component
 // Displays a donut chart breakdown of flags by compliance engine
+// Chart data is mock — pending backend flagsByEngine breakdown
+// Total flags comes from real API data
 
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
-// Temporary mock data — will be replaced with real API data later
+// Temporary mock data — will be replaced when backend adds flagsByEngine to summary
 const engineData = [
   { name: 'Adverse Impact', value: 22, color: '#6366f1' },
   { name: 'Position Description', value: 17, color: '#60a5fa' },
   { name: 'Pay Equity', value: 9, color: '#22d3ee' },
 ]
 
-export default function FlagsByEngine() {
+type Props = {
+  totalFlags: number
+}
+
+export default function FlagsByEngine({ totalFlags }: Props) {
   return (
     <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
 
@@ -50,12 +56,10 @@ export default function FlagsByEngine() {
         </PieChart>
       </ResponsiveContainer>
 
-      {/* Total */}
+      {/* Total — using real API data */}
       <div className="mt-2 pt-4 border-t border-slate-100 flex items-center justify-between">
         <p className="text-sm text-slate-400">Total Flags</p>
-        <p className="text-sm font-bold text-slate-800">
-          {engineData.reduce((acc, item) => acc + item.value, 0)}
-        </p>
+        <p className="text-sm font-bold text-slate-800">{totalFlags}</p>
       </div>
 
     </div>
