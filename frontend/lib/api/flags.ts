@@ -67,29 +67,3 @@ export async function getFlagById(id: string): Promise<FlagItem> {
   return res.data;
 }
 
-// Decision data for analyst workflow
-export interface DecideOnFlagData {
-  decision: 'reviewed' | 'dismissed'
-  rationale: string
-}
-
-// Assign flag data
-export interface AssignFlagData {
-  analystId: string
-}
-
-// Submit analyst decision on a flag
-export function decideOnFlag(id: string, data: DecideOnFlagData) {
-  return flagFetch<FlagItem>(`/flags/${id}/decide`, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-}
-
-// Assign a flag to an analyst
-export function assignFlag(id: string, data: AssignFlagData) {
-  return flagFetch<FlagItem>(`/flags/${id}/assign`, {
-    method: "PATCH",
-    body: JSON.stringify(data),
-  });
-}
