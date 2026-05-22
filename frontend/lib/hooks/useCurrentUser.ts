@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { getAccessToken } from '@/lib/authTokens'
 
 export interface CurrentUser {
@@ -8,33 +9,42 @@ export interface CurrentUser {
 }
 
 /**
- * Decodes the stored JWT access token and returns the current user's
- * name and initials. No API call needed — the name is embedded in the token.
+ * Reads the current user's identity from the stored JWT access token.
+ * Uses useEffect so localStorage is only read after hydration — this prevents
+ * the server/client HTML mismatch (hydration error) that occurs when reading
+ * localStorage synchronously during render.
  *
- * Returns null if there is no token or if it cannot be decoded.
+ * Returns null on first render (server + hydration pass), then updates to
+ * the real user once the component mounts in the browser.
  */
 export function useCurrentUser(): CurrentUser | null {
-  const token = getAccessToken()
-  if (!token) return null
+  const [user, setUser] = useState<CurrentUser | null>(null)
 
-  try {
-    // JWT payload is the middle segment, base64url-encoded
-    const payload = JSON.parse(atob(token.split('.')[1]))
+  useEffect(() => {
+    const token = getAccessToken()
+    if (!token) return
 
-    const name: string   = payload.name  ?? ''
-    const email: string  = payload.email ?? ''
-    const role: string   = payload.role  ?? 'analyst'
+    try {
+      // JWT payload is the middle segment, base64url-encoded
+      const payload = JSON.parse(atob(token.split('.')[1]))
 
-    // Derive initials: first letter of each word in the name, max 2
-    const initials = name
-      .split(' ')
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((w: string) => w[0].toUpperCase())
-      .join('')
+      const name: string  = payload.name  ?? ''
+      const email: string = payload.email ?? ''
+      const role: string  = payload.role  ?? 'analyst'
 
-    return { name, email, role, initials }
-  } catch {
-    return null
-  }
+      // Derive initials: first letter of each word in the name, max 2
+      const initials = name
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((w: string) => w[0].toUpperCase())
+        .join('')
+
+      setUser({ name, email, role, initials })
+    } catch {
+      setUser(null)
+    }
+  }, [])
+
+  return user
 }

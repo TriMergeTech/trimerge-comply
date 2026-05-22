@@ -14,7 +14,7 @@ const LOCK_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 // ────────────────────────────────────────────────────────────
 const signup = async (req, res, next) => {
   try {
-    const { email, password, phone } = req.body;
+    const { name, email, password, phone } = req.body;
 
     // Check duplicate (belt-and-suspenders — schema unique handles DB level)
     const existing = await User.findOne({ email });
@@ -23,7 +23,7 @@ const signup = async (req, res, next) => {
     }
 
     // Create user — password hashed in pre-save hook
-    const user = await User.create({ email, password, phone });
+    const user = await User.create({ name, email, password, phone });
 
     // Send email verification OTP
     const otp = generateOTP();

@@ -12,6 +12,12 @@ const userSchema = new mongoose.Schema(
       match: [/^\S+@\S+\.\S+$/, 'Invalid email format'],
     },
 
+    name: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+
     phone: {
       type: String,
       trim: true,

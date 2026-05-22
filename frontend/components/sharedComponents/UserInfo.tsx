@@ -2,15 +2,11 @@
 
 import { Bell } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-
-// Temporary user data — will be replaced with real auth data later
-const user = {
-  name: 'Sarah Analyst',
-  role: 'Analyst',
-  initials: 'SA',
-}
+import { useCurrentUser } from '@/lib/hooks/useCurrentUser'
 
 export default function UserInfo() {
+  const user = useCurrentUser()
+
   return (
     <div className="flex items-center gap-4">
 
@@ -25,12 +21,12 @@ export default function UserInfo() {
       <div className="flex items-center gap-3">
         <Avatar className="w-9 h-9">
           <AvatarFallback className="bg-indigo-600 text-white text-sm font-medium">
-            {user.initials}
+            {user?.initials ?? '?'}
           </AvatarFallback>
         </Avatar>
         <div className="text-right">
-          <p className="text-sm font-medium text-slate-800">{user.name}</p>
-          <p className="text-xs text-slate-400">{user.role}</p>
+          <p className="text-sm font-medium text-slate-800">{user?.name ?? '—'}</p>
+          <p className="text-xs text-slate-400">{user?.role ?? '—'}</p>
         </div>
       </div>
 
