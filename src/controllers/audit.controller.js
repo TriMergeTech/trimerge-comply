@@ -23,6 +23,20 @@ const createAudit = async (req, res, next) => {
       action: 'audit_created',
       details: { name: audit.name, organization: audit.organization, clientName: audit.clientName, auditType: audit.auditType },
     });
+    await ActivityLog.create({
+      targetType: 'audit',
+      targetId: audit._id,
+      auditId: audit._id,
+      performedBy: req.user._id,
+      action: 'audit_created',
+      details: {
+         name: audit.name,
+         description: audit.description,
+         organization: audit.organization,
+         clientName: audit.clientName,
+         auditType: audit.auditType,
+      },
+    });
 
     return sendSuccess(res, {
       statusCode: 201,

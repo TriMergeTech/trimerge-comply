@@ -12,12 +12,18 @@ const getActivityLogs = async (req, res, next) => {
       page = 1,
       limit = 20,
     } = req.query;
-
+    
     const filter = {};
     if (targetType) filter.targetType = targetType;
     if (action) filter.action = action;
-    if (performedBy) filter.performedBy = performedBy;
     if (auditId) filter.auditId = auditId;
+
+    // Analysts only see their own logs, admins see everyone
+    if (req.user.role === 'analyst') {
+       filter.performedBy = req.user._id;
+    } else if (performedBy) {
+       filter.performedBy = performedBy;
+    }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
