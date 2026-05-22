@@ -35,6 +35,12 @@ const userSchema = new mongoose.Schema(
       default: true,
     },
 
+    role: {
+      type: String,
+      enum: ['admin', 'analyst', 'viewer'],
+      default: 'analyst',
+    },
+
     // ----- OTP fields (Illia will plug into these) -----
     otp: {
       code: { type: String, select: false },

@@ -53,4 +53,19 @@ const requireVerified = (req, res, next) => {
   next();
 };
 
-module.exports = { protect, requireVerified };
+/**
+ * requireRole — use AFTER protect.
+ * Restricts a route to users with one of the specified roles.
+ * Usage: router.get('/export', protect, requireVerified, requireRole('analyst', 'admin'), controller)
+ */
+const requireRole = (...roles) => (req, res, next) => {
+  if (!req.user || !roles.includes(req.user.role)) {
+    return sendError(res, {
+      statusCode: 403,
+      message: 'Forbidden — insufficient role',
+    });
+  }
+  next();
+};
+
+module.exports = { protect, requireVerified, requireRole };

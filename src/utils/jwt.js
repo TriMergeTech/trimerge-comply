@@ -2,11 +2,11 @@ const jwt = require('jsonwebtoken');
 
 /**
  * Generate a short-lived access token.
- * Payload: { sub: userId, email }
+ * Payload: { sub: userId, email, role, name }
  */
 const generateAccessToken = (user) => {
   return jwt.sign(
-    { sub: user._id.toString(), email: user.email },
+    { sub: user._id.toString(), email: user.email, role: user.role, name: user.name },
     process.env.JWT_ACCESS_SECRET,
     { expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m' }
   );
