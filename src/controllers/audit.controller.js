@@ -21,20 +21,12 @@ const createAudit = async (req, res, next) => {
       auditId: audit._id,
       performedBy: req.user._id,
       action: 'audit_created',
-      details: { name: audit.name, organization: audit.organization, clientName: audit.clientName, auditType: audit.auditType },
-    });
-    await ActivityLog.create({
-      targetType: 'audit',
-      targetId: audit._id,
-      auditId: audit._id,
-      performedBy: req.user._id,
-      action: 'audit_created',
       details: {
-         name: audit.name,
-         description: audit.description,
-         organization: audit.organization,
-         clientName: audit.clientName,
-         auditType: audit.auditType,
+        name: audit.name,
+        description: audit.description,
+        organization: audit.organization,
+        clientName: audit.clientName,
+        auditType: audit.auditType,
       },
     });
 
@@ -145,4 +137,66 @@ const deleteAudit = async (req, res, next) => {
   }
 };
 
-module.exports = { createAudit, getAudits, getAuditById, updateAudit, deleteAudit };
+// GET /api/audits/export
+const exportAudits = async (req, res, next) => {
+  try {
+    const { clientName, auditType, status, ids } = req.query;
+
+    const filter = {};
+    if (clientName) filter.clientName = { $regex: clientName, $options: 'i' };
+    if (auditType) filter.auditType = { $regex: auditType, $options: 'i' };
+    if (status) filter.status = status;
+    if (ids) {
+      const idArray = ids.split(',').map((id) => id.trim());
+      filter._id = { $in: idArray };
+    }
+
+    const audits = await Audit.find(filter)
+      .populate('createdBy', 'name email role')
+      .sort({ createdAt: -1 });
+
+    const headers = [
+      'Audit ID',
+      'Name',
+      'Description',
+      'Status',
+      'Organization',
+      'Client Name',
+      'Audit Type',
+      'Created By (Name)',
+      'Created By (Email)',
+      'Created By (Role)',
+      'Created At',
+      'Updated At',
+    ];
+
+    const rows = audits.map((audit) => [
+      audit._id,
+      audit.name || '',
+      audit.description || '',
+      audit.status || '',
+      audit.organization || '',
+      audit.clientName || '',
+      audit.auditType || '',
+      audit.createdBy?.name || '',
+      audit.createdBy?.email || '',
+      audit.createdBy?.role || '',
+      audit.createdAt ? new Date(audit.createdAt).toISOString() : '',
+      audit.updatedAt ? new Date(audit.updatedAt).toISOString() : '',
+    ]);
+
+    const csvLines = [headers, ...rows].map((row) =>
+      row.map((field) => `"${String(field).replace(/"/g, '""')}"`).join(',')
+    );
+
+    const csv = csvLines.join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="audits-export.csv"');
+    return res.send(csv);
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { createAudit, getAudits, getAuditById, updateAudit, deleteAudit, exportAudits };

@@ -82,59 +82,41 @@ const options = {
     },
     paths: {
       '/health': {
-        get: { tags: ['Health'], summary: 'Health check', responses: { 200: { description: 'Server is running' } } }
+        get: { tags: ['Health'], summary: 'Health check', responses: { 200: { description: 'Server is running' } } },
       },
       '/api/auth/signup': {
-        post: { tags: ['Authentication'], summary: 'Create a new account', description: 'Register a new user. Sends an OTP to email for verification.', requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['email', 'password', 'name'], properties: { name: { type: 'string', example: 'Ibrahim Chhapra' }, email: { type: 'string', format: 'email', example: 'ibrahim@trimerge.com' }, password: { type: 'string', example: 'Password123', description: 'Min 8 chars, 1 uppercase, 1 number' }, phone: { type: 'string', example: '+13051234567' } } } } } }, responses: { 201: { description: 'Account created. OTP sent to email.' }, 409: { description: 'Email already registered' }, 422: { description: 'Validation failed' } } }
+        post: { tags: ['Authentication'], summary: 'Create a new account', description: 'Register a new user. Sends an OTP to email for verification.', requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['email', 'password', 'name'], properties: { name: { type: 'string', example: 'Ibrahim Chhapra' }, email: { type: 'string', format: 'email', example: 'ibrahim@trimerge.com' }, password: { type: 'string', example: 'Password123', description: 'Min 8 chars, 1 uppercase, 1 number' }, phone: { type: 'string', example: '+13051234567' } } } } } }, responses: { 201: { description: 'Account created. OTP sent to email.' }, 409: { description: 'Email already registered' }, 422: { description: 'Validation failed' } } },
       },
       '/api/auth/verify-otp': {
-        post: { tags: ['Authentication'], summary: 'Verify OTP', description: 'Verify the 6-digit OTP sent after signup.', requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['email', 'otp'], properties: { email: { type: 'string', format: 'email', example: 'ibrahim@trimerge.com' }, otp: { type: 'string', example: '847291' } } } } } }, responses: { 200: { description: 'Email verified' }, 400: { description: 'Invalid OTP' }, 410: { description: 'OTP expired' }, 429: { description: 'Too many attempts' } } }
+        post: { tags: ['Authentication'], summary: 'Verify OTP', description: 'Verify the 6-digit OTP sent after signup.', requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['email', 'otp'], properties: { email: { type: 'string', format: 'email', example: 'ibrahim@trimerge.com' }, otp: { type: 'string', example: '847291' } } } } } }, responses: { 200: { description: 'Email verified' }, 400: { description: 'Invalid OTP' }, 410: { description: 'OTP expired' }, 429: { description: 'Too many attempts' } } },
       },
       '/api/auth/resend-otp': {
-        post: { tags: ['Authentication'], summary: 'Resend OTP', requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['email'], properties: { email: { type: 'string', format: 'email', example: 'ibrahim@trimerge.com' } } } } } }, responses: { 200: { description: 'OTP resent' }, 429: { description: 'Cooldown active' } } }
+        post: { tags: ['Authentication'], summary: 'Resend OTP', requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['email'], properties: { email: { type: 'string', format: 'email', example: 'ibrahim@trimerge.com' } } } } } }, responses: { 200: { description: 'OTP resent' }, 429: { description: 'Cooldown active' } } },
       },
       '/api/auth/login': {
-        post: { tags: ['Authentication'], summary: 'Log in', description: 'Returns access token (15m) and refresh token (7d). Locks after 5 failed attempts.', requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['email', 'password'], properties: { email: { type: 'string', format: 'email', example: 'ibrahim@trimerge.com' }, password: { type: 'string', example: 'Password123' } } } } } }, responses: { 200: { description: 'Login successful — returns accessToken and refreshToken' }, 401: { description: 'Invalid credentials' }, 403: { description: 'Email not verified' }, 423: { description: 'Account locked' } } }
+        post: { tags: ['Authentication'], summary: 'Log in', description: 'Returns access token (15m) and refresh token (7d). Locks after 5 failed attempts.', requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['email', 'password'], properties: { email: { type: 'string', format: 'email', example: 'ibrahim@trimerge.com' }, password: { type: 'string', example: 'Password123' } } } } } }, responses: { 200: { description: 'Login successful' }, 401: { description: 'Invalid credentials' }, 403: { description: 'Email not verified' }, 423: { description: 'Account locked' } } },
       },
       '/api/auth/refresh': {
-        post: { tags: ['Authentication'], summary: 'Refresh tokens', description: 'Exchange refresh token for new access + refresh tokens. Old token is invalidated.', requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['refreshToken'], properties: { refreshToken: { type: 'string', example: 'eyJhbGci...' } } } } } }, responses: { 200: { description: 'New tokens issued' }, 401: { description: 'Invalid refresh token' } } }
+        post: { tags: ['Authentication'], summary: 'Refresh tokens', description: 'Exchange refresh token for new tokens.', requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['refreshToken'], properties: { refreshToken: { type: 'string', example: 'eyJhbGci...' } } } } } }, responses: { 200: { description: 'New tokens issued' }, 401: { description: 'Invalid refresh token' } } },
       },
       '/api/auth/forgot-password': {
-        post: { tags: ['Password Reset'], summary: 'Request password reset', description: 'Sends reset link to email. Always returns 200 to prevent user enumeration.', requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['email'], properties: { email: { type: 'string', format: 'email', example: 'ibrahim@trimerge.com' } } } } } }, responses: { 200: { description: 'Reset link sent' }, 422: { description: 'Validation failed' } } }
+        post: { tags: ['Password Reset'], summary: 'Request password reset', description: 'Sends reset link to email.', requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['email'], properties: { email: { type: 'string', format: 'email', example: 'ibrahim@trimerge.com' } } } } } }, responses: { 200: { description: 'Reset link sent' }, 422: { description: 'Validation failed' } } },
       },
       '/api/auth/reset-password': {
-        post: { tags: ['Password Reset'], summary: 'Reset password', description: 'Set new password using token from email. Invalidates all active sessions.', requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['token', 'newPassword'], properties: { token: { type: 'string', example: 'a1b2c3...' }, newPassword: { type: 'string', example: 'NewPassword123' } } } } } }, responses: { 200: { description: 'Password reset successful' }, 400: { description: 'Invalid or expired token' }, 422: { description: 'Validation failed' } } }
+        post: { tags: ['Password Reset'], summary: 'Reset password', description: 'Set new password using token from email.', requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['token', 'newPassword'], properties: { token: { type: 'string', example: 'a1b2c3...' }, newPassword: { type: 'string', example: 'NewPassword123' } } } } } }, responses: { 200: { description: 'Password reset successful' }, 400: { description: 'Invalid or expired token' }, 422: { description: 'Validation failed' } } },
       },
       '/api/auth/logout': {
-        post: { tags: ['Authentication'], summary: 'Log out', description: 'Invalidates refresh token. Requires valid access token.', security: [{ bearerAuth: [] }], responses: { 200: { description: 'Logged out successfully' }, 401: { description: 'Unauthorized' } } }
+        post: { tags: ['Authentication'], summary: 'Log out', description: 'Invalidates refresh token.', security: [{ bearerAuth: [] }], responses: { 200: { description: 'Logged out successfully' }, 401: { description: 'Unauthorized' } } },
       },
       '/api/auth/me': {
         get: {
           tags: ['Authentication'],
           summary: 'Get current user',
-          description: 'Returns the authenticated user profile. Requires valid access token.',
+          description: 'Returns the authenticated user profile.',
           security: [{ bearerAuth: [] }],
           responses: {
-            200: {
-              description: 'User profile returned',
-              content: {
-                'application/json': {
-                  schema: {
-                    type: 'object',
-                    properties: {
-                      success: { type: 'boolean', example: true },
-                      data: {
-                        type: 'object',
-                        properties: {
-                          user: { $ref: '#/components/schemas/User' },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-            401: { description: 'Unauthorized — missing or invalid token' },
+            200: { description: 'User profile returned', content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean', example: true }, data: { type: 'object', properties: { user: { $ref: '#/components/schemas/User' } } } } } } } },
+            401: { description: 'Unauthorized' },
           },
         },
       },
@@ -145,27 +127,8 @@ const options = {
           description: 'Update a user role. Admin only.',
           security: [{ bearerAuth: [] }],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '64f1a2b3c4d5e6f7a8b9c0d1' }],
-          requestBody: {
-            required: true,
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  required: ['role'],
-                  properties: {
-                    role: { type: 'string', enum: ['admin', 'analyst', 'viewer'], example: 'analyst' },
-                  },
-                },
-              },
-            },
-          },
-          responses: {
-            200: { description: 'User role updated successfully' },
-            400: { description: 'Invalid role' },
-            401: { description: 'Unauthorized' },
-            403: { description: 'Forbidden — admin only' },
-            404: { description: 'User not found' },
-          },
+          requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['role'], properties: { role: { type: 'string', enum: ['admin', 'analyst', 'viewer'], example: 'analyst' } } } } } },
+          responses: { 200: { description: 'User role updated successfully' }, 400: { description: 'Invalid role' }, 401: { description: 'Unauthorized' }, 403: { description: 'Forbidden — admin only' }, 404: { description: 'User not found' } },
         },
       },
       '/api/upload/csv': {
@@ -173,120 +136,42 @@ const options = {
           tags: ['CSV Upload'],
           summary: 'Process adverse impact CSV',
           description: 'Upload a CSV file and run validation plus analytics processing.',
-          requestBody: {
-            required: true,
-            content: {
-              'multipart/form-data': {
-                schema: {
-                  type: 'object',
-                  required: ['file'],
-                  properties: {
-                    file: { type: 'string', format: 'binary', description: 'CSV file with columns: group, selected, total' },
-                  },
-                },
-              },
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  required: ['csvText'],
-                  properties: {
-                    csvText: { type: 'string', example: 'group,selected,total\nMale,80,100\nFemale,30,50' },
-                  },
-                },
-              },
-            },
-          },
-          responses: {
-            200: { description: 'CSV processed successfully' },
-            400: { description: 'Missing CSV content' },
-            422: { description: 'CSV validation failed' },
-            500: { description: 'CSV processing or Cloudinary storage failed' },
-          },
+          requestBody: { required: true, content: { 'multipart/form-data': { schema: { type: 'object', required: ['file'], properties: { file: { type: 'string', format: 'binary', description: 'CSV file with columns: group, selected, total' } } } }, 'application/json': { schema: { type: 'object', required: ['csvText'], properties: { csvText: { type: 'string', example: 'group,selected,total\nMale,80,100\nFemale,30,50' } } } } } },
+          responses: { 200: { description: 'CSV processed successfully' }, 400: { description: 'Missing CSV content' }, 422: { description: 'CSV validation failed' }, 500: { description: 'CSV processing or Cloudinary storage failed' } },
         },
       },
       '/api/position/upload': {
         post: {
           tags: ['Position Description AI'],
           summary: 'Upload and analyze a position description',
-          description: 'Upload a .txt, .csv, .pdf, or .docx position description. The document is stored in Cloudinary. If OPENAI_API_KEY is configured, OpenAI returns structured compliance findings.',
-          requestBody: {
-            required: true,
-            content: {
-              'multipart/form-data': {
-                schema: {
-                  type: 'object',
-                  required: ['file'],
-                  properties: {
-                    file: { type: 'string', format: 'binary', description: 'Position description file (.txt, .csv, .pdf, or .docx)' },
-                  },
-                },
-              },
-              'text/plain': {
-                schema: { type: 'string', example: 'Customer Success Manager\nMust be energetic with 15 years of experience.' },
-              },
-            },
-          },
-          responses: {
-            200: { description: 'Position document uploaded and stored.' },
-            400: { description: 'Missing position document content' },
-            415: { description: 'Unsupported file type' },
-            422: { description: 'Uploaded document did not contain readable text' },
-            500: { description: 'Position upload, storage, or AI analysis failed' },
-          },
+          description: 'Upload a .txt, .csv, .pdf, or .docx position description.',
+          requestBody: { required: true, content: { 'multipart/form-data': { schema: { type: 'object', required: ['file'], properties: { file: { type: 'string', format: 'binary', description: 'Position description file (.txt, .csv, .pdf, or .docx)' } } } }, 'text/plain': { schema: { type: 'string', example: 'Customer Success Manager\nMust be energetic with 15 years of experience.' } } } },
+          responses: { 200: { description: 'Position document uploaded and stored.' }, 400: { description: 'Missing content' }, 415: { description: 'Unsupported file type' }, 422: { description: 'No readable text' }, 500: { description: 'Upload or AI analysis failed' } },
         },
       },
       '/api/position': {
         get: {
           tags: ['Position Description AI'],
           summary: 'List position description analyses',
-          description: 'Returns position analysis rows for the UI, sorted by newest upload first.',
-          responses: {
-            200: {
-              description: 'Position documents retrieved successfully',
-            },
-          },
+          description: 'Returns position analysis rows sorted by newest upload first.',
+          responses: { 200: { description: 'Position documents retrieved successfully' } },
         },
       },
       '/api/payequity/upload': {
         post: {
           tags: ['Pay Equity'],
           summary: 'Upload and analyze compensation file',
-          description: 'Upload compensation data as .csv, .xlsx, .xls, .pdf, or .docx. Runs OLS regression and returns adjusted pay gap findings.',
-          requestBody: {
-            required: true,
-            content: {
-              'multipart/form-data': {
-                schema: {
-                  type: 'object',
-                  required: ['file'],
-                  properties: {
-                    file: { type: 'string', format: 'binary', description: 'Compensation file. Required column: salary.' },
-                  },
-                },
-              },
-              'text/csv': {
-                schema: { type: 'string', example: 'salary,grade,tenure,performance,gender,race,department\n85000,4,5,4,Female,Black,Finance\n90000,4,6,4,Male,White,Finance' },
-              },
-            },
-          },
-          responses: {
-            200: { description: 'Pay equity file uploaded and analyzed successfully' },
-            400: { description: 'Missing CSV content' },
-            422: { description: 'Pay equity file validation failed' },
-            500: { description: 'Pay equity upload or regression analysis failed' },
-          },
+          description: 'Upload compensation data. Runs OLS regression and returns adjusted pay gap findings.',
+          requestBody: { required: true, content: { 'multipart/form-data': { schema: { type: 'object', required: ['file'], properties: { file: { type: 'string', format: 'binary', description: 'Compensation file. Required column: salary.' } } } }, 'text/csv': { schema: { type: 'string', example: 'salary,grade,tenure,performance,gender,race,department\n85000,4,5,4,Female,Black,Finance\n90000,4,6,4,Male,White,Finance' } } } },
+          responses: { 200: { description: 'Pay equity file uploaded and analyzed successfully' }, 400: { description: 'Missing content' }, 422: { description: 'Validation failed' }, 500: { description: 'Upload or regression analysis failed' } },
         },
       },
       '/api/payequity': {
         get: {
           tags: ['Pay Equity'],
           summary: 'List pay equity analyses',
-          description: 'Returns pay equity analysis records with UI summary metrics, sorted by newest upload first.',
-          responses: {
-            200: {
-              description: 'Pay equity analyses retrieved successfully',
-            },
-          },
+          description: 'Returns pay equity analysis records sorted by newest upload first.',
+          responses: { 200: { description: 'Pay equity analyses retrieved successfully' } },
         },
       },
       '/api/audits': {
@@ -295,29 +180,8 @@ const options = {
           summary: 'Create audit',
           description: 'Create a new audit. Requires analyst or admin role.',
           security: [{ bearerAuth: [] }],
-          requestBody: {
-            required: true,
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  required: ['name'],
-                  properties: {
-                    name: { type: 'string', example: 'Q1 2026 Pay Equity Review' },
-                    description: { type: 'string', example: 'Initial audit for Q1 payroll data' },
-                    organization: { type: 'string', example: 'TriMerge Consulting' },
-                    clientName: { type: 'string', example: 'ABC Corporation' },
-                    auditType: { type: 'string', example: 'Compliance Audit' },
-                  },
-                },
-              },
-            },
-          },
-          responses: {
-            201: { description: 'Audit created successfully' },
-            401: { description: 'Unauthorized' },
-            403: { description: 'Forbidden — insufficient role' },
-          },
+          requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['name'], properties: { name: { type: 'string', example: 'Q1 2026 Pay Equity Review' }, description: { type: 'string', example: 'Initial audit for Q1 payroll data' }, organization: { type: 'string', example: 'TriMerge Consulting' }, clientName: { type: 'string', example: 'ABC Corporation' }, auditType: { type: 'string', example: 'Compliance Audit' } } } } } },
+          responses: { 201: { description: 'Audit created successfully' }, 401: { description: 'Unauthorized' }, 403: { description: 'Forbidden — insufficient role' } },
         },
         get: {
           tags: ['Audits'],
@@ -328,9 +192,25 @@ const options = {
             { name: 'clientName', in: 'query', schema: { type: 'string' }, description: 'Filter by client name (case-insensitive, partial match)' },
             { name: 'auditType', in: 'query', schema: { type: 'string' }, description: 'Filter by audit type (case-insensitive, partial match)' },
           ],
+          responses: { 200: { description: 'Audits retrieved successfully' }, 401: { description: 'Unauthorized' } },
+        },
+      },
+      '/api/audits/export': {
+        get: {
+          tags: ['Audits'],
+          summary: 'Export audits as CSV',
+          description: 'Downloads audits as a CSV file. Filter by status, clientName, auditType, or specific IDs.',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'status', in: 'query', schema: { type: 'string', enum: ['draft', 'processing', 'completed', 'flagged'] }, description: 'Filter by status' },
+            { name: 'clientName', in: 'query', schema: { type: 'string' }, description: 'Filter by client name' },
+            { name: 'auditType', in: 'query', schema: { type: 'string' }, description: 'Filter by audit type' },
+            { name: 'ids', in: 'query', schema: { type: 'string' }, description: 'Comma-separated list of audit IDs to export' },
+          ],
           responses: {
-            200: { description: 'Audits retrieved successfully' },
+            200: { description: 'CSV file download', content: { 'text/csv': { schema: { type: 'string', format: 'binary' } } } },
             401: { description: 'Unauthorized' },
+            403: { description: 'Forbidden — insufficient role' },
           },
         },
       },
@@ -341,11 +221,7 @@ const options = {
           description: 'Returns a single audit by ID.',
           security: [{ bearerAuth: [] }],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '64f1a2b3c4d5e6f7a8b9c0d1' }],
-          responses: {
-            200: { description: 'Audit retrieved successfully' },
-            401: { description: 'Unauthorized' },
-            404: { description: 'Audit not found' },
-          },
+          responses: { 200: { description: 'Audit retrieved successfully' }, 401: { description: 'Unauthorized' }, 404: { description: 'Audit not found' } },
         },
         patch: {
           tags: ['Audits'],
@@ -353,30 +229,8 @@ const options = {
           description: 'Update audit fields. Requires analyst or admin role.',
           security: [{ bearerAuth: [] }],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '64f1a2b3c4d5e6f7a8b9c0d1' }],
-          requestBody: {
-            required: true,
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    name: { type: 'string', example: 'Q1 2026 Pay Equity Review — Updated' },
-                    description: { type: 'string', example: 'Updated description' },
-                    organization: { type: 'string', example: 'TriMerge Consulting' },
-                    clientName: { type: 'string', example: 'ABC Corporation' },
-                    auditType: { type: 'string', example: 'Compliance Audit' },
-                    status: { type: 'string', enum: ['draft', 'processing', 'completed', 'flagged'], example: 'processing' },
-                  },
-                },
-              },
-            },
-          },
-          responses: {
-            200: { description: 'Audit updated successfully' },
-            401: { description: 'Unauthorized' },
-            403: { description: 'Forbidden — insufficient role' },
-            404: { description: 'Audit not found' },
-          },
+          requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', properties: { name: { type: 'string', example: 'Q1 2026 Pay Equity Review — Updated' }, description: { type: 'string', example: 'Updated description' }, organization: { type: 'string', example: 'TriMerge Consulting' }, clientName: { type: 'string', example: 'ABC Corporation' }, auditType: { type: 'string', example: 'Compliance Audit' }, status: { type: 'string', enum: ['draft', 'processing', 'completed', 'flagged'], example: 'processing' } } } } } },
+          responses: { 200: { description: 'Audit updated successfully' }, 401: { description: 'Unauthorized' }, 403: { description: 'Forbidden — insufficient role' }, 404: { description: 'Audit not found' } },
         },
         delete: {
           tags: ['Audits'],
@@ -384,12 +238,7 @@ const options = {
           description: 'Permanently delete an audit. Requires admin role.',
           security: [{ bearerAuth: [] }],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '64f1a2b3c4d5e6f7a8b9c0d1' }],
-          responses: {
-            200: { description: 'Audit deleted successfully' },
-            401: { description: 'Unauthorized' },
-            403: { description: 'Forbidden — admin only' },
-            404: { description: 'Audit not found' },
-          },
+          responses: { 200: { description: 'Audit deleted successfully' }, 401: { description: 'Unauthorized' }, 403: { description: 'Forbidden — admin only' }, 404: { description: 'Audit not found' } },
         },
       },
       '/api/flags': {
@@ -406,10 +255,7 @@ const options = {
             { name: 'page', in: 'query', schema: { type: 'integer', default: 1 }, description: 'Page number' },
             { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 }, description: 'Results per page' },
           ],
-          responses: {
-            200: { description: 'Flags retrieved successfully' },
-            401: { description: 'Unauthorized' },
-          },
+          responses: { 200: { description: 'Flags retrieved successfully' }, 401: { description: 'Unauthorized' } },
         },
       },
       '/api/flags/{id}': {
@@ -419,11 +265,7 @@ const options = {
           description: 'Returns a single flag by ID with statistical explanation.',
           security: [{ bearerAuth: [] }],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a04821729a246ff21797b80' }],
-          responses: {
-            200: { description: 'Flag retrieved successfully' },
-            401: { description: 'Unauthorized' },
-            404: { description: 'Flag not found' },
-          },
+          responses: { 200: { description: 'Flag retrieved successfully' }, 401: { description: 'Unauthorized' }, 404: { description: 'Flag not found' } },
         },
       },
       '/api/flags/{id}/decide': {
@@ -433,28 +275,8 @@ const options = {
           description: 'Analyst approves or dismisses a flag. Requires analyst or admin role.',
           security: [{ bearerAuth: [] }],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a04821729a246ff21797b80' }],
-          requestBody: {
-            required: true,
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  required: ['decision'],
-                  properties: {
-                    decision: { type: 'string', enum: ['approved', 'dismissed'], example: 'approved' },
-                    reason: { type: 'string', example: 'Reviewed and confirmed no adverse impact.' },
-                  },
-                },
-              },
-            },
-          },
-          responses: {
-            200: { description: 'Flag decided successfully' },
-            400: { description: 'Invalid decision or flag already reviewed' },
-            401: { description: 'Unauthorized' },
-            403: { description: 'Forbidden — insufficient role' },
-            404: { description: 'Flag not found' },
-          },
+          requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['decision'], properties: { decision: { type: 'string', enum: ['approved', 'dismissed'], example: 'approved' }, reason: { type: 'string', example: 'Reviewed and confirmed no adverse impact.' } } } } } },
+          responses: { 200: { description: 'Flag decided successfully' }, 400: { description: 'Invalid decision or flag already reviewed' }, 401: { description: 'Unauthorized' }, 403: { description: 'Forbidden — insufficient role' }, 404: { description: 'Flag not found' } },
         },
       },
       '/api/flags/{id}/assign': {
@@ -464,34 +286,15 @@ const options = {
           description: 'Assign a flag to a specific analyst. Requires analyst or admin role.',
           security: [{ bearerAuth: [] }],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a04821729a246ff21797b80' }],
-          requestBody: {
-            required: true,
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  required: ['assignedTo'],
-                  properties: {
-                    assignedTo: { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1', description: 'User ID of the analyst to assign' },
-                  },
-                },
-              },
-            },
-          },
-          responses: {
-            200: { description: 'Flag assigned successfully' },
-            400: { description: 'Missing assignedTo field' },
-            401: { description: 'Unauthorized' },
-            403: { description: 'Forbidden — insufficient role' },
-            404: { description: 'Flag not found' },
-          },
+          requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['assignedTo'], properties: { assignedTo: { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1', description: 'User ID of the analyst to assign' } } } } } },
+          responses: { 200: { description: 'Flag assigned successfully' }, 400: { description: 'Missing assignedTo field' }, 401: { description: 'Unauthorized' }, 403: { description: 'Forbidden — insufficient role' }, 404: { description: 'Flag not found' } },
         },
       },
       '/api/dashboard/summary': {
         get: {
           tags: ['Dashboard'],
           summary: 'Get dashboard summary',
-          description: 'Returns total counts, breakdowns by status/severity, and recent audits and flags.',
+          description: 'Returns total counts, breakdowns by status/severity, risk summaries, and recent audits and flags.',
           security: [{ bearerAuth: [] }],
           responses: {
             200: {
@@ -528,30 +331,11 @@ const options = {
       '/api/dashboard/export': {
         get: {
           tags: ['Dashboard'],
-          summary: 'Export dashboard data',
-          description: 'Returns all audits and flags for export. Requires analyst or admin role.',
+          summary: 'Export dashboard data as CSV',
+          description: 'Downloads all audits and flags as a formatted CSV file. Requires analyst or admin role.',
           security: [{ bearerAuth: [] }],
           responses: {
-            200: {
-              description: 'Export data retrieved successfully',
-              content: {
-                'application/json': {
-                  schema: {
-                    type: 'object',
-                    properties: {
-                      success: { type: 'boolean', example: true },
-                      data: {
-                        type: 'object',
-                        properties: {
-                          audits: { type: 'array', items: { $ref: '#/components/schemas/Audit' } },
-                          flags: { type: 'array', items: { $ref: '#/components/schemas/Flag' } },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
+            200: { description: 'CSV file download', content: { 'text/csv': { schema: { type: 'string', format: 'binary' } } } },
             401: { description: 'Unauthorized' },
             403: { description: 'Forbidden — insufficient role' },
           },
@@ -561,13 +345,13 @@ const options = {
         get: {
           tags: ['Activity Log'],
           summary: 'Get activity logs',
-          description: 'Returns paginated activity logs for audits and flags. Requires analyst or admin role.',
+          description: 'Returns paginated activity logs. Analysts see only their own logs. Admins see all.',
           security: [{ bearerAuth: [] }],
           parameters: [
             { name: 'targetType', in: 'query', schema: { type: 'string', enum: ['audit', 'flag'] }, description: 'Filter by target type' },
             { name: 'action', in: 'query', schema: { type: 'string', enum: ['audit_created', 'audit_updated', 'audit_deleted', 'flag_decided', 'flag_assigned'] }, description: 'Filter by action' },
             { name: 'auditId', in: 'query', schema: { type: 'string' }, description: 'Filter by audit ID' },
-            { name: 'performedBy', in: 'query', schema: { type: 'string' }, description: 'Filter by user ID' },
+            { name: 'performedBy', in: 'query', schema: { type: 'string' }, description: 'Filter by user ID (admin only)' },
             { name: 'page', in: 'query', schema: { type: 'integer', default: 1 }, description: 'Page number' },
             { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 }, description: 'Results per page' },
           ],
@@ -589,37 +373,15 @@ const options = {
                               type: 'object',
                               properties: {
                                 id: { type: 'string' },
-                                user: {
-                                  type: 'object',
-                                  properties: {
-                                    name: { type: 'string', example: 'Ibrahim Chhapra' },
-                                    email: { type: 'string', example: 'ibrahim@trimerge.com' },
-                                    role: { type: 'string', example: 'admin' },
-                                  },
-                                },
+                                user: { type: 'object', properties: { name: { type: 'string', example: 'Ibrahim Chhapra' }, email: { type: 'string', example: 'ibrahim@trimerge.com' }, role: { type: 'string', example: 'admin' } } },
                                 action: { type: 'string', example: 'audit_created' },
-                                target: {
-                                  type: 'object',
-                                  properties: {
-                                    type: { type: 'string', example: 'audit' },
-                                    audit: { type: 'object', nullable: true },
-                                    flag: { type: 'object', nullable: true },
-                                  },
-                                },
+                                target: { type: 'object', properties: { type: { type: 'string', example: 'audit' }, audit: { type: 'object', nullable: true }, flag: { type: 'object', nullable: true } } },
                                 details: { type: 'object' },
                                 date: { type: 'string', format: 'date-time' },
                               },
                             },
                           },
-                          pagination: {
-                            type: 'object',
-                            properties: {
-                              total: { type: 'integer', example: 42 },
-                              page: { type: 'integer', example: 1 },
-                              limit: { type: 'integer', example: 20 },
-                              totalPages: { type: 'integer', example: 3 },
-                            },
-                          },
+                          pagination: { type: 'object', properties: { total: { type: 'integer', example: 42 }, page: { type: 'integer', example: 1 }, limit: { type: 'integer', example: 20 }, totalPages: { type: 'integer', example: 3 } } },
                         },
                       },
                     },

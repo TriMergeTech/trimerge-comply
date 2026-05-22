@@ -10,6 +10,14 @@ const calculateAuditRisk = (flagCounts) => {
   return 'none';
 };
 
+// ─── CSV Helper ───────────────────────────────────────────────
+const toCSV = (headers, rows) => {
+  const lines = [headers, ...rows].map((row) =>
+    row.map((field) => `"${String(field ?? '').replace(/"/g, '""')}"`).join(',')
+  );
+  return lines.join('\n');
+};
+
 // GET /api/dashboard/summary
 const getDashboardSummary = async (req, res, next) => {
   try {
@@ -46,7 +54,6 @@ const getDashboardSummary = async (req, res, next) => {
         return acc;
       }, {});
 
-    // Build per-audit risk summaries
     const auditRiskMap = {};
     for (const item of flagsPerAudit) {
       const auditId = item._id.auditId?.toString();
@@ -69,18 +76,15 @@ const getDashboardSummary = async (req, res, next) => {
       auditRiskMap[auditId].totalFlags += item.count;
     }
 
-    // Add risk level to each audit
     const auditRiskSummaries = Object.entries(auditRiskMap).map(([auditId, data]) => ({
       auditId,
       ...data,
       riskLevel: calculateAuditRisk(data.flagsBySeverity),
     }));
 
-    // Sort by risk — high first
     const riskOrder = { high: 0, medium: 1, low: 2, none: 3 };
     auditRiskSummaries.sort((a, b) => riskOrder[a.riskLevel] - riskOrder[b.riskLevel]);
 
-    // Overall platform risk
     const severityCounts = normalizeAgg(flagsBySeverity);
     const overallRisk =
       (severityCounts.high || 0) > 0
@@ -114,14 +118,63 @@ const getDashboardSummary = async (req, res, next) => {
 const exportDashboard = async (req, res, next) => {
   try {
     const [audits, flags] = await Promise.all([
-      Audit.find().sort({ createdAt: -1 }).populate('createdBy', 'email role'),
+      Audit.find().sort({ createdAt: -1 }).populate('createdBy', 'name email role'),
       Flag.find().sort({ createdAt: -1 }).populate('auditId', 'name organization'),
     ]);
 
-    return sendSuccess(res, {
-      message: 'Export data retrieved successfully',
-      data: { audits, flags },
-    });
+    // ── Audits CSV ──────────────────────────────────────────
+    const auditHeaders = [
+      'Audit ID', 'Name', 'Description', 'Status', 'Organization',
+      'Client Name', 'Audit Type', 'Created By (Name)', 'Created By (Email)',
+      'Created By (Role)', 'Created At', 'Updated At',
+    ];
+    const auditRows = audits.map((a) => [
+      a._id,
+      a.name || '',
+      a.description || '',
+      a.status || '',
+      a.organization || '',
+      a.clientName || '',
+      a.auditType || '',
+      a.createdBy?.name || '',
+      a.createdBy?.email || '',
+      a.createdBy?.role || '',
+      a.createdAt ? new Date(a.createdAt).toISOString() : '',
+      a.updatedAt ? new Date(a.updatedAt).toISOString() : '',
+    ]);
+
+    // ── Flags CSV ───────────────────────────────────────────
+    const flagHeaders = [
+      'Flag ID', 'Audit Name', 'Audit Organization', 'Group', 'Reference Group',
+      'Selected', 'Total', 'Selection Rate', 'Impact Ratio', 'Threshold',
+      'Test Type', 'P-Value', 'Severity', 'Status', 'Created At',
+    ];
+    const flagRows = flags.map((f) => [
+      f._id,
+      f.auditId?.name || '',
+      f.auditId?.organization || '',
+      f.group || '',
+      f.referenceGroup || '',
+      f.selected ?? '',
+      f.total ?? '',
+      f.selectionRate ?? '',
+      f.impactRatio ?? '',
+      f.threshold ?? '',
+      f.testType || '',
+      f.pValue ?? '',
+      f.severity || '',
+      f.status || '',
+      f.createdAt ? new Date(f.createdAt).toISOString() : '',
+    ]);
+
+    const auditCSV = toCSV(auditHeaders, auditRows);
+    const flagCSV = toCSV(flagHeaders, flagRows);
+
+    const combined = `AUDITS\n${auditCSV}\n\nFLAGS\n${flagCSV}`;
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="dashboard-export.csv"');
+    return res.send(combined);
   } catch (err) {
     next(err);
   }

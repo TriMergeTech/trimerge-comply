@@ -5,6 +5,7 @@ const {
   getAuditById,
   updateAudit,
   deleteAudit,
+  exportAudits,
 } = require('../controllers/audit.controller');
 const { protect, requireRole } = require('../middleware/auth.middleware');
 
@@ -15,6 +16,9 @@ router.use(protect);
 
 // POST /api/audits — analyst, admin
 router.post('/', requireRole('analyst', 'admin'), createAudit);
+
+// GET /api/audits/export — must be BEFORE /:id or Express will treat 'export' as an ID
+router.get('/export', requireRole('analyst', 'admin'), exportAudits);
 
 // GET /api/audits — all roles
 router.get('/', requireRole('analyst', 'admin', 'viewer'), getAudits);
