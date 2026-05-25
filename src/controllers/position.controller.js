@@ -1,8 +1,9 @@
 const mongoose = require('mongoose');
 const PositionDocument = require('../models/PositionDocument');
-const { analyzePositionDescription } = require('../services/ai/openai.service');
+const { analyzePositionDescription, generatePositionReportDraft } = require('../services/ai/openai.service');
 const { extractPositionText } = require('../services/position/positionText.service');
 const { buildPositionDetailView, buildPositionUiRow } = require('../services/position/positionUi.service');
+const { buildFallbackReportDraft, renderPositionReportPdf } = require('../services/position/positionReportPdf.service');
 const { uploadRawToCloudinary } = require('../services/storage/cloudinary.service');
 const { extractFileFromMultipart } = require('../utils/multipart');
 const { getUploadedBy } = require('../utils/uploadedBy');
@@ -10,6 +11,19 @@ const { sendSuccess, sendError } = require('../utils/response');
 
 const POSITION_DOCUMENT_FOLDER = 'trimerge-comply/position-documents';
 const REVIEW_STATUSES = new Set(['not_reviewed', 'in_review', 'approved', 'needs_changes', 'dismissed']);
+
+const getReportCompanyName = (req, documentRecord) =>
+  req.user?.companyName || documentRecord.uploadedBy?.companyName || null;
+
+const buildReportFileName = (fileName = 'position-analysis') => {
+  const baseName = fileName
+    .replace(/\.[^/.]+$/, '')
+    .replace(/[^a-z0-9-_]+/gi, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase();
+
+  return `${baseName || 'position-analysis'}-review.pdf`;
+};
 
 const validateDocumentId = (res, id) => {
   if (mongoose.isValidObjectId(id)) {
@@ -254,9 +268,28 @@ const getPositionDocumentReport = async (req, res, next) => {
       });
     }
 
-    return sendError(res, {
-      statusCode: 501,
-      message: 'Position analysis PDF report generation is planned for phase 2.',
+    const documentView = buildPositionDetailView(documentRecord);
+    const companyName = getReportCompanyName(req, documentRecord);
+    let reportDraft = null;
+
+    try {
+      const aiDraft = await generatePositionReportDraft({ documentView, companyName });
+      reportDraft = aiDraft.draft;
+    } catch (err) {
+      reportDraft = buildFallbackReportDraft({ documentView, companyName });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${buildReportFileName(documentRecord.fileName)}"`
+    );
+
+    return renderPositionReportPdf({
+      outputStream: res,
+      documentView,
+      reportDraft,
+      companyName,
     });
   } catch (err) {
     next(err);

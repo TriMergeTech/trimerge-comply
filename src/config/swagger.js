@@ -237,12 +237,23 @@ const options = {
         get: {
           tags: ['Position Description AI'],
           summary: 'Download position analysis PDF report',
-          description: 'Phase 2 placeholder for generating a one-page PDF report with AI findings and analyst review notes.',
+          description: 'Downloads a one-page official compliance PDF report with AI findings, AI recommendations, analyst notes, review status, and company name when available.',
           parameters: [
             { name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a0f1185927a7ccf9ab71252' },
           ],
           responses: {
-            501: { description: 'PDF report generation is planned for phase 2' },
+            200: {
+              description: 'One-page PDF report downloaded successfully',
+              content: {
+                'application/pdf': {
+                  schema: {
+                    type: 'string',
+                    format: 'binary',
+                  },
+                },
+              },
+            },
+            400: { description: 'Invalid position document id' },
             404: { description: 'Position document not found' },
           },
         },

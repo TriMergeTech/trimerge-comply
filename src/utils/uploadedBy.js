@@ -3,6 +3,7 @@ const getUploadedBy = (user) => {
     return {
       userId: null,
       email: 'System Upload',
+      companyName: null,
       role: null,
     };
   }
@@ -10,6 +11,7 @@ const getUploadedBy = (user) => {
   return {
     userId: user._id,
     email: user.email || 'Unknown User',
+    companyName: user.companyName || null,
     role: user.role || null,
   };
 };

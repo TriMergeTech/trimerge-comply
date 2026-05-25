@@ -35,6 +35,10 @@ const positionDocumentSchema = new mongoose.Schema(
         type: String,
         default: 'System Upload',
       },
+      companyName: {
+        type: String,
+        default: null,
+      },
       role: {
         type: String,
         default: null,
