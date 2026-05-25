@@ -182,6 +182,71 @@ const options = {
           responses: { 200: { description: 'Position documents retrieved successfully' } },
         },
       },
+      '/api/position/{id}': {
+        get: {
+          tags: ['Position Description AI'],
+          summary: 'Get position analysis detail view',
+          description: 'Returns the modal/detail payload for one position document, including AI flag summary, AI recommendations, analyst notes, and resolution status.',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a0f1185927a7ccf9ab71252' },
+          ],
+          responses: {
+            200: { description: 'Position document detail retrieved successfully' },
+            404: { description: 'Position document not found' },
+          },
+        },
+      },
+      '/api/position/{id}/review': {
+        patch: {
+          tags: ['Position Description AI'],
+          summary: 'Update analyst review fields',
+          description: 'Updates user-editable review fields from the position analysis detail modal.',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a0f1185927a7ccf9ab71252' },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    analystNotes: {
+                      type: 'string',
+                      example: 'Reviewed flagged issues. Recommend updating physical requirement details.',
+                    },
+                    resolutionStatus: {
+                      type: 'string',
+                      enum: ['not_reviewed', 'in_review', 'approved', 'needs_changes', 'dismissed'],
+                      example: 'in_review',
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: 'Position document review updated successfully' },
+            400: { description: 'Missing review fields' },
+            404: { description: 'Position document not found' },
+            422: { description: 'Invalid resolution status' },
+          },
+        },
+      },
+      '/api/position/{id}/report': {
+        get: {
+          tags: ['Position Description AI'],
+          summary: 'Download position analysis PDF report',
+          description: 'Phase 2 placeholder for generating a one-page PDF report with AI findings and analyst review notes.',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a0f1185927a7ccf9ab71252' },
+          ],
+          responses: {
+            501: { description: 'PDF report generation is planned for phase 2' },
+            404: { description: 'Position document not found' },
+          },
+        },
+      },
       '/api/payequity/upload': {
         post: {
           tags: ['Pay Equity'],

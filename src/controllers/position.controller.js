@@ -1,13 +1,28 @@
+const mongoose = require('mongoose');
 const PositionDocument = require('../models/PositionDocument');
 const { analyzePositionDescription } = require('../services/ai/openai.service');
 const { extractPositionText } = require('../services/position/positionText.service');
-const { buildPositionUiRow } = require('../services/position/positionUi.service');
+const { buildPositionDetailView, buildPositionUiRow } = require('../services/position/positionUi.service');
 const { uploadRawToCloudinary } = require('../services/storage/cloudinary.service');
 const { extractFileFromMultipart } = require('../utils/multipart');
 const { getUploadedBy } = require('../utils/uploadedBy');
 const { sendSuccess, sendError } = require('../utils/response');
 
 const POSITION_DOCUMENT_FOLDER = 'trimerge-comply/position-documents';
+const REVIEW_STATUSES = new Set(['not_reviewed', 'in_review', 'approved', 'needs_changes', 'dismissed']);
+
+const validateDocumentId = (res, id) => {
+  if (mongoose.isValidObjectId(id)) {
+    return true;
+  }
+
+  sendError(res, {
+    statusCode: 400,
+    message: 'Invalid position document id.',
+  });
+
+  return false;
+};
 
 const getPositionPayloadFromRequest = (req) => {
   const contentType = req.headers['content-type'] || '';
@@ -133,7 +148,125 @@ const listPositionDocuments = async (req, res, next) => {
   }
 };
 
+// GET /api/position/:id
+const getPositionDocumentDetail = async (req, res, next) => {
+  try {
+    if (!validateDocumentId(res, req.params.id)) {
+      return null;
+    }
+
+    const documentRecord = await PositionDocument.findById(req.params.id).lean();
+
+    if (!documentRecord) {
+      return sendError(res, {
+        statusCode: 404,
+        message: 'Position document not found.',
+      });
+    }
+
+    return sendSuccess(res, {
+      message: 'Position document detail retrieved successfully.',
+      data: {
+        document: buildPositionDetailView(documentRecord),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// PATCH /api/position/:id/review
+const updatePositionDocumentReview = async (req, res, next) => {
+  try {
+    if (!validateDocumentId(res, req.params.id)) {
+      return null;
+    }
+
+    const { analystNotes, resolutionStatus } = req.body || {};
+    const updates = {};
+
+    if (analystNotes !== undefined) {
+      updates.analystNotes = String(analystNotes).trim();
+    }
+
+    if (resolutionStatus !== undefined) {
+      if (!REVIEW_STATUSES.has(resolutionStatus)) {
+        return sendError(res, {
+          statusCode: 422,
+          message: 'Invalid resolution status.',
+          errors: [{
+            field: 'resolutionStatus',
+            message: 'Use one of: not_reviewed, in_review, approved, needs_changes, dismissed.',
+          }],
+        });
+      }
+
+      updates.resolutionStatus = resolutionStatus;
+    }
+
+    if (!Object.keys(updates).length) {
+      return sendError(res, {
+        statusCode: 400,
+        message: 'Provide analystNotes or resolutionStatus to update.',
+      });
+    }
+
+    updates.reviewedBy = getUploadedBy(req.user);
+    updates.reviewedAt = new Date();
+
+    const documentRecord = await PositionDocument.findByIdAndUpdate(
+      req.params.id,
+      { $set: updates },
+      { new: true, runValidators: true }
+    ).lean();
+
+    if (!documentRecord) {
+      return sendError(res, {
+        statusCode: 404,
+        message: 'Position document not found.',
+      });
+    }
+
+    return sendSuccess(res, {
+      message: 'Position document review updated successfully.',
+      data: {
+        document: buildPositionDetailView(documentRecord),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// GET /api/position/:id/report
+const getPositionDocumentReport = async (req, res, next) => {
+  try {
+    if (!validateDocumentId(res, req.params.id)) {
+      return null;
+    }
+
+    const documentRecord = await PositionDocument.findById(req.params.id).lean();
+
+    if (!documentRecord) {
+      return sendError(res, {
+        statusCode: 404,
+        message: 'Position document not found.',
+      });
+    }
+
+    return sendError(res, {
+      statusCode: 501,
+      message: 'Position analysis PDF report generation is planned for phase 2.',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
+  getPositionDocumentDetail,
+  getPositionDocumentReport,
   listPositionDocuments,
+  updatePositionDocumentReview,
   uploadPositionDocument,
 };
