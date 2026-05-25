@@ -22,6 +22,8 @@ const options = {
           type: 'object',
           properties: {
             id: { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1' },
+            name: { type: 'string', example: 'Ibrahim Chhapra' },
+            companyName: { type: 'string', nullable: true, example: 'TriMerge Consulting' },
             email: { type: 'string', example: 'ibrahim@trimerge.com' },
             phone: { type: 'string', nullable: true },
             isVerified: { type: 'boolean', example: true },
@@ -85,7 +87,30 @@ const options = {
         get: { tags: ['Health'], summary: 'Health check', responses: { 200: { description: 'Server is running' } } },
       },
       '/api/auth/signup': {
-        post: { tags: ['Authentication'], summary: 'Create a new account', description: 'Register a new user. Sends an OTP to email for verification.', requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['email', 'password', 'name'], properties: { name: { type: 'string', example: 'Ibrahim Chhapra' }, email: { type: 'string', format: 'email', example: 'ibrahim@trimerge.com' }, password: { type: 'string', example: 'Password123', description: 'Min 8 chars, 1 uppercase, 1 number' }, phone: { type: 'string', example: '+13051234567' } } } } } }, responses: { 201: { description: 'Account created. OTP sent to email.' }, 409: { description: 'Email already registered' }, 422: { description: 'Validation failed' } } },
+        post: {
+          tags: ['Authentication'],
+          summary: 'Create a new account',
+          description: 'Register a new user. Sends an OTP to email for verification.',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['email', 'password', 'name'],
+                  properties: {
+                    name: { type: 'string', example: 'Ibrahim Chhapra' },
+                    companyName: { type: 'string', example: 'TriMerge Consulting' },
+                    email: { type: 'string', format: 'email', example: 'ibrahim@trimerge.com' },
+                    password: { type: 'string', example: 'Password123', description: 'Min 8 chars, 1 uppercase, 1 number' },
+                    phone: { type: 'string', example: '+13051234567' },
+                  },
+                },
+              },
+            },
+          },
+          responses: { 201: { description: 'Account created. OTP sent to email.' }, 409: { description: 'Email already registered' }, 422: { description: 'Validation failed' } },
+        },
       },
       '/api/auth/verify-otp': {
         post: { tags: ['Authentication'], summary: 'Verify OTP', description: 'Verify the 6-digit OTP sent after signup.', requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['email', 'otp'], properties: { email: { type: 'string', format: 'email', example: 'ibrahim@trimerge.com' }, otp: { type: 'string', example: '847291' } } } } } }, responses: { 200: { description: 'Email verified' }, 400: { description: 'Invalid OTP' }, 410: { description: 'OTP expired' }, 429: { description: 'Too many attempts' } } },

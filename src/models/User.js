@@ -12,9 +12,14 @@ const userSchema = new mongoose.Schema(
       match: [/^\S+@\S+\.\S+$/, 'Invalid email format'],
     },
     name: {
-     type: String,
-     trim: true,
-     default: null,
+      type: String,
+      trim: true,
+      default: null,
+    },
+    companyName: {
+      type: String,
+      trim: true,
+      default: null,
     },
     phone: {
       type: String,
@@ -35,7 +40,7 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    role: {                                          
+    role: {
       type: String,
       enum: ['admin', 'analyst', 'viewer'],
       default: 'viewer',
@@ -75,6 +80,7 @@ userSchema.methods.toPublicJSON = function () {
   return {
     id: this._id,
     name: this.name,
+    companyName: this.companyName,
     email: this.email,
     phone: this.phone,
     isVerified: this.isVerified,
