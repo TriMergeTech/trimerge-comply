@@ -11,6 +11,7 @@ const uploadRoutes    = require('./routes/upload.routes');
 const flagRoutes      = require('./routes/flag.routes');
 const auditRoutes     = require('./routes/audit.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
+const payEquityRoutes = require('./routes/payequity.routes');
 const { errorHandler, notFound } = require('./middleware/error.middleware');
 const { sendSuccess } = require('./utils/response');
 
@@ -75,8 +76,9 @@ app.get('/health', (req, res) => {
 app.use('/api/auth',      authLimiter, authRoutes);
 app.use('/api/upload',    uploadRoutes);
 app.use('/api/flags',     flagRoutes);
-app.use('/api/audits',    auditRoutes);
-app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/audits',     auditRoutes);
+app.use('/api/dashboard',  dashboardRoutes);
+app.use('/api/payequity',  payEquityRoutes);
 
 // ─── 404 + global error handler ─────────────────────────────
 app.use(notFound);
