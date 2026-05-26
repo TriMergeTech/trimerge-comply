@@ -1,32 +1,54 @@
 'use client'
 
 // Export panel component
-// Allows analyst to export confirmed findings
-// Layout: audit dropdown, format dropdown and export button in one row
+// Allows analyst to export confirmed findings as CSV
+// Audit dropdown uses real API data
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Download, ChevronDown } from 'lucide-react'
+import { toast } from 'sonner'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-
-// Temporary audit options — will be replaced with real API data later
-const auditOptions = [
-  'City of Springfield – Full Audit',
-  'State Transit Authority – Adverse Impact',
-  'Public Health Dept – Pay Equity',
-  'County of Madison – Position Description',
-]
-
-// Format options
-const formatOptions = ['CSV', '.docx', 'PDF']
+import { getAudits, Audit } from '@/lib/api/audits'
+import { exportDashboardCSV } from '@/lib/api/dashboard'
 
 export default function ExportPanel() {
-  const [selectedAudit, setSelectedAudit] = useState(auditOptions[0])
-  const [selectedFormat, setSelectedFormat] = useState('CSV')
+  const [audits, setAudits] = useState<Audit[]>([])
+  const [selectedAudit, setSelectedAudit] = useState<Audit | null>(null)
+  const [exporting, setExporting] = useState(false)
+
+  
+
+  // Fetch real audits for the dropdown
+  useEffect(() => {
+    async function fetchAudits() {
+      try {
+        const data = await getAudits()
+        setAudits(data)
+        if (data.length > 0) setSelectedAudit(data[0])
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    fetchAudits()
+  }, [])
+
+  // Handle export button click
+  async function handleExport() {
+    setExporting(true)
+    try {
+      await exportDashboardCSV()
+      toast.success('Export downloaded successfully')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Export failed')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   return (
     <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
@@ -47,49 +69,34 @@ export default function ExportPanel() {
           <label className="text-sm text-slate-600 font-medium">Audit</label>
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center justify-between gap-2 text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-600 hover:bg-slate-50 transition-colors w-full">
-              {selectedAudit}
+              {selectedAudit ? `${selectedAudit.organization ?? '—'} — ${selectedAudit.name}` : 'Select audit'}
               <ChevronDown size={14} className="text-slate-400 shrink-0" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-72">
-              {auditOptions.map((audit, index) => (
+            <DropdownMenuContent className="w-full min-w-[400px]">
+              {audits.map((audit) => (
                 <DropdownMenuItem
-                  key={index}
+                  key={audit._id}
                   onClick={() => setSelectedAudit(audit)}
                   className="cursor-pointer"
                 >
-                  {audit}
+                  {audit.organization ?? '—'} — {audit.name}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
 
-        {/* Format selector */}
-        <div className="flex flex-col gap-1 sm:w-36">
-          <label className="text-sm text-slate-600 font-medium">Format</label>
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center justify-between gap-2 text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-600 hover:bg-slate-50 transition-colors w-full">
-              {selectedFormat}
-              <ChevronDown size={14} className="text-slate-400 shrink-0" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              {formatOptions.map((format, index) => (
-                <DropdownMenuItem
-                  key={index}
-                  onClick={() => setSelectedFormat(format)}
-                  className="cursor-pointer"
-                >
-                  {format}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+
+
 
         {/* Export button */}
-        <button className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-6 py-2 rounded-lg transition-colors sm:mb-0.5">
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-6 py-2 rounded-lg transition-colors sm:mb-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           <Download size={16} />
-          Export
+          {exporting ? 'Exporting...' : 'Export'}
         </button>
 
       </div>

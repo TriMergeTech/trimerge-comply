@@ -70,18 +70,18 @@ export default function AuditsTable() {
   }
 
   // Handle delete audit
- async function handleDelete(id: string) {
-  if (!confirm('Are you sure you want to delete this audit?')) return
-  try {
-    await deleteAudit(id)
-    toast.success('Audit deleted successfully')
-    fetchAudits()
-  } catch (err) {
-    toast.error('Failed to delete audit. Please try again.')
-    console.error(err)
+  async function handleDelete(id: string) {
+    if (!confirm('Are you sure you want to delete this audit?')) return
+    try {
+      await deleteAudit(id)
+      toast.success('Audit deleted successfully')
+      fetchAudits()
+    } catch (err) {
+      toast.error('Failed to delete audit. Please try again.')
+      console.error(err)
+    }
   }
-}
-  
+
 
   // Loading state
   if (loading) {

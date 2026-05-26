@@ -6,7 +6,7 @@
 import { useState } from 'react'
 
 // Tab options
-const tabs = ['All Documents', 'Processing', 'Completed', 'Flagged']
+const tabs = ['All Documents', 'Processing', 'Completed', 'Failed']
 
 type DocumentTabsProps = {
   onTabChange: (tab: string) => void
