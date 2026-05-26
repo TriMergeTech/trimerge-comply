@@ -51,11 +51,10 @@ export default function DocumentsTable({ activeTab, documents, loading }: Docume
 
   // Filter documents based on active tab
   const filteredDocuments = documents.filter((doc) => {
-    if (activeTab === 'All Documents') return true
-    if (activeTab === 'Flagged') return doc.flags > 0
-    return doc.status.toLowerCase() === activeTab.toLowerCase()
+  if (activeTab === 'All Documents') return true
+  return doc.status.toLowerCase() === activeTab.toLowerCase()
   })
-
+  
   // Calculate total pages
   const totalPages = Math.ceil(filteredDocuments.length / ITEMS_PER_PAGE)
 

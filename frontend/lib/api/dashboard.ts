@@ -115,3 +115,31 @@ export async function getDashboardExport(): Promise<DashboardExport> {
     );
     return response.data;
 }
+
+// Export dashboard data as a CSV file download
+// Triggers a file download in the browser
+export async function exportDashboardCSV(): Promise<void> {
+  const token = getAccessToken();
+  const headers: Record<string, string> = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`${BASE}/dashboard/export`, { headers });
+
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.message ?? 'Export failed');
+  }
+
+  // Get the CSV blob from the response
+  const blob = await res.blob();
+
+  // Create a download link and trigger the download
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `trimerge-comply-export-${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+}
