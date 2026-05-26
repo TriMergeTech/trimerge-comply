@@ -57,9 +57,17 @@ export interface UpdateAuditData {
   status?: "draft" | "processing" | "completed" | "flagged";
 }
 
+// Filter parameters for audits
+export interface AuditFilters {
+  status?: string;
+  clientName?: string;
+  auditType?: string;
+  search?: string;
+}
+
 // Get all audits
 export async function getAudits() {
-  const response = await auditFetch<{ success: boolean; message: string; data: { audits: Audit[], total: number } }>("/audits");
+  const response = await auditFetch<{ success: boolean; message: string; data: { audits: Audit[], total: number } }>('/audits');
   return response.data.audits
 }
 

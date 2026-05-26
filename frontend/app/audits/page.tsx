@@ -13,9 +13,10 @@ import {
 
 export default function Audits() {
   const [modalOpen, setModalOpen] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
   const [selectedStatus, setSelectedStatus] = useState('All Status')
   const [selectedType, setSelectedType] = useState('All Types')
-  const [refreshKey, setRefreshKey] = useState(0)
+  const [searchTerm, setSearchTerm] = useState('')
 
   const statusOptions = ['All Status', 'processing', 'draft', 'completed', 'flagged']
   const typeOptions = ['All Types', 'Full Audit', 'Adverse Impact', 'Pay Equity', 'Position Description']
@@ -23,8 +24,15 @@ export default function Audits() {
   // Increment refreshKey to trigger table refresh
   const handleSuccess = useCallback(() => {
     setModalOpen(false)
-    setRefreshKey(prev => prev + 1)
+    setRefreshKey((prev) => prev + 1)
   }, [])
+
+  // Build filters object for the table
+  const filters = {
+    status: selectedStatus,
+    auditType: selectedType,
+    search: searchTerm,
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -60,7 +68,9 @@ export default function Audits() {
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Search audits..."
+            placeholder="Search audits by client name..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
@@ -105,10 +115,8 @@ export default function Audits() {
 
       </div>
 
-      {/* Audits table — refreshKey forces refetch when changed */}
-      <AuditsTable
-        key={refreshKey}
-      />
+      {/* Audits table — passes filters and refresh trigger */}
+      <AuditsTable filters={filters} refreshKey={refreshKey} />
 
     </div>
   )

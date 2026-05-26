@@ -4,8 +4,8 @@
 // Fetches and displays real audit data from the backend API
 // Supports creating, editing and deleting audits
 
-import { useEffect, useState } from 'react'
-import { getAudits, deleteAudit, Audit } from '@/lib/api/audits'
+import { useEffect, useMemo, useState } from 'react'
+import { getAudits, deleteAudit, Audit, AuditFilters } from '@/lib/api/audits'
 import AuditModal from '@/components/audits/AuditModal'
 import {
   DropdownMenu,
@@ -14,6 +14,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
+
+interface AuditsTableProps {
+  filters?: AuditFilters;
+  refreshKey?: number;
+}
 
 // Status color mapping
 function getStatusColor(status: string) {
@@ -37,8 +42,8 @@ function formatDate(dateString: string) {
 
 
 
-export default function AuditsTable() {
-  const [audits, setAudits] = useState<Audit[]>([])
+export default function AuditsTable({ filters, refreshKey }: AuditsTableProps) {
+  const [rawAudits, setRawAudits] = useState<Audit[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -48,9 +53,11 @@ export default function AuditsTable() {
 
   // Fetch audits when component mounts
   async function fetchAudits() {
+    setLoading(true)
     try {
       const data = await getAudits()
-      setAudits(data)
+      setRawAudits(data)
+      setError(null)
     } catch (err) {
       setError('Failed to load audits. Please try again.')
       console.error(err)
@@ -61,7 +68,51 @@ export default function AuditsTable() {
 
   useEffect(() => {
     fetchAudits()
-  }, [])
+  }, [refreshKey])
+
+  const filteredAudits = useMemo(() => {
+    return rawAudits.filter((audit) => {
+      if (filters?.status && filters.status !== 'All Status' && audit.status !== filters.status) {
+        return false
+      }
+
+      if (filters?.search?.trim()) {
+        const searchValue = filters.search.trim().toLowerCase()
+        const organization = audit.organization?.toLowerCase() ?? ''
+        const name = audit.name.toLowerCase()
+        const description = audit.description?.toLowerCase() ?? ''
+
+        if (!organization.includes(searchValue) && !name.includes(searchValue) && !description.includes(searchValue)) {
+          return false
+        }
+      }
+
+      if (filters?.auditType && filters.auditType !== 'All Types') {
+        const typeText = [
+          audit.name,
+          audit.description ?? '',
+          audit.organization ?? '',
+          ((audit as any).auditType || (audit as any).type || '').toString(),
+        ]
+          .join(' ')
+          .toLowerCase()
+
+        const typeMatchers: Record<string, string[]> = {
+          'Full Audit': ['full audit', 'full', 'audit'],
+          'Adverse Impact': ['adverse impact', 'adverse'],
+          'Pay Equity': ['pay equity', 'pay_equity'],
+          'Position Description': ['position description', 'position_description', 'position'],
+        }
+
+        const matchers = typeMatchers[filters.auditType] ?? [filters.auditType.toLowerCase()]
+        if (!matchers.some((term) => typeText.includes(term))) {
+          return false
+        }
+      }
+
+      return true
+    })
+  }, [rawAudits, filters])
 
   // Open edit modal with selected audit
   function handleEdit(audit: Audit) {
@@ -102,7 +153,7 @@ export default function AuditsTable() {
   }
 
   // Empty state
-  if (audits.length === 0) {
+  if (filteredAudits.length === 0) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-10 flex items-center justify-center">
         <p className="text-slate-400 text-sm">No audits found.</p>
@@ -140,7 +191,7 @@ export default function AuditsTable() {
 
             {/* Table rows */}
             <tbody>
-              {audits.map((audit) => (
+              {filteredAudits.map((audit) => (
                 <tr
                   key={audit._id}
                   className="border-b border-slate-50 hover:bg-slate-50 transition-colors"
