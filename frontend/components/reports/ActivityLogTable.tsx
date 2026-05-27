@@ -41,7 +41,7 @@ export default function ActivityLogTable() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
-  const LIMIT = 20
+  const LIMIT = 10
 
   useEffect(() => {
     async function fetchLogs() {
