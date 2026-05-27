@@ -18,10 +18,23 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
+    companyName: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+
     phone: {
       type: String,
       trim: true,
       default: null,
+    },
+
+    // Temporary storage for the new password hash during the change-password OTP flow.
+    // Set on PATCH /auth/change-password, cleared after POST /auth/change-password/verify.
+    pendingPasswordHash: {
+      type: String,
+      select: false,
     },
 
     password: {

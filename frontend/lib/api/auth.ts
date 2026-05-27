@@ -13,6 +13,19 @@ async function post<T>(path: string, body: unknown, token?: string): Promise<T> 
   return (data.data ?? data) as T;
 }
 
+async function patch<T>(path: string, body: unknown, token?: string): Promise<T> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(`${BASE}${path}`, {
+    method: "PATCH",
+    headers,
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message ?? "Request failed");
+  return (data.data ?? data) as T;
+}
+
 async function get<T>(path: string, token: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     method: "GET",
@@ -30,8 +43,11 @@ export interface AuthUser {
   id: string;
   email: string;
   name: string;
+  companyName?: string;
+  phone?: string;
   role: string;
   isVerified: boolean;
+  createdAt?: string;
 }
 
 export interface SignupResponse {
@@ -87,4 +103,25 @@ export function getMe(accessToken: string) {
 
 export function refreshTokens(refreshToken: string) {
   return post<LoginResponse>("/auth/refresh", { refreshToken });
+}
+
+// Update name and/or company name for the logged-in user
+export function changeName(
+  data: { name?: string; companyName?: string },
+  token: string
+) {
+  return patch<{ user: AuthUser }>("/auth/change-name", data, token);
+}
+
+// Step 1 of password change: verify old password, trigger OTP email
+export function changePassword(
+  data: { oldPassword: string; newPassword: string },
+  token: string
+) {
+  return patch<MessageResponse>("/auth/change-password", data, token);
+}
+
+// Step 2 of password change: submit OTP to complete the change
+export function verifyChangePassword(data: { otp: string }, token: string) {
+  return post<MessageResponse>("/auth/change-password/verify", data, token);
 }

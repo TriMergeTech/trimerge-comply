@@ -1,21 +1,27 @@
 import { useState, useEffect } from 'react'
 import { getAccessToken } from '@/lib/authTokens'
+import { getMe } from '@/lib/api/auth'
 
 export interface CurrentUser {
-  name: string      // e.g. "Ibrahim Chhapra"
-  initials: string  // e.g. "IC"
+  name: string       // e.g. "Ibrahim Chhapra"
+  initials: string   // e.g. "IC"
   email: string
   role: string
+  phone?: string       // from /api/auth/me
+  companyName?: string // from /api/auth/me
 }
 
 /**
- * Reads the current user's identity from the stored JWT access token.
- * Uses useEffect so localStorage is only read after hydration — this prevents
- * the server/client HTML mismatch (hydration error) that occurs when reading
- * localStorage synchronously during render.
+ * Fetches the current user from GET /api/auth/me using the stored access token.
+ * Using the API (rather than decoding the JWT payload) ensures real-time,
+ * authoritative data — even for users registered before the JWT payload
+ * included the `name` field, or on live servers where the token may differ.
  *
- * Returns null on first render (server + hydration pass), then updates to
- * the real user once the component mounts in the browser.
+ * Uses useEffect so the fetch only runs after hydration (browser-only),
+ * preventing the server/client HTML mismatch that causes hydration errors.
+ *
+ * Returns null on the first render (server + hydration pass), then the real
+ * user once the component mounts and the API call resolves.
  */
 export function useCurrentUser(): CurrentUser | null {
   const [user, setUser] = useState<CurrentUser | null>(null)
@@ -24,26 +30,26 @@ export function useCurrentUser(): CurrentUser | null {
     const token = getAccessToken()
     if (!token) return
 
-    try {
-      // JWT payload is the middle segment, base64url-encoded
-      const payload = JSON.parse(atob(token.split('.')[1]))
+    getMe(token)
+      .then(({ user: apiUser }) => {
+        const name = apiUser.name ?? ''
+        const initials = name
+          .split(' ')
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((w: string) => w[0].toUpperCase())
+          .join('')
 
-      const name: string  = payload.name  ?? ''
-      const email: string = payload.email ?? ''
-      const role: string  = payload.role  ?? 'analyst'
-
-      // Derive initials: first letter of each word in the name, max 2
-      const initials = name
-        .split(' ')
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((w: string) => w[0].toUpperCase())
-        .join('')
-
-      setUser({ name, email, role, initials })
-    } catch {
-      setUser(null)
-    }
+        setUser({
+          name,
+          initials,
+          email: apiUser.email,
+          role: apiUser.role,
+          phone: apiUser.phone,
+          companyName: apiUser.companyName,
+        })
+      })
+      .catch(() => setUser(null))
   }, [])
 
   return user

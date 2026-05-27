@@ -8,6 +8,10 @@ const {
   resetPassword,
   refreshTokens,
   logout,
+  getMe,
+  changeName,
+  initChangePassword,
+  verifyChangePasswordOTP,
 } = require('../controllers/auth.controller');
 
 const { protect } = require('../middleware/auth.middleware');
@@ -50,5 +54,17 @@ router.post('/refresh', ...refreshTokenRules, validate, refreshTokens);
 
 // POST /api/auth/logout
 router.post('/logout', protect, logout);
+
+// GET /api/auth/me — return current user's full profile
+router.get('/me', protect, getMe);
+
+// PATCH /api/auth/change-name — update name and/or company name
+router.patch('/change-name', protect, changeName);
+
+// PATCH /api/auth/change-password — verify old password, send OTP (step 1)
+router.patch('/change-password', protect, initChangePassword);
+
+// POST /api/auth/change-password/verify — confirm OTP, apply new password (step 2)
+router.post('/change-password/verify', protect, verifyChangePasswordOTP);
 
 module.exports = router;

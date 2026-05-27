@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/jwt');
 const { generateOTP, hashOTP, verifyOTP, getOTPExpiry, isOTPExpired } = require('../utils/otp');
@@ -328,6 +329,191 @@ const logout = async (req, res, next) => {
   }
 };
 
+// ────────────────────────────────────────────────────────────
+// GET /auth/me
+// ────────────────────────────────────────────────────────────
+const getMe = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return sendError(res, { statusCode: 404, message: 'User not found.' });
+    }
+    return sendSuccess(res, {
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          companyName: user.companyName,
+          email: user.email,
+          phone: user.phone,
+          isVerified: user.isVerified,
+          role: user.role,
+          createdAt: user.createdAt,
+        },
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ────────────────────────────────────────────────────────────
+// PATCH /auth/change-name
+// ────────────────────────────────────────────────────────────
+const changeName = async (req, res, next) => {
+  try {
+    const { name, companyName } = req.body;
+
+    if (!name && !companyName) {
+      return sendError(res, {
+        statusCode: 400,
+        message: 'Provide at least one field: name or companyName.',
+      });
+    }
+
+    const updates = {};
+    if (name !== undefined) updates.name = name.trim();
+    if (companyName !== undefined) updates.companyName = companyName.trim();
+
+    await User.findByIdAndUpdate(req.user._id, updates, { runValidators: true });
+
+    return sendSuccess(res, { message: 'Profile updated successfully.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ────────────────────────────────────────────────────────────
+// PATCH /auth/change-password  (step 1 — verify old pw, send OTP)
+// ────────────────────────────────────────────────────────────
+const initChangePassword = async (req, res, next) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+
+    if (!oldPassword || !newPassword) {
+      return sendError(res, { statusCode: 400, message: 'oldPassword and newPassword are required.' });
+    }
+
+    // Validate new password strength (same rules as signup)
+    if (newPassword.length < 8) {
+      return sendError(res, { statusCode: 400, message: 'New password must be at least 8 characters.' });
+    }
+    if (!/[A-Z]/.test(newPassword)) {
+      return sendError(res, { statusCode: 400, message: 'New password must contain at least one uppercase letter.' });
+    }
+    if (!/[0-9]/.test(newPassword)) {
+      return sendError(res, { statusCode: 400, message: 'New password must contain at least one number.' });
+    }
+
+    const user = await User.findById(req.user._id).select('+password +otp.code +otp.expiresAt +otp.purpose');
+    if (!user) {
+      return sendError(res, { statusCode: 404, message: 'User not found.' });
+    }
+
+    // Verify old password
+    const isMatch = await user.comparePassword(oldPassword);
+    if (!isMatch) {
+      return sendError(res, { statusCode: 401, message: 'Current password is incorrect.' });
+    }
+
+    // OTP cooldown — prevent spamming if a valid OTP is already pending
+    if (
+      user.otp?.code &&
+      user.otp?.purpose === 'password_reset' &&
+      !isOTPExpired(user.otp.expiresAt)
+    ) {
+      return sendError(res, {
+        statusCode: 429,
+        message: 'A confirmation code was already sent. Please wait before requesting another.',
+      });
+    }
+
+    // Pre-hash the new password (bypass the pre-save hook on verify step)
+    const rounds = parseInt(process.env.BCRYPT_ROUNDS) || 10;
+    const hashedNewPassword = await bcrypt.hash(newPassword, rounds);
+    user.pendingPasswordHash = hashedNewPassword;
+
+    // Generate and store OTP
+    const otp = generateOTP();
+    const hashedOtp = await hashOTP(otp);
+    user.otp = {
+      code: hashedOtp,
+      expiresAt: getOTPExpiry(),
+      purpose: 'password_reset',
+    };
+
+    await user.save();
+
+    // Fire-and-forget email
+    sendOTPEmail(user.email, otp, 'password_reset').catch((err) =>
+      console.error('[EMAIL] Failed to send change-password OTP:', err.message)
+    );
+
+    return sendSuccess(res, { message: 'OTP sent to email for confirmation.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ────────────────────────────────────────────────────────────
+// POST /auth/change-password/verify  (step 2 — confirm OTP)
+// ────────────────────────────────────────────────────────────
+const verifyChangePasswordOTP = async (req, res, next) => {
+  try {
+    const { otp } = req.body;
+
+    if (!otp) {
+      return sendError(res, { statusCode: 400, message: 'OTP is required.' });
+    }
+
+    const user = await User.findById(req.user._id).select(
+      '+otp.code +otp.expiresAt +otp.purpose +pendingPasswordHash +refreshToken'
+    );
+    if (!user) {
+      return sendError(res, { statusCode: 404, message: 'User not found.' });
+    }
+
+    // Validate OTP exists and is for the right purpose
+    if (!user.otp?.code || user.otp?.purpose !== 'password_reset') {
+      return sendError(res, {
+        statusCode: 410,
+        message: 'No pending password change found. Please restart the process.',
+      });
+    }
+
+    if (isOTPExpired(user.otp.expiresAt)) {
+      return sendError(res, { statusCode: 410, message: 'OTP expired. Please restart the process.' });
+    }
+
+    if (!user.pendingPasswordHash) {
+      return sendError(res, {
+        statusCode: 410,
+        message: 'Session expired. Please restart the process.',
+      });
+    }
+
+    const isValid = await verifyOTP(otp, user.otp.code);
+    if (!isValid) {
+      return sendError(res, { statusCode: 400, message: 'Invalid OTP.' });
+    }
+
+    // Apply the pre-hashed password directly (updateOne bypasses pre-save hook)
+    await User.updateOne(
+      { _id: user._id },
+      {
+        $set: { password: user.pendingPasswordHash, refreshToken: null },
+        $unset: { pendingPasswordHash: '', otp: '' },
+      }
+    );
+
+    return sendSuccess(res, {
+      message: 'Password changed successfully. Please log in again.',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   signup,
   login,
@@ -337,4 +523,8 @@ module.exports = {
   resetPassword,
   refreshTokens,
   logout,
+  getMe,
+  changeName,
+  initChangePassword,
+  verifyChangePasswordOTP,
 };
