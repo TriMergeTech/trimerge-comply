@@ -10,6 +10,9 @@ const {
   logout,
   getMe,
   updateUserRole,
+  changePassword,
+  verifyChangePassword,
+  changeName,
 } = require('../controllers/auth.controller');
 const { protect, requireRole } = require('../middleware/auth.middleware');
 const {
@@ -36,6 +39,11 @@ router.post('/refresh', refreshTokenRules, validate, refreshTokens);
 // ── Protected routes ─────────────────────────────────────────
 router.post('/logout', protect, logout);
 router.get('/me', protect, getMe);
+
+// ── Profile management ───────────────────────────────────────
+router.patch('/change-password', protect, changePassword);
+router.post('/change-password/verify', protect, verifyChangePassword);
+router.patch('/change-name', protect, changeName);
 
 // ── Admin only ───────────────────────────────────────────────
 router.patch('/users/:id/role', protect, requireRole('admin'), updateUserRole);

@@ -43,13 +43,21 @@ const createAudit = async (req, res, next) => {
 // GET /api/audits
 const getAudits = async (req, res, next) => {
   try {
-    const { clientName, auditType } = req.query;
+    const { clientName, auditType, auditName, status } = req.query;
     const filter = {};
-    if (clientName) filter.clientName = { $regex: clientName, $options: 'i' };
+
+    if (clientName) {
+      filter.$or = [
+        { clientName: { $regex: clientName, $options: 'i' } },
+        { organization: { $regex: clientName, $options: 'i' } },
+      ];
+    }
     if (auditType) filter.auditType = { $regex: auditType, $options: 'i' };
+    if (auditName) filter.name = { $regex: auditName, $options: 'i' };
+    if (status) filter.status = status;
 
     const audits = await Audit.find(filter)
-      .populate('createdBy', 'email role')
+      .populate('createdBy', 'name email role companyName')
       .sort({ createdAt: -1 });
 
     return sendSuccess(res, {
@@ -64,7 +72,7 @@ const getAudits = async (req, res, next) => {
 // GET /api/audits/:id
 const getAuditById = async (req, res, next) => {
   try {
-    const audit = await Audit.findById(req.params.id).populate('createdBy', 'email role');
+    const audit = await Audit.findById(req.params.id).populate('createdBy', 'name email role companyName');
     if (!audit) {
       return sendError(res, { statusCode: 404, message: 'Audit not found' });
     }
@@ -84,6 +92,10 @@ const updateAudit = async (req, res, next) => {
     const audit = await Audit.findById(req.params.id);
     if (!audit) {
       return sendError(res, { statusCode: 404, message: 'Audit not found' });
+    }
+
+    if (req.user.role === 'analyst' && audit.createdBy.toString() !== req.user._id.toString()) {
+      return sendError(res, { statusCode: 403, message: 'You can only update audits you created.' });
     }
 
     const changes = {};
@@ -117,10 +129,16 @@ const updateAudit = async (req, res, next) => {
 // DELETE /api/audits/:id
 const deleteAudit = async (req, res, next) => {
   try {
-    const audit = await Audit.findByIdAndDelete(req.params.id);
+    const audit = await Audit.findById(req.params.id);
     if (!audit) {
       return sendError(res, { statusCode: 404, message: 'Audit not found' });
     }
+
+    if (req.user.role === 'analyst' && audit.createdBy.toString() !== req.user._id.toString()) {
+      return sendError(res, { statusCode: 403, message: 'You can only delete audits you created.' });
+    }
+
+    await Audit.findByIdAndDelete(req.params.id);
 
     await ActivityLog.create({
       targetType: 'audit',
@@ -140,11 +158,17 @@ const deleteAudit = async (req, res, next) => {
 // GET /api/audits/export
 const exportAudits = async (req, res, next) => {
   try {
-    const { clientName, auditType, status, ids } = req.query;
+    const { clientName, auditType, status, ids, auditName } = req.query;
 
     const filter = {};
-    if (clientName) filter.clientName = { $regex: clientName, $options: 'i' };
+    if (clientName) {
+      filter.$or = [
+        { clientName: { $regex: clientName, $options: 'i' } },
+        { organization: { $regex: clientName, $options: 'i' } },
+      ];
+    }
     if (auditType) filter.auditType = { $regex: auditType, $options: 'i' };
+    if (auditName) filter.name = { $regex: auditName, $options: 'i' };
     if (status) filter.status = status;
     if (ids) {
       const idArray = ids.split(',').map((id) => id.trim());
@@ -156,18 +180,9 @@ const exportAudits = async (req, res, next) => {
       .sort({ createdAt: -1 });
 
     const headers = [
-      'Audit ID',
-      'Name',
-      'Description',
-      'Status',
-      'Organization',
-      'Client Name',
-      'Audit Type',
-      'Created By (Name)',
-      'Created By (Email)',
-      'Created By (Role)',
-      'Created At',
-      'Updated At',
+      'Audit ID', 'Name', 'Description', 'Status', 'Organization',
+      'Client Name', 'Audit Type', 'Created By (Name)', 'Created By (Email)',
+      'Created By (Role)', 'Created At', 'Updated At',
     ];
 
     const rows = audits.map((audit) => [

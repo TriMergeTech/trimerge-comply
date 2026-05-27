@@ -39,7 +39,9 @@ const options = {
             description: { type: 'string', nullable: true, example: 'Initial audit for Q1 payroll data' },
             status: { type: 'string', enum: ['draft', 'processing', 'completed', 'flagged'], example: 'draft' },
             organization: { type: 'string', nullable: true, example: 'TriMerge Consulting' },
-            createdBy: { type: 'object', properties: { email: { type: 'string' }, role: { type: 'string' } } },
+            clientName: { type: 'string', nullable: true, example: 'ABC Corporation' },
+            auditType: { type: 'string', nullable: true, example: 'Compliance Audit' },
+            createdBy: { type: 'object', properties: { name: { type: 'string' }, email: { type: 'string' }, role: { type: 'string' }, companyName: { type: 'string' } } },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' },
           },
@@ -143,6 +145,76 @@ const options = {
             200: { description: 'User profile returned', content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean', example: true }, data: { type: 'object', properties: { user: { $ref: '#/components/schemas/User' } } } } } } } },
             401: { description: 'Unauthorized' },
           },
+        },
+      },
+      '/api/auth/change-password': {
+        patch: {
+          tags: ['Authentication'],
+          summary: 'Request password change',
+          description: 'Verifies old password and sends OTP to email to confirm the change.',
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['oldPassword', 'newPassword'],
+                  properties: {
+                    oldPassword: { type: 'string', example: 'Password123' },
+                    newPassword: { type: 'string', example: 'NewPassword456' },
+                  },
+                },
+              },
+            },
+          },
+          responses: { 200: { description: 'OTP sent to email for confirmation' }, 400: { description: 'Missing fields' }, 401: { description: 'Old password incorrect' }, 429: { description: 'OTP cooldown active' } },
+        },
+      },
+      '/api/auth/change-password/verify': {
+        post: {
+          tags: ['Authentication'],
+          summary: 'Verify and complete password change',
+          description: 'Submit the OTP received by email to finalize the password change.',
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['otp'],
+                  properties: {
+                    otp: { type: 'string', example: '847291' },
+                  },
+                },
+              },
+            },
+          },
+          responses: { 200: { description: 'Password changed successfully. Please log in again.' }, 400: { description: 'Invalid OTP' }, 410: { description: 'OTP or session expired' }, 429: { description: 'Too many attempts' } },
+        },
+      },
+      '/api/auth/change-name': {
+        patch: {
+          tags: ['Authentication'],
+          summary: 'Update name or company name',
+          description: 'Update the authenticated user name and/or company name.',
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string', example: 'Ibrahim Chhapra' },
+                    companyName: { type: 'string', example: 'TriMerge Consulting' },
+                  },
+                },
+              },
+            },
+          },
+          responses: { 200: { description: 'Profile updated successfully' }, 400: { description: 'No fields provided' }, 401: { description: 'Unauthorized' } },
         },
       },
       '/api/auth/users/{id}/role': {
@@ -287,11 +359,13 @@ const options = {
         get: {
           tags: ['Audits'],
           summary: 'List all audits',
-          description: 'Returns all audits. Supports filtering by clientName and auditType.',
+          description: 'Returns all audits. Supports filtering by auditName, clientName, auditType and status.',
           security: [{ bearerAuth: [] }],
           parameters: [
+            { name: 'auditName', in: 'query', schema: { type: 'string' }, description: 'Filter by audit name (case-insensitive, partial match)' },
             { name: 'clientName', in: 'query', schema: { type: 'string' }, description: 'Filter by client name (case-insensitive, partial match)' },
             { name: 'auditType', in: 'query', schema: { type: 'string' }, description: 'Filter by audit type (case-insensitive, partial match)' },
+            { name: 'status', in: 'query', schema: { type: 'string', enum: ['draft', 'processing', 'completed', 'flagged'] }, description: 'Filter by status' },
           ],
           responses: { 200: { description: 'Audits retrieved successfully' }, 401: { description: 'Unauthorized' } },
         },
@@ -300,10 +374,11 @@ const options = {
         get: {
           tags: ['Audits'],
           summary: 'Export audits as CSV',
-          description: 'Downloads audits as a CSV file. Filter by status, clientName, auditType, or specific IDs.',
+          description: 'Downloads audits as a CSV file. Filter by status, clientName, auditType, auditName, or specific IDs.',
           security: [{ bearerAuth: [] }],
           parameters: [
             { name: 'status', in: 'query', schema: { type: 'string', enum: ['draft', 'processing', 'completed', 'flagged'] }, description: 'Filter by status' },
+            { name: 'auditName', in: 'query', schema: { type: 'string' }, description: 'Filter by audit name' },
             { name: 'clientName', in: 'query', schema: { type: 'string' }, description: 'Filter by client name' },
             { name: 'auditType', in: 'query', schema: { type: 'string' }, description: 'Filter by audit type' },
             { name: 'ids', in: 'query', schema: { type: 'string' }, description: 'Comma-separated list of audit IDs to export' },
