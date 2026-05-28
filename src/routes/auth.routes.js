@@ -13,6 +13,7 @@ const {
   changePassword,
   verifyChangePassword,
   changeName,
+  getUsers,
 } = require('../controllers/auth.controller');
 const { protect, requireRole } = require('../middleware/auth.middleware');
 const {
@@ -44,6 +45,9 @@ router.get('/me', protect, getMe);
 router.patch('/change-password', protect, changePassword);
 router.post('/change-password/verify', protect, verifyChangePassword);
 router.patch('/change-name', protect, changeName);
+
+// ── User management ──────────────────────────────────────────
+router.get('/users', protect, requireRole('analyst', 'admin'), getUsers);
 
 // ── Admin only ───────────────────────────────────────────────
 router.patch('/users/:id/role', protect, requireRole('admin'), updateUserRole);

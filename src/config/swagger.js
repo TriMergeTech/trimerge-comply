@@ -27,7 +27,7 @@ const options = {
             email: { type: 'string', example: 'ibrahim@trimerge.com' },
             phone: { type: 'string', nullable: true },
             isVerified: { type: 'boolean', example: true },
-            role: { type: 'string', enum: ['admin', 'analyst', 'viewer'], example: 'viewer' },
+            role: { type: 'string', enum: ['admin', 'analyst', 'viewer'] },
             createdAt: { type: 'string', format: 'date-time' },
           },
         },
@@ -37,7 +37,7 @@ const options = {
             _id: { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1' },
             name: { type: 'string', example: 'Q1 2026 Pay Equity Review' },
             description: { type: 'string', nullable: true, example: 'Initial audit for Q1 payroll data' },
-            status: { type: 'string', enum: ['draft', 'processing', 'completed', 'flagged'], example: 'draft' },
+            status: { type: 'string', enum: ['draft', 'processing', 'completed', 'flagged'] },
             organization: { type: 'string', nullable: true, example: 'TriMerge Consulting' },
             clientName: { type: 'string', nullable: true, example: 'ABC Corporation' },
             auditType: { type: 'string', nullable: true, example: 'Compliance Audit' },
@@ -58,10 +58,10 @@ const options = {
             selectionRate: { type: 'number', example: 0.6 },
             impactRatio: { type: 'number', example: 0.75 },
             threshold: { type: 'number', example: 0.8 },
-            testType: { type: 'string', enum: ['four_fifths', 'fisher_exact', 'chi_square'], example: 'fisher_exact' },
+            testType: { type: 'string', enum: ['four_fifths', 'fisher_exact', 'chi_square'] },
             pValue: { type: 'number', example: 0.032 },
-            severity: { type: 'string', enum: ['low', 'medium', 'high'], example: 'medium' },
-            status: { type: 'string', enum: ['open', 'reviewed', 'dismissed'], example: 'open' },
+            severity: { type: 'string', enum: ['low', 'medium', 'high'] },
+            status: { type: 'string', enum: ['open', 'reviewed', 'dismissed'] },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' },
           },
@@ -217,14 +217,73 @@ const options = {
           responses: { 200: { description: 'Profile updated successfully' }, 400: { description: 'No fields provided' }, 401: { description: 'Unauthorized' } },
         },
       },
+      '/api/auth/users': {
+        get: {
+          tags: ['User Management'],
+          summary: 'Get all users',
+          description: 'Returns all registered users with their IDs. Requires analyst or admin role.',
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: {
+              description: 'Users retrieved successfully',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      data: {
+                        type: 'object',
+                        properties: {
+                          users: {
+                            type: 'array',
+                            items: {
+                              type: 'object',
+                              properties: {
+                                _id: { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1' },
+                                name: { type: 'string', example: 'Ibrahim Chhapra' },
+                                email: { type: 'string', example: 'ibrahim@trimerge.com' },
+                                role: { type: 'string', enum: ['admin', 'analyst', 'viewer'] },
+                                companyName: { type: 'string', nullable: true, example: 'TriMerge Consulting' },
+                                isVerified: { type: 'boolean', example: true },
+                                createdAt: { type: 'string', format: 'date-time' },
+                              },
+                            },
+                          },
+                          total: { type: 'integer', example: 5 },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Forbidden — insufficient role' },
+          },
+        },
+      },
       '/api/auth/users/{id}/role': {
         patch: {
-          tags: ['Authentication'],
+          tags: ['User Management'],
           summary: 'Update user role',
           description: 'Update a user role. Admin only.',
           security: [{ bearerAuth: [] }],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '64f1a2b3c4d5e6f7a8b9c0d1' }],
-          requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['role'], properties: { role: { type: 'string', enum: ['admin', 'analyst', 'viewer'], example: 'analyst' } } } } } },
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['role'],
+                  properties: {
+                    role: { type: 'string', enum: ['admin', 'analyst', 'viewer'] },
+                  },
+                },
+              },
+            },
+          },
           responses: { 200: { description: 'User role updated successfully' }, 400: { description: 'Invalid role' }, 401: { description: 'Unauthorized' }, 403: { description: 'Forbidden — admin only' }, 404: { description: 'User not found' } },
         },
       },
@@ -258,14 +317,9 @@ const options = {
         get: {
           tags: ['Position Description AI'],
           summary: 'Get position analysis detail view',
-          description: 'Returns the modal/detail payload for one position document, including AI flag summary, AI recommendations, analyst notes, and resolution status.',
-          parameters: [
-            { name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a0f1185927a7ccf9ab71252' },
-          ],
-          responses: {
-            200: { description: 'Position document detail retrieved successfully' },
-            404: { description: 'Position document not found' },
-          },
+          description: 'Returns the detail payload for one position document.',
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a0f1185927a7ccf9ab71252' }],
+          responses: { 200: { description: 'Position document detail retrieved successfully' }, 404: { description: 'Position document not found' } },
         },
       },
       '/api/position/{id}/review': {
@@ -273,9 +327,7 @@ const options = {
           tags: ['Position Description AI'],
           summary: 'Update analyst review fields',
           description: 'Updates user-editable review fields from the position analysis detail modal.',
-          parameters: [
-            { name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a0f1185927a7ccf9ab71252' },
-          ],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a0f1185927a7ccf9ab71252' }],
           requestBody: {
             required: true,
             content: {
@@ -283,51 +335,23 @@ const options = {
                 schema: {
                   type: 'object',
                   properties: {
-                    analystNotes: {
-                      type: 'string',
-                      example: 'Reviewed flagged issues. Recommend updating physical requirement details.',
-                    },
-                    resolutionStatus: {
-                      type: 'string',
-                      enum: ['not_reviewed', 'in_review', 'approved', 'needs_changes', 'dismissed'],
-                      example: 'in_review',
-                    },
+                    analystNotes: { type: 'string', example: 'Reviewed flagged issues.' },
+                    resolutionStatus: { type: 'string', enum: ['not_reviewed', 'in_review', 'approved', 'needs_changes', 'dismissed'] },
                   },
                 },
               },
             },
           },
-          responses: {
-            200: { description: 'Position document review updated successfully' },
-            400: { description: 'Missing review fields' },
-            404: { description: 'Position document not found' },
-            422: { description: 'Invalid resolution status' },
-          },
+          responses: { 200: { description: 'Position document review updated successfully' }, 400: { description: 'Missing review fields' }, 404: { description: 'Position document not found' }, 422: { description: 'Invalid resolution status' } },
         },
       },
       '/api/position/{id}/report': {
         get: {
           tags: ['Position Description AI'],
           summary: 'Download position analysis PDF report',
-          description: 'Downloads a one-page official compliance PDF report with AI findings, AI recommendations, analyst notes, review status, and company name when available.',
-          parameters: [
-            { name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a0f1185927a7ccf9ab71252' },
-          ],
-          responses: {
-            200: {
-              description: 'One-page PDF report downloaded successfully',
-              content: {
-                'application/pdf': {
-                  schema: {
-                    type: 'string',
-                    format: 'binary',
-                  },
-                },
-              },
-            },
-            400: { description: 'Invalid position document id' },
-            404: { description: 'Position document not found' },
-          },
+          description: 'Downloads a one-page official compliance PDF report.',
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a0f1185927a7ccf9ab71252' }],
+          responses: { 200: { description: 'PDF report downloaded successfully', content: { 'application/pdf': { schema: { type: 'string', format: 'binary' } } } }, 400: { description: 'Invalid position document id' }, 404: { description: 'Position document not found' } },
         },
       },
       '/api/payequity/upload': {
@@ -363,7 +387,7 @@ const options = {
           security: [{ bearerAuth: [] }],
           parameters: [
             { name: 'auditName', in: 'query', schema: { type: 'string' }, description: 'Filter by audit name (case-insensitive, partial match)' },
-            { name: 'clientName', in: 'query', schema: { type: 'string' }, description: 'Filter by client name (case-insensitive, partial match)' },
+            { name: 'clientName', in: 'query', schema: { type: 'string' }, description: 'Filter by client name or organization (case-insensitive, partial match)' },
             { name: 'auditType', in: 'query', schema: { type: 'string' }, description: 'Filter by audit type (case-insensitive, partial match)' },
             { name: 'status', in: 'query', schema: { type: 'string', enum: ['draft', 'processing', 'completed', 'flagged'] }, description: 'Filter by status' },
           ],
@@ -402,19 +426,19 @@ const options = {
         patch: {
           tags: ['Audits'],
           summary: 'Update audit',
-          description: 'Update audit fields. Requires analyst or admin role.',
+          description: 'Update audit fields. Analysts can only update their own audits.',
           security: [{ bearerAuth: [] }],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '64f1a2b3c4d5e6f7a8b9c0d1' }],
-          requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', properties: { name: { type: 'string', example: 'Q1 2026 Pay Equity Review — Updated' }, description: { type: 'string', example: 'Updated description' }, organization: { type: 'string', example: 'TriMerge Consulting' }, clientName: { type: 'string', example: 'ABC Corporation' }, auditType: { type: 'string', example: 'Compliance Audit' }, status: { type: 'string', enum: ['draft', 'processing', 'completed', 'flagged'], example: 'processing' } } } } } },
-          responses: { 200: { description: 'Audit updated successfully' }, 401: { description: 'Unauthorized' }, 403: { description: 'Forbidden — insufficient role' }, 404: { description: 'Audit not found' } },
+          requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', properties: { name: { type: 'string', example: 'Q1 2026 Pay Equity Review — Updated' }, description: { type: 'string', example: 'Updated description' }, organization: { type: 'string', example: 'TriMerge Consulting' }, clientName: { type: 'string', example: 'ABC Corporation' }, auditType: { type: 'string', example: 'Compliance Audit' }, status: { type: 'string', enum: ['draft', 'processing', 'completed', 'flagged'] } } } } } },
+          responses: { 200: { description: 'Audit updated successfully' }, 401: { description: 'Unauthorized' }, 403: { description: 'Forbidden — not your audit' }, 404: { description: 'Audit not found' } },
         },
         delete: {
           tags: ['Audits'],
           summary: 'Delete audit',
-          description: 'Permanently delete an audit. Requires admin role.',
+          description: 'Analysts can only delete their own audits. Admins can delete any.',
           security: [{ bearerAuth: [] }],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '64f1a2b3c4d5e6f7a8b9c0d1' }],
-          responses: { 200: { description: 'Audit deleted successfully' }, 401: { description: 'Unauthorized' }, 403: { description: 'Forbidden — admin only' }, 404: { description: 'Audit not found' } },
+          responses: { 200: { description: 'Audit deleted successfully' }, 401: { description: 'Unauthorized' }, 403: { description: 'Forbidden — not your audit' }, 404: { description: 'Audit not found' } },
         },
       },
       '/api/flags': {
@@ -451,7 +475,7 @@ const options = {
           description: 'Analyst approves or dismisses a flag. Requires analyst or admin role.',
           security: [{ bearerAuth: [] }],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a04821729a246ff21797b80' }],
-          requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['decision'], properties: { decision: { type: 'string', enum: ['approved', 'dismissed'], example: 'approved' }, reason: { type: 'string', example: 'Reviewed and confirmed no adverse impact.' } } } } } },
+          requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['decision'], properties: { decision: { type: 'string', enum: ['approved', 'dismissed'] }, reason: { type: 'string', example: 'Reviewed and confirmed no adverse impact.' } } } } } },
           responses: { 200: { description: 'Flag decided successfully' }, 400: { description: 'Invalid decision or flag already reviewed' }, 401: { description: 'Unauthorized' }, 403: { description: 'Forbidden — insufficient role' }, 404: { description: 'Flag not found' } },
         },
       },
@@ -489,7 +513,7 @@ const options = {
                           totalFlags: { type: 'integer', example: 42 },
                           flagsBySeverity: { type: 'object', example: { low: 10, medium: 20, high: 12 } },
                           flagsByStatus: { type: 'object', example: { open: 30, reviewed: 8, dismissed: 4 } },
-                          overallRisk: { type: 'string', enum: ['high', 'medium', 'low', 'none'], example: 'medium' },
+                          overallRisk: { type: 'string', enum: ['high', 'medium', 'low', 'none'] },
                           auditRiskSummaries: { type: 'array', items: { type: 'object' } },
                           recentAudits: { type: 'array', items: { $ref: '#/components/schemas/Audit' } },
                           recentFlags: { type: 'array', items: { $ref: '#/components/schemas/Flag' } },
@@ -549,9 +573,9 @@ const options = {
                               type: 'object',
                               properties: {
                                 id: { type: 'string' },
-                                user: { type: 'object', properties: { name: { type: 'string', example: 'Ibrahim Chhapra' }, email: { type: 'string', example: 'ibrahim@trimerge.com' }, role: { type: 'string', example: 'admin' } } },
-                                action: { type: 'string', example: 'audit_created' },
-                                target: { type: 'object', properties: { type: { type: 'string', example: 'audit' }, audit: { type: 'object', nullable: true }, flag: { type: 'object', nullable: true } } },
+                                user: { type: 'object', properties: { name: { type: 'string', example: 'Ibrahim Chhapra' }, email: { type: 'string', example: 'ibrahim@trimerge.com' }, role: { type: 'string' } } },
+                                action: { type: 'string', enum: ['audit_created', 'audit_updated', 'audit_deleted', 'flag_decided', 'flag_assigned'] },
+                                target: { type: 'object', properties: { type: { type: 'string', enum: ['audit', 'flag'] }, audit: { type: 'object', nullable: true }, flag: { type: 'object', nullable: true } } },
                                 details: { type: 'object' },
                                 date: { type: 'string', format: 'date-time' },
                               },

@@ -272,25 +272,20 @@ const updateUserRole = async (req, res, next) => {
   }
 };
 
-// PATCH /api/auth/change-password
 const changePassword = async (req, res, next) => {
   try {
     const { oldPassword, newPassword } = req.body;
-
     if (!oldPassword || !newPassword) {
       return sendError(res, { statusCode: 400, message: 'Old password and new password are required.' });
     }
-
     const user = await User.findById(req.user._id).select('+password +otpCode +otpExpiresAt +otpPurpose +otpAttempts +otpLastSentAt +passwordResetToken +passwordResetExpires');
     if (!user) {
       return sendError(res, { statusCode: 404, message: 'User not found.' });
     }
-
     const isMatch = await user.comparePassword(oldPassword);
     if (!isMatch) {
       return sendError(res, { statusCode: 401, message: 'Old password is incorrect.' });
     }
-
     if (user.otpLastSentAt) {
       const secondsSinceLastSent = (Date.now() - new Date(user.otpLastSentAt).getTime()) / 1000;
       if (secondsSinceLastSent < OTP_COOLDOWN_SECONDS) {
@@ -298,12 +293,10 @@ const changePassword = async (req, res, next) => {
         return sendError(res, { statusCode: 429, message: `Please wait ${retryAfter} second(s) before requesting another OTP.` });
       }
     }
-
     const otp = generateOTP();
     const hashedOtp = await hashOTP(otp);
     const rounds = parseInt(process.env.BCRYPT_ROUNDS) || 10;
     const hashedNewPassword = await bcrypt.hash(newPassword, rounds);
-
     user.otpCode = hashedOtp;
     user.otpExpiresAt = getOTPExpiry();
     user.otpPurpose = 'password_change';
@@ -312,22 +305,18 @@ const changePassword = async (req, res, next) => {
     user.passwordResetToken = hashedNewPassword;
     user.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
-
     sendOTPEmail(user.email, otp, 'password_change').catch((err) =>
       console.error('[EMAIL] Failed to send password change OTP:', err.message)
     );
-
     return sendSuccess(res, { message: 'OTP sent to your email. Verify to complete password change.' });
   } catch (err) {
     next(err);
   }
 };
 
-// POST /api/auth/change-password/verify
 const verifyChangePassword = async (req, res, next) => {
   try {
     const { otp } = req.body;
-
     const user = await User.findById(req.user._id).select(
       '+otpCode +otpExpiresAt +otpPurpose +otpAttempts +passwordResetToken +passwordResetExpires +refreshToken'
     );
@@ -346,18 +335,15 @@ const verifyChangePassword = async (req, res, next) => {
     if ((user.otpAttempts || 0) >= OTP_MAX_ATTEMPTS) {
       return sendError(res, { statusCode: 429, message: 'Too many invalid OTP attempts. Please request a new OTP.' });
     }
-
     const isValid = await verifyOTP(otp, user.otpCode);
     if (!isValid) {
       user.otpAttempts = (user.otpAttempts || 0) + 1;
       await user.save();
       return sendError(res, { statusCode: 400, message: 'Invalid OTP.' });
     }
-
     if (!user.passwordResetToken || new Date() > user.passwordResetExpires) {
       return sendError(res, { statusCode: 410, message: 'Password change session expired. Please start again.' });
     }
-
     await User.findByIdAndUpdate(user._id, {
       password: user.passwordResetToken,
       passwordResetToken: null,
@@ -369,31 +355,25 @@ const verifyChangePassword = async (req, res, next) => {
       otpLastSentAt: null,
       refreshToken: null,
     });
-
     return sendSuccess(res, { message: 'Password changed successfully. Please log in again.' });
   } catch (err) {
     next(err);
   }
 };
 
-// PATCH /api/auth/change-name
 const changeName = async (req, res, next) => {
   try {
     const { name, companyName } = req.body;
-
     if (!name && !companyName) {
       return sendError(res, { statusCode: 400, message: 'Provide at least a name or companyName to update.' });
     }
-
     const user = await User.findById(req.user._id);
     if (!user) {
       return sendError(res, { statusCode: 404, message: 'User not found.' });
     }
-
     if (name) user.name = name;
     if (companyName) user.companyName = companyName;
     await user.save();
-
     return sendSuccess(res, {
       message: 'Profile updated successfully.',
       data: { user: user.toPublicJSON() },
@@ -403,4 +383,18 @@ const changeName = async (req, res, next) => {
   }
 };
 
-module.exports = { signup, login, verifyOTPHandler, resendOTP, forgotPassword, resetPassword, refreshTokens, logout, getMe, updateUserRole, changePassword, verifyChangePassword, changeName };
+const getUsers = async (req, res, next) => {
+  try {
+    const users = await User.find()
+      .select('_id name email role companyName isVerified createdAt')
+      .sort({ createdAt: -1 });
+    return sendSuccess(res, {
+      message: 'Users retrieved successfully',
+      data: { users, total: users.length },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { signup, login, verifyOTPHandler, resendOTP, forgotPassword, resetPassword, refreshTokens, logout, getMe, updateUserRole, changePassword, verifyChangePassword, changeName, getUsers };
