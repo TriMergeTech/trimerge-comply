@@ -102,7 +102,7 @@ export default function AssignRoleTab() {
                   : 'Select a user'}
               <ChevronDown size={14} className="text-slate-400 shrink-0" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-80">
+            <DropdownMenuContent className="w-80" side="bottom" align="start" avoidCollisions={false}>
               {users.map((user) => (
                 <DropdownMenuItem
                   key={user._id}
