@@ -7,8 +7,9 @@ import { useCurrentUser } from '@/lib/hooks/useCurrentUser'
 import { getAccessToken } from '@/lib/authTokens'
 import { clearTokens } from '@/lib/authTokens'
 import { changeName, changePassword, verifyChangePassword } from '@/lib/api/auth'
+import AssignRoleTab  from '@/components/settings/AssignRoleTab'
 
-type Tab = 'profile' | 'password'
+type Tab = 'profile' | 'password' | 'assign-role'
 type PwStep = 'form' | 'otp'
 
 export default function SettingsPage() {
@@ -103,24 +104,34 @@ export default function SettingsPage() {
       <div className="flex border-b border-slate-200 gap-6">
         <button
           onClick={() => setActiveTab('profile')}
-          className={`pb-3 text-sm font-medium transition-colors ${
-            activeTab === 'profile'
+          className={`pb-3 text-sm font-medium transition-colors ${activeTab === 'profile'
               ? 'border-b-2 border-indigo-600 text-indigo-600'
               : 'text-slate-400 hover:text-slate-600'
-          }`}
+            }`}
         >
           Profile Info
         </button>
         <button
           onClick={() => setActiveTab('password')}
-          className={`pb-3 text-sm font-medium transition-colors ${
-            activeTab === 'password'
+          className={`pb-3 text-sm font-medium transition-colors ${activeTab === 'password'
               ? 'border-b-2 border-indigo-600 text-indigo-600'
               : 'text-slate-400 hover:text-slate-600'
-          }`}
+            }`}
         >
           Change Password
         </button>
+        {/* Assign Role tab — only visible to admins */}
+        {user?.role === 'admin' && (
+          <button
+            onClick={() => setActiveTab('assign-role')}
+            className={`pb-3 text-sm font-medium transition-colors ${activeTab === 'assign-role'
+                ? 'border-b-2 border-indigo-600 text-indigo-600'
+                : 'text-slate-400 hover:text-slate-600'
+              }`}
+          >
+            Assign Role
+          </button>
+        )}
       </div>
 
       {/* ── Profile Info Tab ─────────────────────────────────── */}
@@ -364,6 +375,11 @@ export default function SettingsPage() {
           )}
 
         </div>
+      )}
+
+      {/* ── Assign Role Tab — admin only ────────────────────── */}
+      {activeTab === 'assign-role' && user?.role === 'admin' && (
+        <AssignRoleTab />
       )}
 
     </div>

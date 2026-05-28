@@ -125,3 +125,17 @@ export function changePassword(
 export function verifyChangePassword(data: { otp: string }, token: string) {
   return post<MessageResponse>("/auth/change-password/verify", data, token);
 }
+
+// Update user role — admin only
+export function updateUserRole(
+  id: string,
+  role: 'admin' | 'analyst' | 'viewer',
+  token: string
+) {
+  return patch<{ user: AuthUser }>(`/auth/users/${id}/role`, { role }, token)
+}
+
+// Get all users — admin only
+export function getUsers(token: string) {
+  return get<{ users: { _id: string; name: string; email: string; role: string; companyName?: string; isVerified: boolean; createdAt: string }[] }>('/auth/users', token)
+}
