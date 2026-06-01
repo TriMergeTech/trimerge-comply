@@ -84,4 +84,4 @@ const getFlagById = async (req, res, next) => {
   }
 };
 
-module.exports = { getFlags, getFlagById };s
+module.exports = { getFlags, getFlagById };
