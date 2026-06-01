@@ -7,6 +7,11 @@ const flagSchema = new mongoose.Schema(
       ref: 'Audit',
       required: true,
     },
+    companyName: {
+      type: String,
+      trim: true,
+      default: null,
+    },
     group: {
       type: String,
       required: true,
@@ -65,9 +70,9 @@ const flagSchema = new mongoose.Schema(
 );
 
 flagSchema.index({ auditId: 1 });
+flagSchema.index({ companyName: 1 });
 flagSchema.index({ status: 1 });
 flagSchema.index({ severity: 1 });
-
 flagSchema.index({ testType: 1 });
 flagSchema.index({ createdAt: -1 });
 

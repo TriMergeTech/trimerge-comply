@@ -13,6 +13,7 @@ const createAudit = async (req, res, next) => {
       clientName,
       auditType,
       createdBy: req.user._id,
+      companyName: req.user.companyName,
     });
 
     await ActivityLog.create({
@@ -20,6 +21,7 @@ const createAudit = async (req, res, next) => {
       targetId: audit._id,
       auditId: audit._id,
       performedBy: req.user._id,
+      companyName: req.user.companyName,
       action: 'audit_created',
       details: {
         name: audit.name,
@@ -44,7 +46,7 @@ const createAudit = async (req, res, next) => {
 const getAudits = async (req, res, next) => {
   try {
     const { clientName, auditType, auditName, status } = req.query;
-    const filter = {};
+    const filter = { companyName: req.user.companyName };
 
     if (clientName) {
       filter.$or = [
@@ -72,7 +74,11 @@ const getAudits = async (req, res, next) => {
 // GET /api/audits/:id
 const getAuditById = async (req, res, next) => {
   try {
-    const audit = await Audit.findById(req.params.id).populate('createdBy', 'name email role companyName');
+    const audit = await Audit.findOne({
+      _id: req.params.id,
+      companyName: req.user.companyName,
+    }).populate('createdBy', 'name email role companyName');
+
     if (!audit) {
       return sendError(res, { statusCode: 404, message: 'Audit not found' });
     }
@@ -89,7 +95,11 @@ const getAuditById = async (req, res, next) => {
 const updateAudit = async (req, res, next) => {
   try {
     const { name, description, organization, status, clientName, auditType } = req.body;
-    const audit = await Audit.findById(req.params.id);
+    const audit = await Audit.findOne({
+      _id: req.params.id,
+      companyName: req.user.companyName,
+    });
+
     if (!audit) {
       return sendError(res, { statusCode: 404, message: 'Audit not found' });
     }
@@ -113,6 +123,7 @@ const updateAudit = async (req, res, next) => {
       targetId: audit._id,
       auditId: audit._id,
       performedBy: req.user._id,
+      companyName: req.user.companyName,
       action: 'audit_updated',
       details: { changes },
     });
@@ -129,7 +140,11 @@ const updateAudit = async (req, res, next) => {
 // DELETE /api/audits/:id
 const deleteAudit = async (req, res, next) => {
   try {
-    const audit = await Audit.findById(req.params.id);
+    const audit = await Audit.findOne({
+      _id: req.params.id,
+      companyName: req.user.companyName,
+    });
+
     if (!audit) {
       return sendError(res, { statusCode: 404, message: 'Audit not found' });
     }
@@ -145,6 +160,7 @@ const deleteAudit = async (req, res, next) => {
       targetId: audit._id,
       auditId: audit._id,
       performedBy: req.user._id,
+      companyName: req.user.companyName,
       action: 'audit_deleted',
       details: { name: audit.name, organization: audit.organization },
     });
@@ -159,8 +175,8 @@ const deleteAudit = async (req, res, next) => {
 const exportAudits = async (req, res, next) => {
   try {
     const { clientName, auditType, status, ids, auditName } = req.query;
+    const filter = { companyName: req.user.companyName };
 
-    const filter = {};
     if (clientName) {
       filter.$or = [
         { clientName: { $regex: clientName, $options: 'i' } },
@@ -204,11 +220,9 @@ const exportAudits = async (req, res, next) => {
       row.map((field) => `"${String(field).replace(/"/g, '""')}"`).join(',')
     );
 
-    const csv = csvLines.join('\n');
-
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', 'attachment; filename="audits-export.csv"');
-    return res.send(csv);
+    return res.send(csvLines.join('\n'));
   } catch (err) {
     next(err);
   }

@@ -14,16 +14,17 @@ const decideFlag = async (req, res, next) => {
       });
     }
 
-    const flag = await Flag.findById(req.params.id);
+    const flag = await Flag.findOne({
+      _id: req.params.id,
+      companyName: req.user.companyName,
+    });
+
     if (!flag) {
       return sendError(res, { statusCode: 404, message: 'Flag not found' });
     }
 
     if (flag.status !== 'open') {
-      return sendError(res, {
-        statusCode: 400,
-        message: 'Flag has already been reviewed.',
-      });
+      return sendError(res, { statusCode: 400, message: 'Flag has already been reviewed.' });
     }
 
     flag.status = 'reviewed';
@@ -35,6 +36,7 @@ const decideFlag = async (req, res, next) => {
       flagId: flag._id,
       auditId: flag.auditId,
       performedBy: req.user._id,
+      companyName: req.user.companyName,
       action: 'flag_decided',
       details: { decision, reason: reason || null },
     });
@@ -54,13 +56,14 @@ const assignFlag = async (req, res, next) => {
     const { assignedTo } = req.body;
 
     if (!assignedTo) {
-      return sendError(res, {
-        statusCode: 400,
-        message: 'assignedTo user ID is required.',
-      });
+      return sendError(res, { statusCode: 400, message: 'assignedTo user ID is required.' });
     }
 
-    const flag = await Flag.findById(req.params.id);
+    const flag = await Flag.findOne({
+      _id: req.params.id,
+      companyName: req.user.companyName,
+    });
+
     if (!flag) {
       return sendError(res, { statusCode: 404, message: 'Flag not found' });
     }
@@ -71,6 +74,7 @@ const assignFlag = async (req, res, next) => {
       flagId: flag._id,
       auditId: flag.auditId,
       performedBy: req.user._id,
+      companyName: req.user.companyName,
       action: 'flag_assigned',
       details: { assignedTo },
     });

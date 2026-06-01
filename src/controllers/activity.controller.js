@@ -4,29 +4,20 @@ const { sendSuccess } = require('../utils/response');
 // GET /api/activity
 const getActivityLogs = async (req, res, next) => {
   try {
-    const {
-      targetType,
-      action,
-      performedBy,
-      auditId,
-      page = 1,
-      limit = 20,
-    } = req.query;
-    
-    const filter = {};
+    const { targetType, action, performedBy, auditId, page = 1, limit = 20 } = req.query;
+
+    const filter = { companyName: req.user.companyName };
     if (targetType) filter.targetType = targetType;
     if (action) filter.action = action;
     if (auditId) filter.auditId = auditId;
 
-    // Analysts only see their own logs, admins see everyone
     if (req.user.role === 'analyst') {
-       filter.performedBy = req.user._id;
+      filter.performedBy = req.user._id;
     } else if (performedBy) {
-       filter.performedBy = performedBy;
+      filter.performedBy = performedBy;
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
-
     const [logs, total] = await Promise.all([
       ActivityLog.find(filter)
         .populate('performedBy', 'name email role')
@@ -38,7 +29,6 @@ const getActivityLogs = async (req, res, next) => {
       ActivityLog.countDocuments(filter),
     ]);
 
-    // Format into table-friendly shape
     const formatted = logs.map((log) => ({
       id: log._id,
       user: log.performedBy

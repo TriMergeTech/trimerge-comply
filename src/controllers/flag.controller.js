@@ -2,33 +2,18 @@ const Flag = require('../models/Flag');
 const { sendSuccess, sendError } = require('../utils/response');
 
 const generateExplanation = (flag) => {
-  const {
-    group,
-    referenceGroup,
-    selectionRate,
-    impactRatio,
-    threshold,
-    testType,
-    pValue,
-    severity,
-    flagged,
-  } = flag;
-
+  const { group, referenceGroup, selectionRate, impactRatio, threshold, testType, pValue, severity, flagged } = flag;
   const selectionPct = (selectionRate * 100).toFixed(1);
   const impactPct = (impactRatio * 100).toFixed(1);
   const thresholdPct = (threshold * 100).toFixed(1);
-
   let explanation = `The ${group} group has a selection rate of ${selectionPct}% compared to the reference group (${referenceGroup}), resulting in an impact ratio of ${impactPct}% — `;
-
   explanation += flagged
     ? `below the ${thresholdPct}% threshold, indicating potential adverse impact.`
     : `above the ${thresholdPct}% threshold, no adverse impact detected.`;
-
   if (pValue !== null && pValue !== undefined) {
     const significant = pValue < 0.05;
     explanation += ` ${testType === 'fisher_exact' ? "Fisher's Exact Test" : 'Chi-Square Test'} returned a p-value of ${pValue}, which is ${significant ? 'statistically significant (p < 0.05)' : 'not statistically significant (p ≥ 0.05)'}.`;
   }
-
   if (severity === 'high') {
     explanation += ' This flag is rated HIGH severity and requires immediate review.';
   } else if (severity === 'medium') {
@@ -36,30 +21,21 @@ const generateExplanation = (flag) => {
   } else {
     explanation += ' This flag is rated LOW severity.';
   }
-
   return explanation;
 };
 
 // GET /api/flags
 const getFlags = async (req, res, next) => {
   try {
-    const {
-      auditId,
-      status,
-      severity,
-      testType,
-      page = 1,
-      limit = 20,
-    } = req.query;
+    const { auditId, status, severity, testType, page = 1, limit = 20 } = req.query;
 
-    const filter = {};
+    const filter = { companyName: req.user.companyName };
     if (auditId) filter.auditId = auditId;
     if (status) filter.status = status;
     if (severity) filter.severity = severity;
     if (testType) filter.testType = testType;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
-
     const [flags, total] = await Promise.all([
       Flag.find(filter)
         .populate('auditId', 'name organization status')
@@ -89,16 +65,16 @@ const getFlags = async (req, res, next) => {
 // GET /api/flags/:id
 const getFlagById = async (req, res, next) => {
   try {
-    const flag = await Flag.findById(req.params.id).populate(
-      'auditId',
-      'name organization status'
-    );
+    const flag = await Flag.findOne({
+      _id: req.params.id,
+      companyName: req.user.companyName,
+    }).populate('auditId', 'name organization status');
+
     if (!flag) {
       return sendError(res, { statusCode: 404, message: 'Flag not found' });
     }
 
     const explanation = generateExplanation(flag);
-
     return sendSuccess(res, {
       message: 'Flag retrieved successfully',
       data: { flag, explanation },
@@ -108,4 +84,4 @@ const getFlagById = async (req, res, next) => {
   }
 };
 
-module.exports = { getFlags, getFlagById };
+module.exports = { getFlags, getFlagById };s

@@ -2,7 +2,6 @@ const Audit = require('../models/Audit');
 const Flag = require('../models/Flag');
 const { sendSuccess } = require('../utils/response');
 
-// ─── Risk Summary Helper ──────────────────────────────────────
 const calculateAuditRisk = (flagCounts) => {
   if (flagCounts.high > 0) return 'high';
   if (flagCounts.medium > 0) return 'medium';
@@ -10,7 +9,6 @@ const calculateAuditRisk = (flagCounts) => {
   return 'none';
 };
 
-// ─── CSV Helper ───────────────────────────────────────────────
 const toCSV = (headers, rows) => {
   const lines = [headers, ...rows].map((row) =>
     row.map((field) => `"${String(field ?? '').replace(/"/g, '""')}"`).join(',')
@@ -21,6 +19,8 @@ const toCSV = (headers, rows) => {
 // GET /api/dashboard/summary
 const getDashboardSummary = async (req, res, next) => {
   try {
+    const company = { companyName: req.user.companyName };
+
     const [
       totalAudits,
       auditsByStatus,
@@ -31,14 +31,15 @@ const getDashboardSummary = async (req, res, next) => {
       recentFlags,
       flagsPerAudit,
     ] = await Promise.all([
-      Audit.countDocuments(),
-      Audit.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
-      Flag.countDocuments(),
-      Flag.aggregate([{ $group: { _id: '$severity', count: { $sum: 1 } } }]),
-      Flag.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
-      Audit.find().sort({ createdAt: -1 }).limit(5).populate('createdBy', 'email role'),
-      Flag.find().sort({ createdAt: -1 }).limit(5).populate('auditId', 'name organization'),
+      Audit.countDocuments(company),
+      Audit.aggregate([{ $match: company }, { $group: { _id: '$status', count: { $sum: 1 } } }]),
+      Flag.countDocuments(company),
+      Flag.aggregate([{ $match: company }, { $group: { _id: '$severity', count: { $sum: 1 } } }]),
+      Flag.aggregate([{ $match: company }, { $group: { _id: '$status', count: { $sum: 1 } } }]),
+      Audit.find(company).sort({ createdAt: -1 }).limit(5).populate('createdBy', 'email role'),
+      Flag.find(company).sort({ createdAt: -1 }).limit(5).populate('auditId', 'name organization'),
       Flag.aggregate([
+        { $match: company },
         {
           $group: {
             _id: { auditId: '$auditId', severity: '$severity', status: '$status' },
@@ -87,13 +88,10 @@ const getDashboardSummary = async (req, res, next) => {
 
     const severityCounts = normalizeAgg(flagsBySeverity);
     const overallRisk =
-      (severityCounts.high || 0) > 0
-        ? 'high'
-        : (severityCounts.medium || 0) > 0
-        ? 'medium'
-        : (severityCounts.low || 0) > 0
-        ? 'low'
-        : 'none';
+      (severityCounts.high || 0) > 0 ? 'high'
+      : (severityCounts.medium || 0) > 0 ? 'medium'
+      : (severityCounts.low || 0) > 0 ? 'low'
+      : 'none';
 
     return sendSuccess(res, {
       message: 'Dashboard summary retrieved successfully',
@@ -117,12 +115,13 @@ const getDashboardSummary = async (req, res, next) => {
 // GET /api/dashboard/export
 const exportDashboard = async (req, res, next) => {
   try {
+    const company = { companyName: req.user.companyName };
+
     const [audits, flags] = await Promise.all([
-      Audit.find().sort({ createdAt: -1 }).populate('createdBy', 'name email role'),
-      Flag.find().sort({ createdAt: -1 }).populate('auditId', 'name organization'),
+      Audit.find(company).sort({ createdAt: -1 }).populate('createdBy', 'name email role'),
+      Flag.find(company).sort({ createdAt: -1 }).populate('auditId', 'name organization'),
     ]);
 
-    // ── Audits CSV ──────────────────────────────────────────
     const auditHeaders = [
       'Audit ID', 'Name', 'Description', 'Status', 'Organization',
       'Client Name', 'Audit Type', 'Created By (Name)', 'Created By (Email)',
@@ -143,7 +142,6 @@ const exportDashboard = async (req, res, next) => {
       a.updatedAt ? new Date(a.updatedAt).toISOString() : '',
     ]);
 
-    // ── Flags CSV ───────────────────────────────────────────
     const flagHeaders = [
       'Flag ID', 'Audit Name', 'Audit Organization', 'Group', 'Reference Group',
       'Selected', 'Total', 'Selection Rate', 'Impact Ratio', 'Threshold',
@@ -167,10 +165,7 @@ const exportDashboard = async (req, res, next) => {
       f.createdAt ? new Date(f.createdAt).toISOString() : '',
     ]);
 
-    const auditCSV = toCSV(auditHeaders, auditRows);
-    const flagCSV = toCSV(flagHeaders, flagRows);
-
-    const combined = `AUDITS\n${auditCSV}\n\nFLAGS\n${flagCSV}`;
+    const combined = `AUDITS\n${toCSV(auditHeaders, auditRows)}\n\nFLAGS\n${toCSV(flagHeaders, flagRows)}`;
 
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', 'attachment; filename="dashboard-export.csv"');

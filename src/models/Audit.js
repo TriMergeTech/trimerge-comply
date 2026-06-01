@@ -24,12 +24,17 @@ const auditSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
-    clientName: {                                    // 👈 add
+    clientName: {
       type: String,
       trim: true,
       default: null,
     },
-    auditType: {                                     // 👈 add
+    auditType: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    companyName: {
       type: String,
       trim: true,
       default: null,
@@ -47,6 +52,7 @@ auditSchema.index({ clientName: 1 });
 auditSchema.index({ auditType: 1 });
 auditSchema.index({ status: 1 });
 auditSchema.index({ createdBy: 1 });
+auditSchema.index({ companyName: 1 });
 auditSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Audit', auditSchema);

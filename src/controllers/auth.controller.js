@@ -251,13 +251,17 @@ const getMe = async (req, res, next) => {
   }
 };
 
+// Admin only — scoped to same company
 const updateUserRole = async (req, res, next) => {
   try {
     const { role } = req.body;
     if (!['admin', 'analyst', 'viewer'].includes(role)) {
       return sendError(res, { statusCode: 400, message: 'Role must be admin, analyst, or viewer.' });
     }
-    const user = await User.findById(req.params.id);
+    const user = await User.findOne({
+      _id: req.params.id,
+      companyName: req.user.companyName,
+    });
     if (!user) {
       return sendError(res, { statusCode: 404, message: 'User not found.' });
     }
@@ -383,9 +387,10 @@ const changeName = async (req, res, next) => {
   }
 };
 
+// Scoped to same company
 const getUsers = async (req, res, next) => {
   try {
-    const users = await User.find()
+    const users = await User.find({ companyName: req.user.companyName })
       .select('_id name email role companyName isVerified createdAt')
       .sort({ createdAt: -1 });
     return sendSuccess(res, {

@@ -2,7 +2,6 @@ const mongoose = require('mongoose');
 
 const activityLogSchema = new mongoose.Schema(
   {
-    // What was acted on
     targetType: {
       type: String,
       enum: ['audit', 'flag'],
@@ -13,8 +12,6 @@ const activityLogSchema = new mongoose.Schema(
       required: true,
       refPath: 'targetType',
     },
-
-    // Optional references
     auditId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Audit',
@@ -25,15 +22,16 @@ const activityLogSchema = new mongoose.Schema(
       ref: 'Flag',
       default: null,
     },
-
-    // Who did it
     performedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
     },
-
-    // What they did
+    companyName: {
+      type: String,
+      trim: true,
+      default: null,
+    },
     action: {
       type: String,
       enum: [
@@ -45,8 +43,6 @@ const activityLogSchema = new mongoose.Schema(
       ],
       required: true,
     },
-
-    // Details
     details: {
       type: mongoose.Schema.Types.Mixed,
       default: {},
@@ -60,6 +56,7 @@ activityLogSchema.index({ auditId: 1 });
 activityLogSchema.index({ flagId: 1 });
 activityLogSchema.index({ performedBy: 1 });
 activityLogSchema.index({ action: 1 });
+activityLogSchema.index({ companyName: 1 });
 activityLogSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('ActivityLog', activityLogSchema);
