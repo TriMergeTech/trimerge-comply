@@ -6,9 +6,10 @@ const AUTH_PATHS = ["/login", "/signup", "/forgot-password", "/reset-password", 
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAuth = AUTH_PATHS.some((p) => pathname.startsWith(p));
+  const isNoShell = pathname === "/" || AUTH_PATHS.some((p) => pathname.startsWith(p));
 
-  if (isAuth) return <>{children}</>;
+  if (isNoShell) return <>{children}</>;
+
 
   return (
     <div className="flex flex-row h-screen overflow-hidden bg-slate-50">
