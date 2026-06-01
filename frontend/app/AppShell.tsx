@@ -2,11 +2,11 @@
 import { usePathname } from "next/navigation";
 import Sidebar from "@/components/sharedComponents/Sidebar";
 
-const AUTH_PATHS = ["/landing-page", "/login", "/signup", "/forgot-password", "/reset-password", "/verify-otp", "/security"];
+const AUTH_PATHS = ["/login", "/signup", "/forgot-password", "/reset-password", "/verify-otp", "/security"];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isNoShell = AUTH_PATHS.some((p) => pathname.startsWith(p));
+  const isNoShell = pathname === "/" || AUTH_PATHS.some((p) => pathname.startsWith(p));
 
   if (isNoShell) return <>{children}</>;
 
