@@ -2,13 +2,14 @@
 import { usePathname } from "next/navigation";
 import Sidebar from "@/components/sharedComponents/Sidebar";
 
-const AUTH_PATHS = ["/login", "/signup", "/forgot-password", "/reset-password", "/verify-otp", "/security"];
+const AUTH_PATHS = ["/landing-page", "/login", "/signup", "/forgot-password", "/reset-password", "/verify-otp", "/security"];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAuth = AUTH_PATHS.some((p) => pathname.startsWith(p));
+  const isNoShell = AUTH_PATHS.some((p) => pathname.startsWith(p));
 
-  if (isAuth) return <>{children}</>;
+  if (isNoShell) return <>{children}</>;
+
 
   return (
     <div className="flex flex-row h-screen overflow-hidden bg-slate-50">
