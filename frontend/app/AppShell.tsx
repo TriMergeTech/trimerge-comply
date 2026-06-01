@@ -6,7 +6,7 @@ const AUTH_PATHS = ["/login", "/signup", "/forgot-password", "/reset-password", 
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isNoShell = pathname === "/" || AUTH_PATHS.some((p) => pathname.startsWith(p));
+  const isNoShell = pathname === "/" || pathname.startsWith("/landing-page") || AUTH_PATHS.some((p) => pathname.startsWith(p));
 
   if (isNoShell) return <>{children}</>;
 

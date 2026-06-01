@@ -7,7 +7,7 @@ function isAuthPath(pathname: string) {
 }
 
 function isProtectedPath(pathname: string) {
-  return !isAuthPath(pathname) && pathname !== "/";
+  return !isAuthPath(pathname) && pathname !== "/" && pathname !== "/landing-page";
 }
 
 export function middleware(request: NextRequest) {
