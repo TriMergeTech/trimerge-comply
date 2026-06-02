@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ChevronDown, Shield, Menu, X } from "lucide-react";
+import Image from "next/image";
+import { ChevronDown, Menu, X } from "lucide-react";
 
 export default function LandingNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -11,10 +12,15 @@ export default function LandingNav() {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0d0f2b] border-b border-white/10 h-16">
       <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-[#1a1f6e] rounded-lg flex items-center justify-center">
-            <Shield className="w-4 h-4 text-white" />
-          </div>
+        <Link href="/" className="flex items-center gap-2.5">
+          <Image
+            src="/logo.png"
+            alt="TriMerge Comply"
+            width={36}
+            height={36}
+            className="h-9 w-9 object-contain"
+            priority
+          />
           <div className="leading-none">
             <span className="text-white font-bold text-lg block leading-tight">TriMerge</span>
             <span className="text-[#818cf8] font-bold text-xs tracking-widest uppercase">COMPLY</span>
