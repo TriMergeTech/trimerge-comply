@@ -1,0 +1,18 @@
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+const { PrismaClient } = require('@prisma/client');
+
+@Injectable()
+export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+  [key: string]: any;
+  private readonly logger = new Logger(PrismaService.name);
+
+  async onModuleInit() {
+    await this.$connect();
+    this.logger.log('Prisma connected to MongoDB');
+  }
+
+  async onModuleDestroy() {
+    await this.$disconnect();
+    this.logger.log('Prisma disconnected from MongoDB');
+  }
+}

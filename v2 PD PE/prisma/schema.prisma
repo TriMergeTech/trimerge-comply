@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                      String   @id @default(auto()) @map("_id") @db.ObjectId
+  email                   String   @unique
+  password                String
+  firstName               String?
+  lastName                String?
+  companyName             String?
+  isVerified              Boolean  @default(false)
+  verificationCode        String?
+  verificationCodeExpires DateTime?
+  role                    Role     @default(USER)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@map("users")
+}
+
+model PositionDocument {
+  id                   String                   @id @default(auto()) @map("_id") @db.ObjectId
+  fileName             String
+  mimeType             String
+  sizeBytes            Int                      @default(0)
+  storage              Json?
+  uploadedBy           Json?
+  textLength           Int                      @default(0)
+  extractedTextPreview String?
+  aiConfigured         Boolean                  @default(false)
+  analysisStatus       PositionAnalysisStatus   @default(STORED)
+  analysis             Json?
+  analystNotes         String                   @default("")
+  resolutionStatus     PositionResolutionStatus @default(NOT_REVIEWED)
+  reviewedBy           Json?
+  reviewedAt           DateTime?
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+
+  @@map("position_documents")
+}
+
+model PayEquityAnalysis {
+  id         String          @id @default(auto()) @map("_id") @db.ObjectId
+  fileName   String
+  mimeType   String          @default("text/csv")
+  sizeBytes  Int             @default(0)
+  storage    Json?
+  uploadedBy Json?
+  dataset    Json?
+  model      Json?
+  payGaps    Json?
+  summary    Json?
+  warnings   Json?
+  uiSummary  Json?
+  status     PayEquityStatus @default(PROCESSED)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@map("pay_equity_analyses")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum PositionAnalysisStatus {
+  STORED
+  SKIPPED
+  COMPLETED
+  FAILED
+}
+
+enum PositionResolutionStatus {
+  NOT_REVIEWED
+  IN_REVIEW
+  APPROVED
+  NEEDS_CHANGES
+  DISMISSED
+}
+
+enum PayEquityStatus {
+  PROCESSED
+  FAILED
+}
