@@ -17,6 +17,45 @@ export interface PositionDocument {
   view: string | null;
 }
 
+// Individual flag found by AI analysis
+export interface PositionFlagSummary {
+  id: string;
+  title: string;
+  severity: 'low' | 'medium' | 'high';
+  category: string;
+  evidence: string;
+  explanation: string;
+}
+
+// Full detail response for a single position document
+export interface PositionDocumentDetail {
+  id: string;
+  documentName: string;
+  status: string;
+  flags: number;
+  uploadedBy: string;
+  date: string;
+  fileName: string;
+  mimeType: string;
+  storage: {
+    publicId: string;
+    secureUrl: string;
+    resourceType: string;
+    bytes: number;
+    createdAt: string;
+    originalFilename: string;
+  };
+  summary: string;
+  overallRisk: 'low' | 'medium' | 'high';
+  flagSummary: PositionFlagSummary[];
+  aiRecommendations: string[];
+  analystNotes: string;
+  resolutionStatus: string;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  textPreview: string;
+}
+
 // Upload response type
 export interface PositionUploadResponse {
   message: string;
@@ -44,6 +83,12 @@ async function positionFetch<T>(path: string, options?: RequestInit): Promise<T>
 export async function getPositionDocuments(): Promise<PositionDocument[]> {
   const res = await positionFetch<{ success: boolean; data: { documents: PositionDocument[] } }>('/position');
   return res.data.documents;
+}
+
+// Get a single position document's full detail (flags, AI recs, preview)
+export async function getPositionDocumentById(id: string): Promise<PositionDocumentDetail> {
+  const res = await positionFetch<{ success: boolean; data: { document: PositionDocumentDetail } }>(`/position/${id}`);
+  return res.data.document;
 }
 
 // Upload a position description file for AI analysis

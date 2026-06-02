@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { Search, ChevronDown } from 'lucide-react'
+import { useUser } from '@/lib/context/UserContext'
 import AuditsTable from '@/components/audits/AuditsTable'
 import AuditModal from '@/components/audits/AuditModal'
 import {
@@ -12,6 +13,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 export default function Audits() {
+  const user = useUser()
+  const isAdmin = user?.role === 'admin'
   const [modalOpen, setModalOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [selectedStatus, setSelectedStatus] = useState('All Status')
@@ -44,13 +47,15 @@ export default function Audits() {
           <p className="text-slate-400 text-sm mt-0.5">Manage all compliance audits.</p>
         </div>
 
-        {/* New Audit button */}
-        <button
-          onClick={() => setModalOpen(true)}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors w-fit"
-        >
-          + New Audit
-        </button>
+        {/* New Audit button — admin only */}
+        {isAdmin && (
+          <button
+            onClick={() => setModalOpen(true)}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors w-fit"
+          >
+            + New Audit
+          </button>
+        )}
       </div>
 
       {/* New audit modal */}

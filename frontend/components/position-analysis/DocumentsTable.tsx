@@ -5,6 +5,7 @@
 // Includes pagination — 10 documents per page
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Eye, ChevronLeft, ChevronRight } from 'lucide-react'
 import { PositionDocument } from '@/lib/api/position'
 
@@ -130,10 +131,13 @@ export default function DocumentsTable({ activeTab, documents, loading }: Docume
                   <td className="py-3 text-slate-500">{formatDate(doc.date)}</td>
                   <td className="py-3">
                     {doc.status.toLowerCase() === 'completed' ? (
-                      <button className="flex items-center gap-1 text-indigo-500 hover:underline text-xs">
+                      <Link
+                        href={`/position-analysis/${doc.id}`}
+                        className="flex items-center gap-1 text-indigo-500 hover:underline text-xs"
+                      >
                         <Eye size={14} />
                         View
-                      </button>
+                      </Link>
                     ) : (
                       <span className="text-slate-300 text-xs">—</span>
                     )}

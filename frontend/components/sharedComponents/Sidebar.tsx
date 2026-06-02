@@ -17,6 +17,7 @@ import {
   BarChart2,
 } from 'lucide-react'
 import { clearTokens } from '@/lib/authTokens'
+import { useUser } from '@/lib/context/UserContext'
 
 // Navigation links configuration
 const navLinks = [
@@ -31,10 +32,11 @@ const navLinks = [
 ]
 
 export default function Sidebar() {
-  // Controls mobile sidebar open/close state
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
+  const user = useUser()
+  const isAdmin = user?.role === 'admin'
 
   // Clear tokens and redirect to login on logout
   function handleLogout() {
@@ -81,7 +83,7 @@ export default function Sidebar() {
 
           {/* Navigation links */}
           <nav className="flex flex-col gap-1">
-            {navLinks.map(({ label, href, icon: Icon }) => {
+            {navLinks.filter(({ href }) => href !== '/upload' || isAdmin).map(({ label, href, icon: Icon }) => {
               const isActive = pathname === href
               return (
                 <Link
