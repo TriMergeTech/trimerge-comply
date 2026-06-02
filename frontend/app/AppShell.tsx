@@ -3,10 +3,13 @@ import { usePathname } from "next/navigation";
 import Sidebar from "@/components/sharedComponents/Sidebar";
 
 const AUTH_PATHS = ["/login", "/signup", "/forgot-password", "/reset-password", "/verify-otp", "/security"];
+const PUBLIC_PATHS = ["/", "/landing-page", "/about"];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isNoShell = pathname === "/" || pathname.startsWith("/landing-page") || AUTH_PATHS.some((p) => pathname.startsWith(p));
+  const isNoShell =
+    PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/")) ||
+    AUTH_PATHS.some((p) => pathname.startsWith(p));
 
   if (isNoShell) return <>{children}</>;
 

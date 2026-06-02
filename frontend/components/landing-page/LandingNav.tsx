@@ -35,7 +35,7 @@ export default function LandingNav() {
           <Link href="#" className="text-sm font-medium text-white/70 hover:text-white transition-colors">
             Pricing
           </Link>
-          <Link href="#" className="text-sm font-medium text-white/70 hover:text-white transition-colors">
+          <Link href="/about" className="text-sm font-medium text-white/70 hover:text-white transition-colors">
             About Us
           </Link>
         </div>
@@ -68,14 +68,20 @@ export default function LandingNav() {
       {/* Mobile Menu */}
       {mobileOpen && (
         <div className="md:hidden bg-[#0d0f2b] border-t border-white/10 px-6 py-4 space-y-4">
-          {["Product", "Solutions", "Resources", "Pricing", "About Us"].map((item) => (
+          {["Product", "Solutions", "Resources", "Pricing"].map((item) => (
             <Link key={item} href="#" className="block text-sm font-medium text-white/70">
               {item}
             </Link>
           ))}
+          <Link href="/about" className="block text-sm font-medium text-white/70">
+            About Us
+          </Link>
           <div className="flex flex-col gap-2 pt-2">
             <Link href="/login" className="text-sm font-semibold text-white/80">Log In</Link>
-            <Link href="/login" className="bg-[#4f46e5] text-white text-sm font-semibold px-5 py-2.5 rounded-lg text-center">
+            <Link
+              href="/login"
+              className="bg-[#4f46e5] text-white text-sm font-semibold px-5 py-2.5 rounded-lg text-center"
+            >
               Request Demo
             </Link>
           </div>
