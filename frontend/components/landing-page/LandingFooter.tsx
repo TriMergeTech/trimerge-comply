@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Shield } from "lucide-react";
+import Image from "next/image";
 
 const footerLinks = ["Product", "Solutions", "Resources", "About Us", "Contact", "Privacy Policy", "Terms of Service"];
 
@@ -8,13 +8,17 @@ export default function LandingFooter() {
     <footer className="bg-[#0a0c22] border-t border-white/5 py-8 px-6">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-[#4f46e5] rounded-lg flex items-center justify-center">
-            <Shield className="w-3.5 h-3.5 text-white" />
-          </div>
-          <div>
-            <span className="text-white font-bold text-sm">TriMerge</span>
-            <span className="text-[#4f46e5] font-bold text-xs tracking-widest uppercase ml-1">COMPLY</span>
+        <Link href="/" className="flex items-center gap-2.5">
+          <Image
+            src="/logo.png"
+            alt="TriMerge Comply"
+            width={32}
+            height={32}
+            className="h-8 w-8 object-contain"
+          />
+          <div className="leading-none">
+            <span className="text-white font-bold text-sm block leading-tight">TriMerge</span>
+            <span className="text-[#818cf8] font-bold text-xs tracking-widest uppercase">COMPLY</span>
           </div>
         </Link>
 
@@ -32,7 +36,7 @@ export default function LandingFooter() {
         </nav>
 
         {/* Copyright */}
-        <p className="text-white/30 text-xs">© 2024 TriMerge Comply. All rights reserved.</p>
+        <p className="text-white/30 text-xs">© 2026 TriMerge Comply. All rights reserved.</p>
       </div>
     </footer>
   );

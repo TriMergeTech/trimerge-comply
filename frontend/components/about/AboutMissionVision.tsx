@@ -19,7 +19,7 @@ export default function AboutMissionVision() {
           sizes="(max-width: 1024px) 100vw, 50vw"
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-[#0F0A2E]/75" />
+        <div className="absolute inset-0 bg-[#0F0A2E]/50" />
         <div className="relative z-10 p-10">
           <h3 className="text-2xl font-bold mb-4">Our Mission</h3>
           <div className="w-10 h-0.5 bg-[#4f46e5] mb-6 rounded-full" />
