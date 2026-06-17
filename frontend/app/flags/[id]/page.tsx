@@ -1,21 +1,61 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useParams } from 'next/navigation'
+import Link from 'next/link'
 import FlagDetail from '@/components/flags/FlagDetail'
 import DecisionPanel from '@/components/flags/DecisionPanel'
+import { getFlagById, FlagItem } from '@/lib/api/flags'
+
 
 export default function FlagDetailPage() {
+    const { id } = useParams<{ id: string }>()
+
+    const [flag, setFlag] = useState<FlagItem | null>(null)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string>('')
+    const [decisionSummary, setDecisionSummary] = useState<{ decision: string; rationale: string; decidedAt: string } | null>(null)
+
+    useEffect(() => {
+        if (!id) return
+        getFlagById(id)
+            .then((res) => {
+                setFlag(res.flag)
+            })
+            .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load flag.'))
+            .finally(() => setLoading(false))
+    }, [id])
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64 text-slate-400 text-sm">
+                Loading flag details…
+            </div>
+        )
+    }
+
+    if (error || !flag) {
+        return (
+            <div className="flex flex-col items-center justify-center h-64 gap-3">
+                <p className="text-red-500 text-sm">{error || 'Flag not found.'}</p>
+                <Link href="/flags/queue" className="text-indigo-500 text-sm hover:underline">
+                    ← Back to Queue
+                </Link>
+            </div>
+        )
+    }
+
     return (
         <div className="flex flex-col gap-6">
 
             {/* Page header */}
             <div className="flex items-center justify-between">
-
-                {/* Back to queue link */}
-                <a
+                <Link
                     href="/flags/queue"
                     className="text-sm text-indigo-500 hover:underline"
                 >
                     ← Back to Queue
-                </a>
-
+                </Link>
             </div>
 
             {/* Main content — flag detail and decision panel side by side */}
@@ -23,12 +63,23 @@ export default function FlagDetailPage() {
 
                 {/* Flag detail — takes up more space */}
                 <div className="flex-1">
-                    <FlagDetail />
+                    <FlagDetail flag={flag} decisionSummary={decisionSummary} />
                 </div>
 
-                {/* Decision panel — fixed width on desktop */}
+                {/* Decision panel — only shown for pending flags */}
                 <div className="lg:w-80">
-                    <DecisionPanel />
+                    {flag.status.toLowerCase() === 'pending' ? (
+                        <DecisionPanel
+                            flagId={flag._id}
+                            onDecided={(decision, rationale) =>
+                                setDecisionSummary({ decision, rationale, decidedAt: new Date().toISOString() })
+                            }
+                        />
+                    ) : (
+                        <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5 text-sm text-slate-400">
+                            This flag has already been reviewed.
+                        </div>
+                    )}
                 </div>
 
             </div>
