@@ -29,16 +29,22 @@ async function auditFetch<T>(
 
 // Audit data types matching the backend schema
 export interface AuditCreatedBy {
+  _id?: string;
   email: string;
   role: string;
+  name?: string;
+  companyName?: string;
 }
 
 export interface Audit {
   _id: string;
   name: string;
-  description?: string
+  description?: string | null;
   status: "draft" | "processing" | "completed" | "flagged";
-  organization?: string;
+  organization?: string | null;
+  clientName?: string;
+  auditType?: string;
+  companyName?: string;
   createdBy: AuditCreatedBy;
   createdAt: string;
   updatedAt: string;
@@ -72,8 +78,9 @@ export async function getAudits() {
 }
 
 // Get a single audit by ID
-export function getAuditById(id: string) {
-  return auditFetch<Audit>(`/audits/${id}`);
+export async function getAuditById(id: string): Promise<Audit> {
+  const res = await auditFetch<{ data: { audit: Audit } }>(`/audits/${id}`);
+  return res.data.audit;
 }
 
 // Create a new audit

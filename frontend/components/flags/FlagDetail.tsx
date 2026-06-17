@@ -1,31 +1,38 @@
 'use client'
 
-// Flag detail component
-// Displays detailed information about a specific flag
-// Includes tabs for Summary, Test Results, Charts and Applicant Flow
+import { FlagItem } from '@/lib/api/flags'
 
-import { useState } from 'react'
-
-// Tab options for the flag detail view
-const tabs = ['Summary', 'Test Results', 'Charts', 'Applicant Flow']
-
-// Temporary mock flag data — will be replaced with real API data later
-const flagData = {
-  title: 'Police Officer – Interview – Female',
-  severity: 'Critical',
-  engine: 'Adverse Impact',
-  audit: 'City of Springfield',
-  stage: 'Interview',
-  demographicGroup: 'Female',
-  comparisonGroup: 'Male',
-  fourFifthsRule: 0.63,
-  chiSquare: 0.0012,
-  fishersExact: 0.0008,
+const engineLabel: Record<string, string> = {
+  adverse_impact: 'Adverse Impact',
+  position_description: 'Position Description',
+  pay_equity: 'Pay Equity',
 }
 
-export default function FlagDetail() {
-  // Track active tab
-  const [activeTab, setActiveTab] = useState('Summary')
+function getSeverityColor(severity: string) {
+  switch (severity) {
+    case 'Critical': return 'bg-red-100 text-red-600'
+    case 'High':     return 'bg-orange-100 text-orange-500'
+    case 'Medium':   return 'bg-yellow-100 text-yellow-600'
+    case 'Low':      return 'bg-green-100 text-green-600'
+    default:         return 'bg-slate-100 text-slate-500'
+  }
+}
+
+type DecisionSummary = {
+  decision: string
+  rationale: string
+  decidedAt: string
+}
+
+type Props = {
+  flag: FlagItem
+  decisionSummary?: DecisionSummary | null
+}
+
+export default function FlagDetail({ flag, decisionSummary }: Props) {
+  const { results } = flag
+  const fourFifths = results?.fourFifthsRule
+  const isViolation = fourFifths !== undefined && fourFifths !== null && fourFifths < (flag.threshold ?? 0.8)
 
   return (
     <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5 flex flex-col gap-5">
@@ -33,10 +40,10 @@ export default function FlagDetail() {
       {/* Flag title and severity badge */}
       <div className="flex items-center justify-between">
         <h3 className="text-slate-800 font-semibold text-base">
-          {flagData.title}
+          {flag.name ?? '—'}
         </h3>
-        <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-600">
-          {flagData.severity}
+        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getSeverityColor(flag.severity)}`}>
+          {flag.severity}
         </span>
       </div>
 
@@ -45,107 +52,105 @@ export default function FlagDetail() {
 
         <div>
           <p className="text-slate-400">Engine</p>
-          <p className="text-slate-700 font-medium mt-0.5">{flagData.engine}</p>
+          <p className="text-slate-700 font-medium mt-0.5">{engineLabel[flag.testType] ?? flag.testType}</p>
         </div>
 
         <div>
-          <p className="text-slate-400">Audit</p>
-          <p className="text-slate-700 font-medium mt-0.5">{flagData.audit}</p>
+          <p className="text-slate-400">Status</p>
+          <p className="text-slate-700 font-medium mt-0.5">{flag.status}</p>
         </div>
 
         <div>
           <p className="text-slate-400">Stage</p>
-          <p className="text-slate-700 font-medium mt-0.5">{flagData.stage}</p>
+          <p className="text-slate-700 font-medium mt-0.5">{results?.stage ?? '—'}</p>
         </div>
 
         <div>
           <p className="text-slate-400">Demographic Group</p>
-          <p className="text-slate-700 font-medium mt-0.5">{flagData.demographicGroup}</p>
+          <p className="text-slate-700 font-medium mt-0.5">{results?.demographicGroup ?? '—'}</p>
         </div>
 
         <div>
-          <p className="text-slate-400">Comparison Group</p>
-          <p className="text-slate-700 font-medium mt-0.5">{flagData.comparisonGroup}</p>
+          <p className="text-slate-400">Assigned To</p>
+          <p className="text-slate-700 font-medium mt-0.5">{flag.assignedTo}</p>
+        </div>
+
+        <div>
+          <p className="text-slate-400">Job Title</p>
+          <p className="text-slate-700 font-medium mt-0.5">{results?.jobTitle ?? '—'}</p>
         </div>
 
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-slate-100">
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === tab
-                ? 'text-indigo-600 border-b-2 border-indigo-600'
-                : 'text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
+      {/* Statistical results — always visible */}
+      <div className="grid grid-cols-3 gap-4">
 
-      {/* Tab content */}
-      <div>
+        <div className="bg-slate-50 rounded-lg p-4 text-center">
+          <p className="text-xs text-slate-400 mb-1">4/5ths Rule</p>
+          <p className={`text-2xl font-bold ${isViolation ? 'text-red-500' : 'text-green-600'}`}>
+            {fourFifths !== undefined && fourFifths !== null ? fourFifths.toFixed(2) : '—'}
+          </p>
+          <p className={`text-xs mt-1 ${isViolation ? 'text-red-400' : 'text-green-500'}`}>
+            {isViolation ? 'Violation' : 'Pass'}
+          </p>
+        </div>
 
-        {/* Summary tab */}
-        {activeTab === 'Summary' && (
-          <div className="grid grid-cols-3 gap-4">
+        <div className="bg-slate-50 rounded-lg p-4 text-center">
+          <p className="text-xs text-slate-400 mb-1">Chi-Square</p>
+          <p className="text-2xl font-bold text-slate-800">
+            {results?.chiSquare !== undefined && results.chiSquare !== null
+              ? results.chiSquare.toFixed(4)
+              : '—'}
+          </p>
+          <p className="text-xs text-slate-400 mt-1">statistic</p>
+        </div>
 
-            {/* 4/5ths Rule */}
-            <div className="bg-slate-50 rounded-lg p-4 text-center">
-              <p className="text-xs text-slate-400 mb-1">4/5ths Rule</p>
-              <p className="text-2xl font-bold text-red-500">
-                {flagData.fourFifthsRule.toFixed(2)}
-              </p>
-              <p className="text-xs text-red-400 mt-1">Violation</p>
-            </div>
-
-            {/* Chi-Square */}
-            <div className="bg-slate-50 rounded-lg p-4 text-center">
-              <p className="text-xs text-slate-400 mb-1">Chi-Square p-value</p>
-              <p className="text-2xl font-bold text-slate-800">
-                {flagData.chiSquare.toFixed(4)}
-              </p>
-              <p className="text-xs text-slate-400 mt-1">p-value</p>
-            </div>
-
-            {/* Fisher's Exact */}
-            <div className="bg-slate-50 rounded-lg p-4 text-center">
-              <p className="text-xs text-slate-400 mb-1">Fisher&apos;s Exact</p>
-              <p className="text-2xl font-bold text-slate-800">
-                {flagData.fishersExact.toFixed(4)}
-              </p>
-              <p className="text-xs text-slate-400 mt-1">p-value</p>
-            </div>
-
-          </div>
-        )}
-
-        {/* Test Results tab */}
-        {activeTab === 'Test Results' && (
-          <div className="text-sm text-slate-500 py-4 text-center">
-            Test results will be displayed here.
-          </div>
-        )}
-
-        {/* Charts tab */}
-        {activeTab === 'Charts' && (
-          <div className="text-sm text-slate-500 py-4 text-center">
-            Charts will be displayed here.
-          </div>
-        )}
-
-        {/* Applicant Flow tab */}
-        {activeTab === 'Applicant Flow' && (
-          <div className="text-sm text-slate-500 py-4 text-center">
-            Applicant flow data will be displayed here.
-          </div>
-        )}
+        <div className="bg-slate-50 rounded-lg p-4 text-center">
+          <p className="text-xs text-slate-400 mb-1">Fisher&apos;s Exact</p>
+          <p className="text-2xl font-bold text-slate-800">
+            {results?.fishersExact !== undefined && results.fishersExact !== null
+              ? results.fishersExact.toFixed(4)
+              : '—'}
+          </p>
+          <p className="text-xs text-slate-400 mt-1">p-value</p>
+        </div>
 
       </div>
+
+      {/* Decision summary */}
+      <div className="border-t border-slate-100 pt-4 flex flex-col gap-3">
+        <p className="text-sm font-medium text-slate-700">Summary</p>
+
+        {decisionSummary ? (
+          <>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-400">Decision</span>
+              <span className="font-medium text-slate-700 capitalize">{decisionSummary.decision}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-400">Decided</span>
+              <span className="text-slate-700">
+                {new Date(decisionSummary.decidedAt).toLocaleString('en-US', {
+                  month: 'short', day: 'numeric', year: 'numeric',
+                  hour: 'numeric', minute: '2-digit', hour12: true,
+                })}
+              </span>
+            </div>
+            <div className="flex flex-col gap-1 text-sm">
+              <span className="text-slate-400">Rationale</span>
+              <p className="text-slate-700 bg-slate-50 rounded-lg p-3 leading-relaxed">{decisionSummary.rationale}</p>
+            </div>
+          </>
+        ) : flag.status.toLowerCase() !== 'pending' ? (
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-slate-400">Status</span>
+            <span className="font-medium text-slate-700 capitalize">{flag.status}</span>
+          </div>
+        ) : (
+          <p className="text-sm text-slate-400">No decision has been made yet.</p>
+        )}
+      </div>
+
     </div>
   )
 }
