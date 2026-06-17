@@ -9,15 +9,15 @@ const router = Router();
 router.use(protect);
 
 // GET /api/flags — all roles
-router.get('/', requireRole('analyst', 'admin', 'viewer'), getFlags);
+router.get('/', requireRole('analyst', 'reviewer', 'manager', 'director', 'admin', 'viewer'), getFlags);
 
 // GET /api/flags/:id — all roles
-router.get('/:id', requireRole('analyst', 'admin', 'viewer'), getFlagById);
+router.get('/:id', requireRole('analyst', 'reviewer', 'manager', 'director', 'admin', 'viewer'), getFlagById);
 
-// POST /api/flags/:id/decide — analyst, admin
-router.post('/:id/decide', requireRole('analyst', 'admin'), decideFlag);
+// POST /api/flags/:id/decide — analyst and above (not viewer)
+router.post('/:id/decide', requireRole('analyst', 'reviewer', 'manager', 'director', 'admin'), decideFlag);
 
-// PATCH /api/flags/:id/assign — analyst, admin
-router.patch('/:id/assign', requireRole('analyst', 'admin'), assignFlag);
+// PATCH /api/flags/:id/assign — manager and above only
+router.patch('/:id/assign', requireRole('manager', 'director', 'admin'), assignFlag);
 
 module.exports = router;

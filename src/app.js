@@ -18,6 +18,8 @@ const { errorHandler, notFound } = require('./middleware/error.middleware');
 const { sendSuccess } = require('./utils/response');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const activityRoutes = require('./routes/activity.routes');
+const findingRoutes = require('./routes/finding.routes');
+const handbookRoutes = require('./routes/handbook.routes');
 
 const app = express();
 
@@ -58,15 +60,16 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 // ─── Rate limiters ───────────────────────────────────────────
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 1000,
+  max: 500,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests, please try again later.' },
 });
 
+// Auth routes get a tighter limit to slow credential-stuffing and OTP brute-force
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 500,
+  max: 30,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many auth attempts, please try again later.' },
@@ -94,7 +97,9 @@ app.use('/api/flags', flagRoutes);
 app.use('/api/position', positionRoutes);
 app.use('/api/payequity', payEquityRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/activity', activityRoutes);  
+app.use('/api/activity', activityRoutes);
+app.use('/api/findings', findingRoutes);
+app.use('/api/handbooks', handbookRoutes);
 
 setupSwagger(app);
 

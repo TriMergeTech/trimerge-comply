@@ -255,8 +255,12 @@ const getMe = async (req, res, next) => {
 const updateUserRole = async (req, res, next) => {
   try {
     const { role } = req.body;
-    if (!['admin', 'analyst', 'viewer'].includes(role)) {
-      return sendError(res, { statusCode: 400, message: 'Role must be admin, analyst, or viewer.' });
+    const ASSIGNABLE_ROLES = ['admin', 'director', 'manager', 'analyst', 'reviewer', 'viewer'];
+    if (!ASSIGNABLE_ROLES.includes(role)) {
+      return sendError(res, {
+        statusCode: 400,
+        message: `Role must be one of: ${ASSIGNABLE_ROLES.join(', ')}.`,
+      });
     }
     const user = await User.findOne({
       _id: req.params.id,
@@ -282,7 +286,7 @@ const changePassword = async (req, res, next) => {
     if (!oldPassword || !newPassword) {
       return sendError(res, { statusCode: 400, message: 'Old password and new password are required.' });
     }
-    const user = await User.findById(req.user._id).select('+password +otpCode +otpExpiresAt +otpPurpose +otpAttempts +otpLastSentAt +passwordResetToken +passwordResetExpires');
+    const user = await User.findById(req.user._id).select('+password +otpCode +otpExpiresAt +otpPurpose +otpAttempts +otpLastSentAt +pendingPasswordHash +pendingPasswordHashExpires');
     if (!user) {
       return sendError(res, { statusCode: 404, message: 'User not found.' });
     }
@@ -306,8 +310,8 @@ const changePassword = async (req, res, next) => {
     user.otpPurpose = 'password_change';
     user.otpAttempts = 0;
     user.otpLastSentAt = new Date();
-    user.passwordResetToken = hashedNewPassword;
-    user.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000);
+    user.pendingPasswordHash = hashedNewPassword;
+    user.pendingPasswordHashExpires = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
     sendOTPEmail(user.email, otp, 'password_change').catch((err) =>
       console.error('[EMAIL] Failed to send password change OTP:', err.message)
@@ -322,7 +326,7 @@ const verifyChangePassword = async (req, res, next) => {
   try {
     const { otp } = req.body;
     const user = await User.findById(req.user._id).select(
-      '+otpCode +otpExpiresAt +otpPurpose +otpAttempts +passwordResetToken +passwordResetExpires +refreshToken'
+      '+otpCode +otpExpiresAt +otpPurpose +otpAttempts +pendingPasswordHash +pendingPasswordHashExpires +refreshToken'
     );
     if (!user) {
       return sendError(res, { statusCode: 404, message: 'User not found.' });
@@ -345,13 +349,13 @@ const verifyChangePassword = async (req, res, next) => {
       await user.save();
       return sendError(res, { statusCode: 400, message: 'Invalid OTP.' });
     }
-    if (!user.passwordResetToken || new Date() > user.passwordResetExpires) {
+    if (!user.pendingPasswordHash || new Date() > user.pendingPasswordHashExpires) {
       return sendError(res, { statusCode: 410, message: 'Password change session expired. Please start again.' });
     }
     await User.findByIdAndUpdate(user._id, {
-      password: user.passwordResetToken,
-      passwordResetToken: null,
-      passwordResetExpires: null,
+      password: user.pendingPasswordHash,
+      pendingPasswordHash: null,
+      pendingPasswordHashExpires: null,
       otpCode: null,
       otpExpiresAt: null,
       otpPurpose: null,
@@ -367,16 +371,15 @@ const verifyChangePassword = async (req, res, next) => {
 
 const changeName = async (req, res, next) => {
   try {
-    const { name, companyName } = req.body;
-    if (!name && !companyName) {
-      return sendError(res, { statusCode: 400, message: 'Provide at least a name or companyName to update.' });
+    const { name } = req.body;
+    if (!name || !name.trim()) {
+      return sendError(res, { statusCode: 400, message: 'A name is required.' });
     }
     const user = await User.findById(req.user._id);
     if (!user) {
       return sendError(res, { statusCode: 404, message: 'User not found.' });
     }
-    if (name) user.name = name;
-    if (companyName) user.companyName = companyName;
+    user.name = name.trim();
     await user.save();
     return sendSuccess(res, {
       message: 'Profile updated successfully.',

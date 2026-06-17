@@ -1,14 +1,15 @@
 const express = require('express');
 const { listPayEquityAnalyses, uploadPayEquityCsv } = require('../controllers/payequity.controller');
-const { optionalProtect } = require('../middleware/auth.middleware');
+const { protect, requireRole } = require('../middleware/auth.middleware');
 
 const router = express.Router();
 
-router.get('/', optionalProtect, listPayEquityAnalyses);
+router.get('/', protect, requireRole('analyst', 'reviewer', 'manager', 'director', 'admin'), listPayEquityAnalyses);
 
 router.post(
   '/upload',
-  optionalProtect,
+  protect,
+  requireRole('analyst', 'manager', 'director', 'admin'),
   express.raw({
     type: [
       'multipart/form-data',

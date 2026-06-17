@@ -5,9 +5,22 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'TriMerge Auth API',
-      version: '1.0.0',
-      description: 'Secure authentication API for TriMerge Consulting Group.',
+      title: 'TriMerge Comply API',
+      version: '2.0.0',
+      description: `HR Audit & Compliance platform API — Findings, Handbooks, Pay Equity, Adverse Impact, and Position Description analysis.
+
+## Role System
+
+| Role | Label | Access |
+|------|-------|--------|
+| \`admin\` | Platform Admin | System-wide config, user management, all data |
+| \`director\` | Engagement Director | Owns client audits, approves findings, deletes handbooks |
+| \`manager\` | Project Manager | Manages audit tasks, assigns flags, exports data |
+| \`analyst\` | Analyst | Works findings, uploads evidence, creates audits |
+| \`reviewer\` | SME Reviewer | Validates findings before approval (read + decide) |
+| \`viewer\` | Client Read-Only | Sees assigned audit reports only |
+
+All protected endpoints require a verified email and a valid Bearer token.`,
     },
     servers: [
       { url: 'https://trimerge-comply.onrender.com', description: 'Production server' },
@@ -27,7 +40,17 @@ const options = {
             email: { type: 'string', example: 'ibrahim@trimerge.com' },
             phone: { type: 'string', nullable: true },
             isVerified: { type: 'boolean', example: true },
-            role: { type: 'string', enum: ['admin', 'analyst', 'viewer'] },
+            role: {
+              type: 'string',
+              enum: ['admin', 'director', 'manager', 'analyst', 'reviewer', 'viewer'],
+              description: 'admin=Platform Admin, director=Engagement Director, manager=Project Manager, analyst=Analyst, reviewer=SME Reviewer, viewer=Client Read-Only',
+            },
+            roleName: {
+              type: 'string',
+              enum: ['Platform Admin', 'Engagement Director', 'Project Manager', 'Analyst', 'SME Reviewer', 'Client Read-Only'],
+              description: 'Human-readable label for the role',
+              example: 'Platform Admin',
+            },
             createdAt: { type: 'string', format: 'date-time' },
           },
         },
@@ -64,6 +87,73 @@ const options = {
             status: { type: 'string', enum: ['open', 'reviewed', 'dismissed'] },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        Finding: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1' },
+            auditId: { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1' },
+            flagId: { type: 'string', nullable: true, example: '64f1a2b3c4d5e6f7a8b9c0d1' },
+            observation: { type: 'string', example: 'Female applicants selected at a rate of 60% vs 80% for males (impact ratio 0.75).' },
+            risk: {
+              type: 'object',
+              properties: {
+                level: { type: 'string', enum: ['low', 'medium', 'high', 'critical'], example: 'high' },
+                description: { type: 'string', example: 'Potential violation of EEOC 4/5ths Rule.' },
+              },
+            },
+            criteria: { type: 'string', example: 'Per Section 3.2 of the Employee Handbook, all selection processes must comply with EEOC adverse impact guidelines.' },
+            recommendation: { type: 'string', example: 'HR Director to conduct a structured review of the selection criteria within 30 days and document findings.' },
+            status: { type: 'string', enum: ['new', 'under_review', 'additional_info_required', 'approved', 'rejected', 'closed'], example: 'under_review' },
+            handbookReference: {
+              type: 'object',
+              properties: {
+                handbookId: { type: 'string', nullable: true },
+                section: { type: 'string', example: 'Handbook: Employee Handbook 2024' },
+                excerpt: { type: 'string', example: 'All hiring decisions must be made without regard to gender...' },
+              },
+            },
+            aiDrafted: { type: 'boolean', example: true },
+            analystNotes: { type: 'string', example: 'Discussed with hiring manager on 2026-06-01.' },
+            createdBy: { type: 'object', properties: { name: { type: 'string' }, email: { type: 'string' }, role: { type: 'string' } } },
+            assignedTo: { type: 'object', nullable: true, properties: { name: { type: 'string' }, email: { type: 'string' } } },
+            reviewedBy: { type: 'object', nullable: true, properties: { name: { type: 'string' }, email: { type: 'string' } } },
+            reviewedAt: { type: 'string', format: 'date-time', nullable: true },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        Handbook: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1' },
+            name: { type: 'string', example: 'Employee Handbook 2024' },
+            fileName: { type: 'string', example: 'employee-handbook-2024.pdf' },
+            mimeType: { type: 'string', example: 'application/pdf' },
+            sizeBytes: { type: 'number', example: 1048576 },
+            textLength: { type: 'number', example: 45230 },
+            chunkCount: { type: 'number', example: 112 },
+            status: { type: 'string', enum: ['processing', 'ready', 'failed'], example: 'ready' },
+            uploadedBy: {
+              type: 'object',
+              properties: {
+                email: { type: 'string', example: 'ibrahim@trimerge.com' },
+                companyName: { type: 'string', example: 'TriMerge Consulting' },
+                role: { type: 'string', example: 'admin' },
+              },
+            },
+            storage: { type: 'object', properties: { secureUrl: { type: 'string' }, publicId: { type: 'string' } } },
+            createdAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        Pagination: {
+          type: 'object',
+          properties: {
+            total: { type: 'integer', example: 42 },
+            page: { type: 'integer', example: 1 },
+            limit: { type: 'integer', example: 20 },
+            totalPages: { type: 'integer', example: 3 },
           },
         },
         SuccessResponse: {
@@ -197,8 +287,8 @@ const options = {
       '/api/auth/change-name': {
         patch: {
           tags: ['Authentication'],
-          summary: 'Update name or company name',
-          description: 'Update the authenticated user name and/or company name.',
+          summary: 'Update display name',
+          description: 'Update the authenticated user\'s display name. Company name cannot be changed via this endpoint.',
           security: [{ bearerAuth: [] }],
           requestBody: {
             required: true,
@@ -206,22 +296,22 @@ const options = {
               'application/json': {
                 schema: {
                   type: 'object',
+                  required: ['name'],
                   properties: {
                     name: { type: 'string', example: 'Ibrahim Chhapra' },
-                    companyName: { type: 'string', example: 'TriMerge Consulting' },
                   },
                 },
               },
             },
           },
-          responses: { 200: { description: 'Profile updated successfully' }, 400: { description: 'No fields provided' }, 401: { description: 'Unauthorized' } },
+          responses: { 200: { description: 'Profile updated successfully' }, 400: { description: 'Name is required' }, 401: { description: 'Unauthorized' } },
         },
       },
       '/api/auth/users': {
         get: {
           tags: ['User Management'],
-          summary: 'Get all users',
-          description: 'Returns all registered users with their IDs. Requires analyst or admin role.',
+          summary: 'Get all users in company',
+          description: 'Returns all users scoped to the authenticated user\'s company. Requires manager, director, or admin role.',
           security: [{ bearerAuth: [] }],
           responses: {
             200: {
@@ -243,7 +333,8 @@ const options = {
                                 _id: { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1' },
                                 name: { type: 'string', example: 'Ibrahim Chhapra' },
                                 email: { type: 'string', example: 'ibrahim@trimerge.com' },
-                                role: { type: 'string', enum: ['admin', 'analyst', 'viewer'] },
+                                role: { type: 'string', enum: ['admin', 'director', 'manager', 'analyst', 'reviewer', 'viewer'] },
+                                roleName: { type: 'string', example: 'Platform Admin', description: 'Human-readable role label' },
                                 companyName: { type: 'string', nullable: true, example: 'TriMerge Consulting' },
                                 isVerified: { type: 'boolean', example: true },
                                 createdAt: { type: 'string', format: 'date-time' },
@@ -259,7 +350,7 @@ const options = {
               },
             },
             401: { description: 'Unauthorized' },
-            403: { description: 'Forbidden — insufficient role' },
+            403: { description: 'Forbidden — manager, director, or admin required' },
           },
         },
       },
@@ -267,7 +358,7 @@ const options = {
         patch: {
           tags: ['User Management'],
           summary: 'Update user role',
-          description: 'Update a user role. Admin only.',
+          description: 'Assign one of the 6 platform roles to a user within the same company. Admin only.',
           security: [{ bearerAuth: [] }],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '64f1a2b3c4d5e6f7a8b9c0d1' }],
           requestBody: {
@@ -278,7 +369,11 @@ const options = {
                   type: 'object',
                   required: ['role'],
                   properties: {
-                    role: { type: 'string', enum: ['admin', 'analyst', 'viewer'] },
+                    role: {
+                      type: 'string',
+                      enum: ['admin', 'director', 'manager', 'analyst', 'reviewer', 'viewer'],
+                      description: 'admin=Platform Admin | director=Engagement Director | manager=Project Manager | analyst=Analyst | reviewer=SME Reviewer | viewer=Client Read-Only',
+                    },
                   },
                 },
               },
@@ -291,7 +386,8 @@ const options = {
         post: {
           tags: ['CSV Upload'],
           summary: 'Process adverse impact CSV',
-          description: 'Upload a CSV file and run validation plus analytics processing.',
+          description: 'Upload a CSV file and run validation plus analytics processing. Requires analyst, manager, director, or admin role.',
+          security: [{ bearerAuth: [] }],
           requestBody: { required: true, content: { 'multipart/form-data': { schema: { type: 'object', required: ['file'], properties: { file: { type: 'string', format: 'binary', description: 'CSV file with columns: group, selected, total' } } } }, 'application/json': { schema: { type: 'object', required: ['csvText'], properties: { csvText: { type: 'string', example: 'group,selected,total\nMale,80,100\nFemale,30,50' } } } } } },
           responses: { 200: { description: 'CSV processed successfully' }, 400: { description: 'Missing CSV content' }, 422: { description: 'CSV validation failed' }, 500: { description: 'CSV processing or Cloudinary storage failed' } },
         },
@@ -300,7 +396,8 @@ const options = {
         post: {
           tags: ['Position Description AI'],
           summary: 'Upload and analyze a position description',
-          description: 'Upload a .txt, .csv, .pdf, or .docx position description.',
+          description: 'Upload a .txt, .csv, .pdf, or .docx position description. Requires analyst, manager, director, or admin role.',
+          security: [{ bearerAuth: [] }],
           requestBody: { required: true, content: { 'multipart/form-data': { schema: { type: 'object', required: ['file'], properties: { file: { type: 'string', format: 'binary', description: 'Position description file (.txt, .csv, .pdf, or .docx)' } } } }, 'text/plain': { schema: { type: 'string', example: 'Customer Success Manager\nMust be energetic with 15 years of experience.' } } } },
           responses: { 200: { description: 'Position document uploaded and stored.' }, 400: { description: 'Missing content' }, 415: { description: 'Unsupported file type' }, 422: { description: 'No readable text' }, 500: { description: 'Upload or AI analysis failed' } },
         },
@@ -309,24 +406,27 @@ const options = {
         get: {
           tags: ['Position Description AI'],
           summary: 'List position description analyses',
-          description: 'Returns position analysis rows sorted by newest upload first.',
-          responses: { 200: { description: 'Position documents retrieved successfully' } },
+          description: 'Returns position analysis rows for the authenticated user\'s company, sorted newest first. All internal roles and viewer can access.',
+          security: [{ bearerAuth: [] }],
+          responses: { 200: { description: 'Position documents retrieved successfully' }, 401: { description: 'Unauthorized' } },
         },
       },
       '/api/position/{id}': {
         get: {
           tags: ['Position Description AI'],
           summary: 'Get position analysis detail view',
-          description: 'Returns the detail payload for one position document.',
+          description: 'Returns the detail payload for one position document scoped to the user\'s company.',
+          security: [{ bearerAuth: [] }],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a0f1185927a7ccf9ab71252' }],
-          responses: { 200: { description: 'Position document detail retrieved successfully' }, 404: { description: 'Position document not found' } },
+          responses: { 200: { description: 'Position document detail retrieved successfully' }, 401: { description: 'Unauthorized' }, 404: { description: 'Position document not found' } },
         },
       },
       '/api/position/{id}/review': {
         patch: {
           tags: ['Position Description AI'],
           summary: 'Update analyst review fields',
-          description: 'Updates user-editable review fields from the position analysis detail modal.',
+          description: 'Updates review fields on a position document. Requires analyst, manager, director, or admin role.',
+          security: [{ bearerAuth: [] }],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a0f1185927a7ccf9ab71252' }],
           requestBody: {
             required: true,
@@ -349,7 +449,8 @@ const options = {
         get: {
           tags: ['Position Description AI'],
           summary: 'Download position analysis PDF report',
-          description: 'Downloads a one-page official compliance PDF report.',
+          description: 'Downloads a one-page official compliance PDF report. Scoped to user\'s company.',
+          security: [{ bearerAuth: [] }],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a0f1185927a7ccf9ab71252' }],
           responses: { 200: { description: 'PDF report downloaded successfully', content: { 'application/pdf': { schema: { type: 'string', format: 'binary' } } } }, 400: { description: 'Invalid position document id' }, 404: { description: 'Position document not found' } },
         },
@@ -358,7 +459,8 @@ const options = {
         post: {
           tags: ['Pay Equity'],
           summary: 'Upload and analyze compensation file',
-          description: 'Upload compensation data. Runs OLS regression and returns adjusted pay gap findings.',
+          description: 'Upload compensation data. Runs OLS regression and returns adjusted pay gap findings. Requires analyst, manager, director, or admin role.',
+          security: [{ bearerAuth: [] }],
           requestBody: { required: true, content: { 'multipart/form-data': { schema: { type: 'object', required: ['file'], properties: { file: { type: 'string', format: 'binary', description: 'Compensation file. Required column: salary.' } } } }, 'text/csv': { schema: { type: 'string', example: 'salary,grade,tenure,performance,gender,race,department\n85000,4,5,4,Female,Black,Finance\n90000,4,6,4,Male,White,Finance' } } } },
           responses: { 200: { description: 'Pay equity file uploaded and analyzed successfully' }, 400: { description: 'Missing content' }, 422: { description: 'Validation failed' }, 500: { description: 'Upload or regression analysis failed' } },
         },
@@ -367,15 +469,16 @@ const options = {
         get: {
           tags: ['Pay Equity'],
           summary: 'List pay equity analyses',
-          description: 'Returns pay equity analysis records sorted by newest upload first.',
-          responses: { 200: { description: 'Pay equity analyses retrieved successfully' } },
+          description: 'Returns pay equity analyses for the authenticated user\'s company. Requires analyst, reviewer, manager, director, or admin role.',
+          security: [{ bearerAuth: [] }],
+          responses: { 200: { description: 'Pay equity analyses retrieved successfully' }, 401: { description: 'Unauthorized' }, 403: { description: 'Forbidden — viewer cannot access pay equity data' } },
         },
       },
       '/api/audits': {
         post: {
           tags: ['Audits'],
           summary: 'Create audit',
-          description: 'Create a new audit. Requires analyst or admin role.',
+          description: 'Create a new audit. Requires analyst, manager, director, or admin role.',
           security: [{ bearerAuth: [] }],
           requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['name'], properties: { name: { type: 'string', example: 'Q1 2026 Pay Equity Review' }, description: { type: 'string', example: 'Initial audit for Q1 payroll data' }, organization: { type: 'string', example: 'TriMerge Consulting' }, clientName: { type: 'string', example: 'ABC Corporation' }, auditType: { type: 'string', example: 'Compliance Audit' } } } } } },
           responses: { 201: { description: 'Audit created successfully' }, 401: { description: 'Unauthorized' }, 403: { description: 'Forbidden — insufficient role' } },
@@ -472,7 +575,7 @@ const options = {
         post: {
           tags: ['Analyst Workflow'],
           summary: 'Decide on a flag',
-          description: 'Analyst approves or dismisses a flag. Requires analyst or admin role.',
+          description: 'Approve or dismiss a flag. Requires analyst, reviewer, manager, director, or admin role.',
           security: [{ bearerAuth: [] }],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a04821729a246ff21797b80' }],
           requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['decision'], properties: { decision: { type: 'string', enum: ['approved', 'dismissed'] }, reason: { type: 'string', example: 'Reviewed and confirmed no adverse impact.' } } } } } },
@@ -483,7 +586,7 @@ const options = {
         patch: {
           tags: ['Analyst Workflow'],
           summary: 'Assign flag to analyst',
-          description: 'Assign a flag to a specific analyst. Requires analyst or admin role.',
+          description: 'Assign a flag to a team member. Requires manager, director, or admin role.',
           security: [{ bearerAuth: [] }],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a04821729a246ff21797b80' }],
           requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['assignedTo'], properties: { assignedTo: { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1', description: 'User ID of the analyst to assign' } } } } } },
@@ -532,7 +635,7 @@ const options = {
         get: {
           tags: ['Dashboard'],
           summary: 'Export dashboard data as CSV',
-          description: 'Downloads all audits and flags as a formatted CSV file. Requires analyst or admin role.',
+          description: 'Downloads all audits and flags as a formatted CSV file. Requires manager, director, or admin role.',
           security: [{ bearerAuth: [] }],
           responses: {
             200: { description: 'CSV file download', content: { 'text/csv': { schema: { type: 'string', format: 'binary' } } } },
@@ -541,17 +644,266 @@ const options = {
           },
         },
       },
+      '/api/audits/{id}/findings': {
+        get: {
+          tags: ['Findings'],
+          summary: 'List findings for an audit',
+          description: 'Returns all findings scoped to a specific audit. Supports pagination, status and risk level filters.',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '64f1a2b3c4d5e6f7a8b9c0d1', description: 'Audit ID' },
+            { name: 'status', in: 'query', schema: { type: 'string', enum: ['new', 'under_review', 'additional_info_required', 'approved', 'rejected', 'closed'] } },
+            { name: 'riskLevel', in: 'query', schema: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] } },
+            { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+            { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 } },
+          ],
+          responses: {
+            200: { description: 'Findings retrieved successfully', content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean' }, data: { type: 'object', properties: { findings: { type: 'array', items: { $ref: '#/components/schemas/Finding' } }, pagination: { $ref: '#/components/schemas/Pagination' } } } } } } } },
+            401: { description: 'Unauthorized' },
+            404: { description: 'Audit not found' },
+          },
+        },
+      },
+      '/api/audits/{id}/report': {
+        get: {
+          tags: ['Findings'],
+          summary: 'Download Findings Register PDF',
+          description: 'Streams a branded PDF Findings Register for the audit — cover page, KPI summary, and one block per finding. This is the deliverable handed to clients.',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '64f1a2b3c4d5e6f7a8b9c0d1', description: 'Audit ID' },
+          ],
+          responses: {
+            200: { description: 'PDF streamed successfully', content: { 'application/pdf': { schema: { type: 'string', format: 'binary' } } } },
+            401: { description: 'Unauthorized' },
+            404: { description: 'Audit not found' },
+          },
+        },
+      },
+      '/api/findings': {
+        get: {
+          tags: ['Findings'],
+          summary: 'List all findings',
+          description: 'Returns findings across all audits scoped to the authenticated user\'s company. Filter by auditId, status, or risk level.',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'auditId', in: 'query', schema: { type: 'string' }, description: 'Filter by audit ID' },
+            { name: 'status', in: 'query', schema: { type: 'string', enum: ['new', 'under_review', 'additional_info_required', 'approved', 'rejected', 'closed'] } },
+            { name: 'riskLevel', in: 'query', schema: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] } },
+            { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+            { name: 'limit', in: 'query', schema: { type: 'integer', default: 20, maximum: 100 } },
+          ],
+          responses: {
+            200: { description: 'Findings retrieved successfully', content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean' }, data: { type: 'object', properties: { findings: { type: 'array', items: { $ref: '#/components/schemas/Finding' } }, pagination: { $ref: '#/components/schemas/Pagination' } } } } } } } },
+            401: { description: 'Unauthorized' },
+          },
+        },
+        post: {
+          tags: ['Findings'],
+          summary: 'Create a finding',
+          description: 'Creates a finding for an audit. Optionally linked to a flag. Automatically searches company handbooks and uses GPT-4o-mini to draft criteria and recommendation fields. Analyst must review before approving.',
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['auditId', 'observation'],
+                  properties: {
+                    auditId: { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1' },
+                    flagId: { type: 'string', nullable: true, example: '64f1a2b3c4d5e6f7a8b9c0d1', description: 'Optional — links finding to a statistical flag' },
+                    observation: { type: 'string', example: 'Female applicants selected at 60% vs 80% for males (impact ratio 0.75, below the 4/5ths threshold).' },
+                    risk: {
+                      type: 'object',
+                      properties: {
+                        level: { type: 'string', enum: ['low', 'medium', 'high', 'critical'], example: 'high' },
+                        description: { type: 'string', example: 'Potential EEOC violation with exposure to disparate impact claim.' },
+                      },
+                    },
+                    analystNotes: { type: 'string', example: 'Initial review notes.' },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            201: { description: 'Finding created. AI-drafted criteria and recommendation included if OPENAI_API_KEY is configured.', content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean' }, message: { type: 'string' }, data: { type: 'object', properties: { finding: { $ref: '#/components/schemas/Finding' } } } } } } } },
+            400: { description: 'Missing auditId or observation' },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Forbidden — analyst, manager, director, or admin required' },
+            404: { description: 'Audit or flag not found' },
+          },
+        },
+      },
+      '/api/findings/{id}': {
+        get: {
+          tags: ['Findings'],
+          summary: 'Get finding by ID',
+          description: 'Returns a single finding with all populated references (audit, flag, handbook, users).',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '64f1a2b3c4d5e6f7a8b9c0d1' }],
+          responses: {
+            200: { description: 'Finding retrieved successfully', content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean' }, data: { type: 'object', properties: { finding: { $ref: '#/components/schemas/Finding' } } } } } } } },
+            401: { description: 'Unauthorized' },
+            404: { description: 'Finding not found' },
+          },
+        },
+        patch: {
+          tags: ['Findings'],
+          summary: 'Update finding fields',
+          description: 'Edit observation, risk, criteria, recommendation, analystNotes, or assignedTo. Cannot edit findings with status approved, rejected, or closed.',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    observation: { type: 'string' },
+                    risk: { type: 'object', properties: { level: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] }, description: { type: 'string' } } },
+                    criteria: { type: 'string', description: 'AI-drafted — analyst should review and edit.' },
+                    recommendation: { type: 'string', description: 'AI-drafted — analyst should review and edit.' },
+                    analystNotes: { type: 'string' },
+                    assignedTo: { type: 'string', nullable: true, description: 'User ID of analyst to assign' },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: 'Finding updated successfully' },
+            400: { description: 'Finding is in a terminal status and cannot be edited' },
+            401: { description: 'Unauthorized' },
+            404: { description: 'Finding not found' },
+          },
+        },
+      },
+      '/api/findings/{id}/status': {
+        patch: {
+          tags: ['Findings'],
+          summary: 'Advance finding status',
+          description: 'Transitions a finding through its workflow. Invalid transitions return 400 with allowed next states. Criteria and recommendation must be filled before approving.',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['status'],
+                  properties: {
+                    status: { type: 'string', enum: ['new', 'under_review', 'additional_info_required', 'approved', 'rejected', 'closed'], example: 'approved' },
+                    reason: { type: 'string', example: 'Reviewed and confirmed. Corrective plan submitted.' },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: 'Status updated successfully' },
+            400: { description: 'Invalid transition or missing criteria/recommendation for approval' },
+            401: { description: 'Unauthorized' },
+            404: { description: 'Finding not found' },
+          },
+        },
+      },
+      '/api/findings/{id}/regenerate-draft': {
+        post: {
+          tags: ['Findings'],
+          summary: 'Regenerate AI draft',
+          description: 'Re-runs the AI draft for criteria and recommendation using the latest handbook content. The finding is moved back to under_review if it was already approved or rejected.',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          responses: {
+            200: { description: 'AI draft regenerated. Review before approving.' },
+            400: { description: 'Cannot regenerate for an approved or closed finding' },
+            401: { description: 'Unauthorized' },
+            404: { description: 'Finding not found' },
+            503: { description: 'OPENAI_API_KEY not configured' },
+          },
+        },
+      },
+      '/api/handbooks': {
+        get: {
+          tags: ['Handbooks'],
+          summary: 'List company handbooks',
+          description: 'Returns all uploaded handbooks for the authenticated user\'s company. Chunk data is excluded for performance.',
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: { description: 'Handbooks retrieved successfully', content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean' }, data: { type: 'object', properties: { handbooks: { type: 'array', items: { $ref: '#/components/schemas/Handbook' } }, total: { type: 'integer' } } } } } } } },
+            401: { description: 'Unauthorized' },
+          },
+        },
+      },
+      '/api/handbooks/upload': {
+        post: {
+          tags: ['Handbooks'],
+          summary: 'Upload and index a company handbook',
+          description: 'Accepts a PDF or DOCX employee handbook. Extracts full text, splits it into 400-word overlapping chunks, stores in MongoDB, and uploads the original to Cloudinary. Chunks are used by the Findings AI to retrieve relevant policy sections when drafting criteria and recommendation.',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'x-handbook-name', in: 'header', schema: { type: 'string' }, description: 'Display name for the handbook (e.g. "Employee Handbook 2024"). Falls back to filename if omitted.' },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              'multipart/form-data': { schema: { type: 'object', required: ['file'], properties: { file: { type: 'string', format: 'binary', description: 'Employee handbook file (.pdf or .docx)' } } } },
+              'application/pdf': { schema: { type: 'string', format: 'binary' } },
+              'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { schema: { type: 'string', format: 'binary' } },
+            },
+          },
+          responses: {
+            201: { description: 'Handbook uploaded and indexed successfully', content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean' }, message: { type: 'string' }, data: { type: 'object', properties: { handbookId: { type: 'string' }, name: { type: 'string' }, textLength: { type: 'number' }, chunkCount: { type: 'number' }, status: { type: 'string' }, storageUrl: { type: 'string' } } } } } } } },
+            400: { description: 'No file provided' },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Forbidden — analyst, manager, director, or admin required' },
+            415: { description: 'Unsupported file type — only .pdf and .docx accepted' },
+            422: { description: 'Could not extract text (possibly a scanned image PDF)' },
+          },
+        },
+      },
+      '/api/handbooks/{id}': {
+        get: {
+          tags: ['Handbooks'],
+          summary: 'Get handbook by ID',
+          description: 'Returns handbook metadata. Chunk data is excluded.',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          responses: {
+            200: { description: 'Handbook retrieved successfully' },
+            401: { description: 'Unauthorized' },
+            404: { description: 'Handbook not found' },
+          },
+        },
+        delete: {
+          tags: ['Handbooks'],
+          summary: 'Delete a handbook',
+          description: 'Permanently deletes the handbook and its indexed chunks. Existing findings retain their excerpt snapshot. Requires director or admin role.',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          responses: {
+            200: { description: 'Handbook deleted' },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Forbidden — director or admin required' },
+            404: { description: 'Handbook not found' },
+          },
+        },
+      },
       '/api/activity': {
         get: {
           tags: ['Activity Log'],
           summary: 'Get activity logs',
-          description: 'Returns paginated activity logs. Analysts see only their own logs. Admins see all.',
+          description: 'Returns paginated activity logs. Analysts and reviewers see only their own logs. Managers and above see all company logs.',
           security: [{ bearerAuth: [] }],
           parameters: [
-            { name: 'targetType', in: 'query', schema: { type: 'string', enum: ['audit', 'flag'] }, description: 'Filter by target type' },
-            { name: 'action', in: 'query', schema: { type: 'string', enum: ['audit_created', 'audit_updated', 'audit_deleted', 'flag_decided', 'flag_assigned'] }, description: 'Filter by action' },
+            { name: 'targetType', in: 'query', schema: { type: 'string', enum: ['audit', 'flag', 'finding', 'handbook', 'position', 'payequity'] }, description: 'Filter by target type' },
+            { name: 'action', in: 'query', schema: { type: 'string', enum: ['audit_created', 'audit_updated', 'audit_deleted', 'flag_decided', 'flag_assigned', 'finding_created', 'finding_updated', 'finding_status_changed', 'finding_assigned', 'handbook_uploaded', 'handbook_deleted', 'position_uploaded', 'position_reviewed', 'payequity_uploaded', 'csv_uploaded'] }, description: 'Filter by action' },
             { name: 'auditId', in: 'query', schema: { type: 'string' }, description: 'Filter by audit ID' },
-            { name: 'performedBy', in: 'query', schema: { type: 'string' }, description: 'Filter by user ID (admin only)' },
+            { name: 'performedBy', in: 'query', schema: { type: 'string' }, description: 'Filter by user ID — manager and above only (analysts and reviewers always see their own logs only)' },
             { name: 'page', in: 'query', schema: { type: 'integer', default: 1 }, description: 'Page number' },
             { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 }, description: 'Results per page' },
           ],
@@ -574,8 +926,8 @@ const options = {
                               properties: {
                                 id: { type: 'string' },
                                 user: { type: 'object', properties: { name: { type: 'string', example: 'Ibrahim Chhapra' }, email: { type: 'string', example: 'ibrahim@trimerge.com' }, role: { type: 'string' } } },
-                                action: { type: 'string', enum: ['audit_created', 'audit_updated', 'audit_deleted', 'flag_decided', 'flag_assigned'] },
-                                target: { type: 'object', properties: { type: { type: 'string', enum: ['audit', 'flag'] }, audit: { type: 'object', nullable: true }, flag: { type: 'object', nullable: true } } },
+                                action: { type: 'string', enum: ['audit_created', 'audit_updated', 'audit_deleted', 'flag_decided', 'flag_assigned', 'finding_created', 'finding_updated', 'finding_status_changed', 'finding_assigned', 'handbook_uploaded', 'handbook_deleted', 'position_uploaded', 'position_reviewed', 'payequity_uploaded', 'csv_uploaded'] },
+                                target: { type: 'object', properties: { type: { type: 'string', enum: ['audit', 'flag', 'finding', 'handbook', 'position', 'payequity'] }, audit: { type: 'object', nullable: true }, flag: { type: 'object', nullable: true }, finding: { type: 'object', nullable: true, properties: { id: { type: 'string' }, observation: { type: 'string' }, status: { type: 'string' } } }, handbook: { type: 'object', nullable: true, properties: { id: { type: 'string' }, name: { type: 'string' }, status: { type: 'string' } } } } },
                                 details: { type: 'object' },
                                 date: { type: 'string', format: 'date-time' },
                               },
@@ -603,7 +955,7 @@ const specs = swaggerJsdoc(options);
 
 const setupSwagger = (app) => {
   app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(specs, {
-    customSiteTitle: 'TriMerge Auth API Docs',
+    customSiteTitle: 'TriMerge Comply API Docs',
     customCss: '.swagger-ui .topbar { background-color: #1a1a2e; }',
   }));
   app.get('/api/docs.json', (req, res) => {

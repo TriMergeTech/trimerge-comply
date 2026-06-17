@@ -111,6 +111,7 @@ const uploadPositionDocument = async (req, res, next) => {
       sizeBytes: fileBuffer.length,
       storage,
       uploadedBy: getUploadedBy(req.user),
+      companyName: req.user.companyName,
       textLength: extraction.text.length,
       extractedTextPreview: extraction.text.slice(0, 500),
       aiConfigured: aiResult.configured,
@@ -146,7 +147,7 @@ const uploadPositionDocument = async (req, res, next) => {
 // GET /api/position
 const listPositionDocuments = async (req, res, next) => {
   try {
-    const documents = await PositionDocument.find({})
+    const documents = await PositionDocument.find({ companyName: req.user.companyName })
       .sort({ createdAt: -1 })
       .limit(100)
       .lean();
@@ -169,7 +170,10 @@ const getPositionDocumentDetail = async (req, res, next) => {
       return null;
     }
 
-    const documentRecord = await PositionDocument.findById(req.params.id).lean();
+    const documentRecord = await PositionDocument.findOne({
+      _id: req.params.id,
+      companyName: req.user.companyName,
+    }).lean();
 
     if (!documentRecord) {
       return sendError(res, {
@@ -228,8 +232,8 @@ const updatePositionDocumentReview = async (req, res, next) => {
     updates.reviewedBy = getUploadedBy(req.user);
     updates.reviewedAt = new Date();
 
-    const documentRecord = await PositionDocument.findByIdAndUpdate(
-      req.params.id,
+    const documentRecord = await PositionDocument.findOneAndUpdate(
+      { _id: req.params.id, companyName: req.user.companyName },
       { $set: updates },
       { new: true, runValidators: true }
     ).lean();
@@ -259,7 +263,10 @@ const getPositionDocumentReport = async (req, res, next) => {
       return null;
     }
 
-    const documentRecord = await PositionDocument.findById(req.params.id).lean();
+    const documentRecord = await PositionDocument.findOne({
+      _id: req.params.id,
+      companyName: req.user.companyName,
+    }).lean();
 
     if (!documentRecord) {
       return sendError(res, {

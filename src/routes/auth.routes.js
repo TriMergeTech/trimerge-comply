@@ -46,10 +46,10 @@ router.patch('/change-password', protect, changePassword);
 router.post('/change-password/verify', protect, verifyChangePassword);
 router.patch('/change-name', protect, changeName);
 
-// ── User management ──────────────────────────────────────────
-router.get('/users', protect, requireRole('analyst', 'admin'), getUsers);
+// ── User management — manager and above (analysts don't need to enumerate users) ──────
+router.get('/users', protect, requireRole('manager', 'director', 'admin'), getUsers);
 
-// ── Admin only ───────────────────────────────────────────────
+// ── Role assignment — admin only ─────────────────────────────
 router.patch('/users/:id/role', protect, requireRole('admin'), updateUserRole);
 
 module.exports = router;

@@ -6,18 +6,21 @@ const {
   updatePositionDocumentReview,
   uploadPositionDocument,
 } = require('../controllers/position.controller');
-const { optionalProtect } = require('../middleware/auth.middleware');
+const { protect, requireRole } = require('../middleware/auth.middleware');
+
+const ALL_INTERNAL = ['analyst', 'reviewer', 'manager', 'director', 'admin'];
 
 const router = express.Router();
 
-router.get('/', optionalProtect, listPositionDocuments);
-router.get('/:id', optionalProtect, getPositionDocumentDetail);
-router.patch('/:id/review', optionalProtect, updatePositionDocumentReview);
-router.get('/:id/report', optionalProtect, getPositionDocumentReport);
+router.get('/', protect, requireRole(...ALL_INTERNAL, 'viewer'), listPositionDocuments);
+router.get('/:id', protect, requireRole(...ALL_INTERNAL, 'viewer'), getPositionDocumentDetail);
+router.patch('/:id/review', protect, requireRole(...ALL_INTERNAL), updatePositionDocumentReview);
+router.get('/:id/report', protect, requireRole(...ALL_INTERNAL), getPositionDocumentReport);
 
 router.post(
   '/upload',
-  optionalProtect,
+  protect,
+  requireRole('analyst', 'manager', 'director', 'admin'),
   express.raw({
     type: [
       'multipart/form-data',

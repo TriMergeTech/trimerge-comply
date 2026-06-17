@@ -61,6 +61,11 @@ const flagSchema = new mongoose.Schema(
       enum: ['open', 'reviewed', 'dismissed'],
       default: 'open',
     },
+    assignedTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
     details: {
       type: mongoose.Schema.Types.Mixed,
       default: {},

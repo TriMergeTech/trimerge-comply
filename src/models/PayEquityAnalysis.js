@@ -73,6 +73,12 @@ const payEquityAnalysisSchema = new mongoose.Schema(
       enum: ['processed', 'failed'],
       default: 'processed',
     },
+    companyName: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true,
+    },
   },
   { timestamps: true }
 );

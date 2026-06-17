@@ -35,13 +35,15 @@ const getFlags = async (req, res, next) => {
     if (severity) filter.severity = severity;
     if (testType) filter.testType = testType;
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const parsedPage = Math.max(parseInt(page) || 1, 1);
+    const parsedLimit = Math.min(Math.max(parseInt(limit) || 20, 1), 100);
+    const skip = (parsedPage - 1) * parsedLimit;
     const [flags, total] = await Promise.all([
       Flag.find(filter)
         .populate('auditId', 'name organization status')
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(parseInt(limit)),
+        .limit(parsedLimit),
       Flag.countDocuments(filter),
     ]);
 
@@ -51,9 +53,9 @@ const getFlags = async (req, res, next) => {
         flags,
         pagination: {
           total,
-          page: parseInt(page),
-          limit: parseInt(limit),
-          totalPages: Math.ceil(total / parseInt(limit)),
+          page: parsedPage,
+          limit: parsedLimit,
+          totalPages: Math.ceil(total / parsedLimit),
         },
       },
     });

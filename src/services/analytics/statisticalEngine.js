@@ -4,63 +4,58 @@
  * for adverse impact analysis in pay equity audits.
  */
 
-// ─── Factorial & Combinatorics ────────────────────────────────
-const factorial = (n) => {
-  if (n < 0) throw new Error('Factorial undefined for negative numbers');
-  if (n === 0 || n === 1) return 1;
-  let result = 1;
-  for (let i = 2; i <= n; i++) result *= i;
+// ─── Log-space combinatorics ──────────────────────────────────
+// Avoids integer overflow for n > 170 by working in log-space throughout.
+const logFactorial = (n) => {
+  if (n <= 1) return 0;
+  let result = 0;
+  for (let i = 2; i <= n; i++) result += Math.log(i);
   return result;
 };
 
-const combination = (n, k) => {
-  if (k > n) return 0;
-  return factorial(n) / (factorial(k) * factorial(n - k));
-};
+const logHypergeometric = (a, b, c, d) =>
+  logFactorial(a + b) +
+  logFactorial(c + d) +
+  logFactorial(a + c) +
+  logFactorial(b + d) -
+  logFactorial(a + b + c + d) -
+  logFactorial(a) -
+  logFactorial(b) -
+  logFactorial(c) -
+  logFactorial(d);
 
 // ─── Fisher's Exact Test ──────────────────────────────────────
 /**
  * Fisher's Exact Test for 2x2 contingency table.
+ * Computed in log-space to handle large n without overflow.
  *
- * Contingency table:
  *          Selected  Not Selected
  * Group A:    a          b
  * Group B:    c          d
  *
- * p-value = sum of probabilities of all tables as extreme or more extreme
+ * p-value = sum of probabilities of all tables as extreme or more extreme.
  */
-const hypergeometricProbability = (a, b, c, d) => {
-  const n = a + b + c + d;
-  return (
-    (combination(a + b, a) * combination(c + d, c)) /
-    combination(n, a + c)
-  );
-};
-
 const fisherExactTest = (a, b, c, d) => {
   if ([a, b, c, d].some((v) => !Number.isFinite(v) || v < 0)) {
     throw new Error('Fisher Exact Test requires non-negative finite numbers.');
   }
 
-  const observed = hypergeometricProbability(a, b, c, d);
-  const n = a + b + c + d;
   const rowTotal1 = a + b;
   const rowTotal2 = c + d;
   const colTotal1 = a + c;
 
+  const logObserved = logHypergeometric(a, b, c, d);
   let pValue = 0;
 
-  // Sum all tables with probability <= observed
   const maxA = Math.min(rowTotal1, colTotal1);
   for (let i = 0; i <= maxA; i++) {
-    const newA = i;
-    const newB = rowTotal1 - i;
-    const newC = colTotal1 - i;
-    const newD = rowTotal2 - newC;
-    if (newB < 0 || newC < 0 || newD < 0) continue;
-    const prob = hypergeometricProbability(newA, newB, newC, newD);
-    if (prob <= observed + 1e-10) {
-      pValue += prob;
+    const nb = rowTotal1 - i;
+    const nc = colTotal1 - i;
+    const nd = rowTotal2 - nc;
+    if (nb < 0 || nc < 0 || nd < 0) continue;
+    const logProb = logHypergeometric(i, nb, nc, nd);
+    if (logProb <= logObserved + 1e-10) {
+      pValue += Math.exp(logProb);
     }
   }
 
@@ -74,10 +69,27 @@ const fisherExactTest = (a, b, c, d) => {
 // ─── Chi-Square Test ──────────────────────────────────────────
 /**
  * Chi-Square Test of Independence for 2x2 contingency table.
- *
  * Uses Yates' continuity correction for small samples.
- * p-value approximated from chi-square distribution (1 degree of freedom).
+ * p-value is the complementary error function (erfc) approximation
+ * for chi-square with 1 degree of freedom.
  */
+
+// Abramowitz & Stegun erfc approximation — max |error| < 1.5e-7
+const erfc = (x) => {
+  if (x < 0) return 2 - erfc(-x);
+  const t = 1 / (1 + 0.3275911 * x);
+  const poly =
+    t *
+    (0.254829592 +
+      t * (-0.284496736 + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429))));
+  return poly * Math.exp(-x * x);
+};
+
+const chiSquarePValue1df = (chiSquare) => {
+  if (chiSquare <= 0) return 1;
+  return erfc(Math.sqrt(chiSquare / 2));
+};
+
 const chiSquareFromContingency = (a, b, c, d) => {
   if ([a, b, c, d].some((v) => !Number.isFinite(v) || v < 0)) {
     throw new Error('Chi-Square Test requires non-negative finite numbers.');
@@ -95,15 +107,10 @@ const chiSquareFromContingency = (a, b, c, d) => {
 
   // Yates' continuity correction
   const chiSquare =
-    (n *
-      Math.pow(
-        Math.max(0, Math.abs(a * d - b * c) - n / 2),
-        2
-      )) /
+    (n * Math.pow(Math.max(0, Math.abs(a * d - b * c) - n / 2), 2)) /
     ((a + b) * (c + d) * (a + c) * (b + d));
 
-  // p-value from chi-square CDF (1 df) approximation
-  const pValue = Math.exp(-chiSquare / 2);
+  const pValue = chiSquarePValue1df(chiSquare);
 
   return {
     chiSquare: Number(chiSquare.toFixed(6)),

@@ -27,7 +27,7 @@ const decideFlag = async (req, res, next) => {
       return sendError(res, { statusCode: 400, message: 'Flag has already been reviewed.' });
     }
 
-    flag.status = 'reviewed';
+    flag.status = decision === 'approved' ? 'reviewed' : 'dismissed';
     await flag.save();
 
     await ActivityLog.create({
@@ -67,6 +67,9 @@ const assignFlag = async (req, res, next) => {
     if (!flag) {
       return sendError(res, { statusCode: 404, message: 'Flag not found' });
     }
+
+    flag.assignedTo = assignedTo;
+    await flag.save();
 
     await ActivityLog.create({
       targetType: 'flag',

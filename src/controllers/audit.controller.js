@@ -1,5 +1,7 @@
 const Audit = require('../models/Audit');
+const Finding = require('../models/Finding');
 const ActivityLog = require('../models/ActivityLog');
+const { renderFindingsRegisterPdf } = require('../services/findings/findingsReport.service');
 const { sendSuccess, sendError } = require('../utils/response');
 
 // POST /api/audits
@@ -104,7 +106,8 @@ const updateAudit = async (req, res, next) => {
       return sendError(res, { statusCode: 404, message: 'Audit not found' });
     }
 
-    if (req.user.role === 'analyst' && audit.createdBy.toString() !== req.user._id.toString()) {
+    const ownerOnlyRoles = new Set(['analyst', 'reviewer']);
+    if (ownerOnlyRoles.has(req.user.role) && audit.createdBy.toString() !== req.user._id.toString()) {
       return sendError(res, { statusCode: 403, message: 'You can only update audits you created.' });
     }
 
@@ -149,7 +152,8 @@ const deleteAudit = async (req, res, next) => {
       return sendError(res, { statusCode: 404, message: 'Audit not found' });
     }
 
-    if (req.user.role === 'analyst' && audit.createdBy.toString() !== req.user._id.toString()) {
+    const ownerOnlyRoles = new Set(['analyst', 'manager']);
+    if (ownerOnlyRoles.has(req.user.role) && audit.createdBy.toString() !== req.user._id.toString()) {
       return sendError(res, { statusCode: 403, message: 'You can only delete audits you created.' });
     }
 
@@ -228,4 +232,44 @@ const exportAudits = async (req, res, next) => {
   }
 };
 
-module.exports = { createAudit, getAudits, getAuditById, updateAudit, deleteAudit, exportAudits };
+// GET /api/audits/:id/report — streams Findings Register PDF
+const getAuditReport = async (req, res, next) => {
+  try {
+    const audit = await Audit.findOne({
+      _id: req.params.id,
+      companyName: req.user.companyName,
+    }).populate('createdBy', 'name email');
+
+    if (!audit) {
+      return sendError(res, { statusCode: 404, message: 'Audit not found.' });
+    }
+
+    const findings = await Finding.find({ auditId: audit._id })
+      .populate('flagId', 'group referenceGroup severity testType pValue selectionRate impactRatio')
+      .populate('assignedTo', 'name')
+      .populate('reviewedBy', 'name')
+      .populate('handbookReference.handbookId', 'name')
+      .sort({ 'risk.level': 1, createdAt: 1 })
+      .lean();
+
+    const safeName = (audit.name || 'audit').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const dateStamp = new Date().toISOString().slice(0, 10);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="findings-register-${safeName}-${dateStamp}.pdf"`
+    );
+
+    renderFindingsRegisterPdf({
+      outputStream: res,
+      audit,
+      findings,
+      generatedBy: req.user.name || req.user.email,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { createAudit, getAudits, getAuditById, updateAudit, deleteAudit, exportAudits, getAuditReport };

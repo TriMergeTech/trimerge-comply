@@ -138,6 +138,7 @@ const uploadPayEquityCsv = async (req, res, next) => {
       sizeBytes: fileBuffer.length,
       storage,
       uploadedBy: getUploadedBy(req.user),
+      companyName: req.user.companyName,
       dataset: result.dataset,
       model: result.model,
       payGaps: result.payGaps,
@@ -172,7 +173,7 @@ const uploadPayEquityCsv = async (req, res, next) => {
 // GET /api/payequity
 const listPayEquityAnalyses = async (req, res, next) => {
   try {
-    const analyses = await PayEquityAnalysis.find({})
+    const analyses = await PayEquityAnalysis.find({ companyName: req.user.companyName })
       .sort({ createdAt: -1 })
       .limit(100)
       .lean();

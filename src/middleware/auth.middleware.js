@@ -26,6 +26,13 @@ const protect = async (req, res, next) => {
       return sendError(res, { statusCode: 401, message: 'User not found or deactivated' });
     }
 
+    if (!user.isVerified) {
+      return sendError(res, {
+        statusCode: 403,
+        message: 'Email not verified. Please verify your account first.',
+      });
+    }
+
     req.user = user;
     next();
   } catch (err) {

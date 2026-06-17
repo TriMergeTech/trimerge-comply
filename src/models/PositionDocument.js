@@ -95,6 +95,12 @@ const positionDocumentSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    companyName: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true,
+    },
   },
   { timestamps: true }
 );

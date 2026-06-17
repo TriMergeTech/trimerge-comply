@@ -6,7 +6,7 @@ const router = Router();
 
 router.use(protect);
 
-// GET /api/activity — analyst, admin
-router.get('/', requireRole('analyst', 'admin'), getActivityLogs);
+// GET /api/activity — all internal roles (not client viewer)
+router.get('/', requireRole('analyst', 'reviewer', 'manager', 'director', 'admin'), getActivityLogs);
 
 module.exports = router;

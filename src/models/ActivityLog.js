@@ -4,7 +4,7 @@ const activityLogSchema = new mongoose.Schema(
   {
     targetType: {
       type: String,
-      enum: ['audit', 'flag'],
+      enum: ['audit', 'flag', 'finding', 'handbook', 'position', 'payequity'],
       required: true,
     },
     targetId: {
@@ -22,6 +22,16 @@ const activityLogSchema = new mongoose.Schema(
       ref: 'Flag',
       default: null,
     },
+    findingId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Finding',
+      default: null,
+    },
+    handbookId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Handbook',
+      default: null,
+    },
     performedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
@@ -35,11 +45,28 @@ const activityLogSchema = new mongoose.Schema(
     action: {
       type: String,
       enum: [
+        // Audit
         'audit_created',
         'audit_updated',
         'audit_deleted',
+        // Flag
         'flag_decided',
         'flag_assigned',
+        // Finding
+        'finding_created',
+        'finding_updated',
+        'finding_status_changed',
+        'finding_assigned',
+        // Handbook
+        'handbook_uploaded',
+        'handbook_deleted',
+        // Position document
+        'position_uploaded',
+        'position_reviewed',
+        // Pay equity
+        'payequity_uploaded',
+        // CSV adverse impact
+        'csv_uploaded',
       ],
       required: true,
     },
@@ -54,6 +81,8 @@ const activityLogSchema = new mongoose.Schema(
 activityLogSchema.index({ targetId: 1 });
 activityLogSchema.index({ auditId: 1 });
 activityLogSchema.index({ flagId: 1 });
+activityLogSchema.index({ findingId: 1 });
+activityLogSchema.index({ handbookId: 1 });
 activityLogSchema.index({ performedBy: 1 });
 activityLogSchema.index({ action: 1 });
 activityLogSchema.index({ companyName: 1 });
