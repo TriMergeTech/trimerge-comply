@@ -6,6 +6,10 @@ const {
   buildPositionReportSystemPrompt,
   buildPositionReportUserPrompt,
 } = require('../position/positionReportPrompt.service');
+const {
+  buildPositionStandardsSystemPrompt,
+  buildPositionStandardsUserPrompt,
+} = require('../position/positionStandardsPrompt.service');
 
 const OPENAI_CHAT_COMPLETIONS_URL = 'https://api.openai.com/v1/chat/completions';
 
@@ -37,6 +41,28 @@ const normalizePositionAnalysis = (analysis) => ({
         evidence: finding.evidence || '',
         explanation: finding.explanation || '',
         suggestedImprovement: finding.suggestedImprovement || '',
+      }))
+    : [],
+});
+
+const normalizePositionStandardsReview = (review, standard) => ({
+  standardId: review?.standardId || standard.standardId,
+  standardName: review?.standardName || standard.standardName,
+  overallReadiness: ['ready', 'minor_revision', 'needs_revision'].includes(review?.overallReadiness)
+    ? review.overallReadiness
+    : 'needs_revision',
+  score: Number.isFinite(Number(review?.score))
+    ? Math.max(0, Math.min(100, Math.round(Number(review.score))))
+    : 0,
+  summary: review?.summary || '',
+  issues: Array.isArray(review?.issues)
+    ? review.issues.slice(0, 5).map((issue) => ({
+        section: issue.section || 'General',
+        severity: ['low', 'medium', 'high'].includes(issue.severity)
+          ? issue.severity
+          : 'medium',
+        issue: issue.issue || '',
+        recommendation: issue.recommendation || '',
       }))
     : [],
 });
@@ -131,8 +157,54 @@ const generatePositionReportDraft = async ({ documentView, companyName }) => {
   };
 };
 
+const analyzePositionStandards = async ({ text, fileName, standard }) => {
+  if (!isOpenAIConfigured()) {
+    return {
+      configured: false,
+      skipped: true,
+      review: null,
+    };
+  }
+
+  const response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: buildPositionStandardsSystemPrompt() },
+        { role: 'user', content: buildPositionStandardsUserPrompt({ text, fileName, standard }) },
+      ],
+      response_format: { type: 'json_object' },
+      temperature: 0.15,
+    }),
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.error?.message || 'OpenAI position standards review failed.');
+  }
+
+  const content = result.choices?.[0]?.message?.content;
+
+  if (!content) {
+    throw new Error('OpenAI response did not include standards review content.');
+  }
+
+  return {
+    configured: true,
+    skipped: false,
+    review: normalizePositionStandardsReview(parseJsonResponse(content), standard),
+  };
+};
+
 module.exports = {
   analyzePositionDescription,
+  analyzePositionStandards,
   generatePositionReportDraft,
   isOpenAIConfigured,
 };

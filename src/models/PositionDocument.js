@@ -52,6 +52,10 @@ const positionDocumentSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    extractedText: {
+      type: String,
+      default: '',
+    },
     aiConfigured: {
       type: Boolean,
       default: false,
@@ -62,6 +66,10 @@ const positionDocumentSchema = new mongoose.Schema(
       default: 'stored',
     },
     analysis: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    standardsReview: {
       type: mongoose.Schema.Types.Mixed,
       default: null,
     },

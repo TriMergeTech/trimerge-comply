@@ -64,6 +64,7 @@ const buildPositionDetailView = (documentRecord) => ({
   overallRisk: documentRecord.analysis?.overallRisk || null,
   flagSummary: buildFlagSummary(documentRecord.analysis),
   aiRecommendations: buildAiRecommendations(documentRecord.analysis),
+  standardsReview: documentRecord.standardsReview || null,
   analystNotes: documentRecord.analystNotes || '',
   resolutionStatus: documentRecord.resolutionStatus || 'not_reviewed',
   reviewedBy: documentRecord.reviewedBy || null,

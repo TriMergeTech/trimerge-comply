@@ -29,3 +29,31 @@ If `OPENAI_API_KEY` is empty, the endpoint still stores the document and returns
 ## Later Additions
 
 - Persist AI findings into the shared flag workflow as AI-generated flags.
+
+## Government Posting Standards Review
+
+- Endpoint: `POST /api/position/:id/standards-review`
+- Uses the full extracted position text saved during upload.
+- Compares the posting against a local `usajobs_federal_announcement_v1` checklist.
+- Returns a separate concise AI response with no more than 5 important issues.
+- Keeps the original risk analysis and PDF report behavior unchanged.
+
+### Standards Review Output
+
+```json
+{
+  "standardId": "usajobs_federal_announcement_v1",
+  "standardName": "USAJOBS Federal Job Announcement Structure",
+  "overallReadiness": "needs_revision",
+  "score": 68,
+  "summary": "The posting needs clearer application instructions and benefits information.",
+  "issues": [
+    {
+      "section": "Benefits",
+      "severity": "medium",
+      "issue": "Benefits information is missing.",
+      "recommendation": "Add a short benefits section covering health, retirement, leave, and insurance eligibility."
+    }
+  ]
+}
+```

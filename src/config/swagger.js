@@ -445,6 +445,66 @@ All protected endpoints require a verified email and a valid Bearer token.`,
           responses: { 200: { description: 'Position document review updated successfully' }, 400: { description: 'Missing review fields' }, 404: { description: 'Position document not found' }, 422: { description: 'Invalid resolution status' } },
         },
       },
+      '/api/position/{id}/standards-review': {
+        post: {
+          tags: ['Position Description AI'],
+          summary: 'Run government posting standards review',
+          description: 'Compares a saved position description against a concise USAJOBS-style government job posting checklist and returns only the most important issues. New uploads store full extracted text for this review.',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a0f1185927a7ccf9ab71252' },
+          ],
+          responses: {
+            200: {
+              description: 'Position standards review completed successfully',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      message: { type: 'string' },
+                      data: {
+                        type: 'object',
+                        properties: {
+                          documentId: { type: 'string', example: '6a0f1185927a7ccf9ab71252' },
+                          aiConfigured: { type: 'boolean', example: true },
+                          standardsReview: {
+                            type: 'object',
+                            properties: {
+                              standardId: { type: 'string', example: 'usajobs_federal_announcement_v1' },
+                              standardName: { type: 'string', example: 'USAJOBS Federal Job Announcement Structure' },
+                              overallReadiness: { type: 'string', enum: ['ready', 'minor_revision', 'needs_revision'], example: 'needs_revision' },
+                              score: { type: 'integer', example: 68 },
+                              summary: { type: 'string', example: 'The posting needs clearer application instructions and benefits information.' },
+                              issues: {
+                                type: 'array',
+                                maxItems: 5,
+                                items: {
+                                  type: 'object',
+                                  properties: {
+                                    section: { type: 'string', example: 'Benefits' },
+                                    severity: { type: 'string', enum: ['low', 'medium', 'high'], example: 'medium' },
+                                    issue: { type: 'string', example: 'Benefits information is missing.' },
+                                    recommendation: { type: 'string', example: 'Add a short benefits section covering health, retirement, leave, and insurance eligibility.' },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            400: { description: 'Invalid position document id' },
+            404: { description: 'Position document not found' },
+            422: { description: 'Full extracted text unavailable for older upload' },
+            500: { description: 'AI standards review failed' },
+          },
+        },
+      },
       '/api/position/{id}/report': {
         get: {
           tags: ['Position Description AI'],

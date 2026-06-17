@@ -1,5 +1,6 @@
 const express = require('express');
 const {
+  createPositionStandardsReview,
   getPositionDocumentDetail,
   getPositionDocumentReport,
   listPositionDocuments,
@@ -15,6 +16,7 @@ const router = express.Router();
 router.get('/', protect, requireRole(...ALL_INTERNAL, 'viewer'), listPositionDocuments);
 router.get('/:id', protect, requireRole(...ALL_INTERNAL, 'viewer'), getPositionDocumentDetail);
 router.patch('/:id/review', protect, requireRole(...ALL_INTERNAL), updatePositionDocumentReview);
+router.post('/:id/standards-review', protect, requireRole(...ALL_INTERNAL), createPositionStandardsReview);
 router.get('/:id/report', protect, requireRole(...ALL_INTERNAL), getPositionDocumentReport);
 
 router.post(

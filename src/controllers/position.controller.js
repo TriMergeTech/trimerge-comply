@@ -1,7 +1,12 @@
 const mongoose = require('mongoose');
 const PositionDocument = require('../models/PositionDocument');
-const { analyzePositionDescription, generatePositionReportDraft } = require('../services/ai/openai.service');
+const {
+  analyzePositionDescription,
+  analyzePositionStandards,
+  generatePositionReportDraft,
+} = require('../services/ai/openai.service');
 const { extractPositionText } = require('../services/position/positionText.service');
+const { getGovernmentJobPostingStandard } = require('../services/position/positionStandardsChecklist.service');
 const { buildPositionDetailView, buildPositionUiRow } = require('../services/position/positionUi.service');
 const { buildFallbackReportDraft, renderPositionReportPdf } = require('../services/position/positionReportPdf.service');
 const { uploadRawToCloudinary } = require('../services/storage/cloudinary.service');
@@ -114,6 +119,7 @@ const uploadPositionDocument = async (req, res, next) => {
       companyName: req.user.companyName,
       textLength: extraction.text.length,
       extractedTextPreview: extraction.text.slice(0, 500),
+      extractedText: extraction.text,
       aiConfigured: aiResult.configured,
       analysisStatus: aiResult.skipped ? 'skipped' : 'completed',
       analysis: aiResult.analysis,
@@ -137,6 +143,55 @@ const uploadPositionDocument = async (req, res, next) => {
           overallRisk: null,
           findings: [],
         },
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /api/position/:id/standards-review
+const createPositionStandardsReview = async (req, res, next) => {
+  try {
+    if (!validateDocumentId(res, req.params.id)) {
+      return null;
+    }
+
+    const documentRecord = await PositionDocument.findById(req.params.id);
+
+    if (!documentRecord) {
+      return sendError(res, {
+        statusCode: 404,
+        message: 'Position document not found.',
+      });
+    }
+
+    if (!documentRecord.extractedText) {
+      return sendError(res, {
+        statusCode: 422,
+        message: 'Full extracted text is not available for this document. Re-upload the document to run standards review.',
+      });
+    }
+
+    const standard = getGovernmentJobPostingStandard();
+    const standardsResult = await analyzePositionStandards({
+      text: documentRecord.extractedText,
+      fileName: documentRecord.fileName,
+      standard,
+    });
+
+    documentRecord.standardsReview = standardsResult.review;
+    documentRecord.markModified('standardsReview');
+    await documentRecord.save();
+
+    return sendSuccess(res, {
+      message: standardsResult.skipped
+        ? 'Position standards review skipped because OPENAI_API_KEY is not configured.'
+        : 'Position standards review completed successfully.',
+      data: {
+        documentId: documentRecord._id,
+        aiConfigured: standardsResult.configured,
+        standardsReview: standardsResult.review,
       },
     });
   } catch (err) {
@@ -304,6 +359,7 @@ const getPositionDocumentReport = async (req, res, next) => {
 };
 
 module.exports = {
+  createPositionStandardsReview,
   getPositionDocumentDetail,
   getPositionDocumentReport,
   listPositionDocuments,
