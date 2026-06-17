@@ -11,7 +11,8 @@ const uploadRoutes    = require('./routes/upload.routes');
 const flagRoutes      = require('./routes/flag.routes');
 const auditRoutes     = require('./routes/audit.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
-const payEquityRoutes = require('./routes/payequity.routes');
+const payEquityRoutes  = require('./routes/payequity.routes');
+const positionRoutes   = require('./routes/position.routes');
 const { errorHandler, notFound } = require('./middleware/error.middleware');
 const { sendSuccess } = require('./utils/response');
 
@@ -79,6 +80,7 @@ app.use('/api/flags',     flagRoutes);
 app.use('/api/audits',     auditRoutes);
 app.use('/api/dashboard',  dashboardRoutes);
 app.use('/api/payequity',  payEquityRoutes);
+app.use('/api/position',   positionRoutes);
 
 // ─── 404 + global error handler ─────────────────────────────
 app.use(notFound);
