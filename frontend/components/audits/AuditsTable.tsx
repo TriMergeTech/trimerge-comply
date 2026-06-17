@@ -199,7 +199,11 @@ export default function AuditsTable({ filters, refreshKey }: AuditsTableProps) {
                   <td className="py-3 text-slate-700 font-medium">
                     {audit.organization ?? '—'}
                   </td>
-                  <td className="py-3 text-slate-500">{audit.name}</td>
+                  <td className="py-3 text-slate-500">
+                    <a href={`/audits/${audit._id}`} className="text-indigo-500 hover:underline">
+                      {audit.name}
+                    </a>
+                  </td>
                   <td className="py-3">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(audit.status)}`}>
                       {audit.status}

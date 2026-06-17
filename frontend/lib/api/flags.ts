@@ -62,8 +62,23 @@ export async function getFlags(params: GetFlagsParams = {}): Promise<{ flags: Fl
   return res.data;
 }
 
-export async function getFlagById(id: string): Promise<FlagItem> {
-  const res = await flagFetch<{ data: FlagItem }>(`/flags/${id}`);
+export interface FlagDetail {
+  flag: FlagItem;
+  explanation: string;
+}
+
+export async function getFlagById(id: string): Promise<FlagDetail> {
+  const res = await flagFetch<{ data: FlagDetail }>(`/flags/${id}`);
   return res.data;
+}
+
+export type DecisionValue = 'approved' | 'dismissed'
+
+export async function decideFlag(id: string, decision: DecisionValue, reason: string): Promise<FlagItem> {
+  const res = await flagFetch<{ data: { flag: FlagItem } }>(`/flags/${id}/decide`, {
+    method: 'POST',
+    body: JSON.stringify({ decision, reason }),
+  });
+  return res.data.flag;
 }
 
