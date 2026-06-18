@@ -11,11 +11,18 @@ export interface FlagResults {
   fishersExact?: number;
 }
 
+export interface FlagAudit {
+  _id: string;
+  name: string;
+  status: string;
+  organization?: string;
+}
+
 export interface FlagItem {
   _id: string;
   name?: string;              // flag name e.g. "Position - Selection - J"
   testType: string;
-  auditId?: string;
+  auditId?: string | FlagAudit;
   group: string;              // demographic group e.g. Female
   referenceGroup: string;     // comparison group e.g. Male
   selected: number;

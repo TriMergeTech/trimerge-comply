@@ -103,7 +103,7 @@ export default function FlagQueueTable({ flags, loading }: Props) {
                     {engineLabel[flag.testType] ?? flag.testType}
                   </td>
                   <td className="py-3 text-slate-500">
-                    {flag.auditId ?? '—'}
+                    {typeof flag.auditId === 'object' ? flag.auditId?.name : flag.auditId ?? '—'}
                   </td>
                   <td className="py-3">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getSeverityColor(flag.severity)}`}>

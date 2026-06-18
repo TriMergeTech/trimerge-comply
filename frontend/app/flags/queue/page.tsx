@@ -20,14 +20,14 @@ const engineMap: Record<string, string> = {
 export default function FlagQueue() {
   const [selectedEngine, setSelectedEngine] = useState('All Engines')
   const [selectedSeverity, setSelectedSeverity] = useState('All Severities')
-  const [selectedStatus, setSelectedStatus] = useState('Pending')
+  const [selectedStatus, setSelectedStatus] = useState('open')
 
   const [flags, setFlags] = useState<FlagItem[]>([])
   const [loading, setLoading] = useState(true)
 
   const engineOptions = ['All Engines', 'Adverse Impact', 'Position Description', 'Pay Equity']
   const severityOptions = ['All Severities', 'Critical', 'High', 'Medium', 'Low']
-  const statusOptions = ['Pending', 'Confirmed', 'Dismissed', 'Escalated']
+  const statusOptions = ['open', 'reviewed']
 
   useEffect(() => {
     setLoading(true)
