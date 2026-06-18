@@ -125,11 +125,13 @@ const chiSquareFromContingency = (a, b, c, d) => {
 /**
  * Determines severity based on impact ratio and p-value.
  *
- * high   — impact ratio < 0.6 OR p-value < 0.01
- * medium — impact ratio < 0.8 OR p-value < 0.05
- * low    — flagged but borderline
+ * critical — impact ratio < 0.5 (egregious; protected group selected at less than half the reference rate)
+ * high     — impact ratio < 0.6 OR p-value < 0.01
+ * medium   — impact ratio < 0.8 OR p-value < 0.05
+ * low      — flagged but borderline
  */
 const scoreSeverity = (impactRatio, pValue = null) => {
+  if (impactRatio < 0.5) return 'critical';
   if (impactRatio < 0.6 || (pValue !== null && pValue < 0.01)) return 'high';
   if (impactRatio < 0.8 || (pValue !== null && pValue < 0.05)) return 'medium';
   return 'low';
@@ -175,6 +177,7 @@ const analyzeGroup = (group, reference, threshold = 0.8) => {
 };
 
 module.exports = {
+  chiSquarePValue1df,
   fisherExactTest,
   chiSquareFromContingency,
   scoreSeverity,

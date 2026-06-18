@@ -1,27 +1,63 @@
 const Flag = require('../models/Flag');
+const { chiSquarePValue1df } = require('../services/analytics/statisticalEngine');
 const { sendSuccess, sendError } = require('../utils/response');
 
+const SEVERITY_SUFFIX = {
+  critical: ' This flag is rated CRITICAL severity and requires immediate escalation.',
+  high: ' This flag is rated HIGH severity and requires immediate review.',
+  medium: ' This flag is rated MEDIUM severity and should be reviewed promptly.',
+  low: ' This flag is rated LOW severity.',
+};
+
 const generateExplanation = (flag) => {
-  const { group, referenceGroup, selectionRate, impactRatio, threshold, testType, pValue, severity, flagged } = flag;
-  const selectionPct = (selectionRate * 100).toFixed(1);
-  const impactPct = (impactRatio * 100).toFixed(1);
+  const { threshold = 0.8, severity, testType, pValue } = flag;
   const thresholdPct = (threshold * 100).toFixed(1);
-  let explanation = `The ${group} group has a selection rate of ${selectionPct}% compared to the reference group (${referenceGroup}), resulting in an impact ratio of ${impactPct}% — `;
-  explanation += flagged
+  const severitySuffix = SEVERITY_SUFFIX[severity] || '';
+
+  // CSV-based adverse impact flag — data lives in results object
+  if (flag.results && flag.results.demographicGroup) {
+    const { jobTitle, stage, demographicGroup, fourFifthsRule, chiSquare, fishersExact } = flag.results;
+    const ratioPct = fourFifthsRule != null ? (fourFifthsRule * 100).toFixed(1) : 'N/A';
+    const belowThreshold = fourFifthsRule != null && fourFifthsRule < threshold;
+
+    let explanation = `The ${demographicGroup} group`;
+    if (jobTitle) explanation += ` in the "${jobTitle}" role`;
+    if (stage) explanation += ` (${stage} stage)`;
+    explanation += ` has a four-fifths rule ratio of ${ratioPct}% — `;
+    explanation += belowThreshold
+      ? `below the ${thresholdPct}% threshold, indicating potential adverse impact.`
+      : `at or above the ${thresholdPct}% threshold, no adverse impact detected.`;
+
+    if (fishersExact != null) {
+      explanation += ` Fisher's Exact Test p-value: ${fishersExact} (${fishersExact < 0.05 ? 'statistically significant' : 'not statistically significant'}).`;
+    }
+    if (chiSquare != null) {
+      const chiPValue = Number(chiSquarePValue1df(chiSquare).toFixed(4));
+      explanation += ` Chi-Square p-value: ${chiPValue} (${chiPValue < 0.05 ? 'statistically significant' : 'not statistically significant'}).`;
+    }
+
+    return explanation + severitySuffix;
+  }
+
+  // Audit-linked flag — data on top-level fields
+  const { group, referenceGroup, selectionRate, impactRatio } = flag;
+  const selectionPct = selectionRate != null ? (selectionRate * 100).toFixed(1) : 'N/A';
+  const impactPct = impactRatio != null ? (impactRatio * 100).toFixed(1) : 'N/A';
+  const belowThreshold = impactRatio != null && impactRatio < threshold;
+
+  let explanation = `The ${group || 'unknown'} group has a selection rate of ${selectionPct}%`;
+  if (referenceGroup) explanation += ` compared to the reference group (${referenceGroup})`;
+  explanation += `, resulting in an impact ratio of ${impactPct}% — `;
+  explanation += belowThreshold
     ? `below the ${thresholdPct}% threshold, indicating potential adverse impact.`
-    : `above the ${thresholdPct}% threshold, no adverse impact detected.`;
-  if (pValue !== null && pValue !== undefined) {
-    const significant = pValue < 0.05;
-    explanation += ` ${testType === 'fisher_exact' ? "Fisher's Exact Test" : 'Chi-Square Test'} returned a p-value of ${pValue}, which is ${significant ? 'statistically significant (p < 0.05)' : 'not statistically significant (p ≥ 0.05)'}.`;
+    : `at or above the ${thresholdPct}% threshold, no adverse impact detected.`;
+
+  if (pValue != null) {
+    const label = testType === 'fisher_exact' ? "Fisher's Exact Test" : 'Chi-Square Test';
+    explanation += ` ${label} p-value: ${pValue} (${pValue < 0.05 ? 'statistically significant (p < 0.05)' : 'not statistically significant (p ≥ 0.05)'}).`;
   }
-  if (severity === 'high') {
-    explanation += ' This flag is rated HIGH severity and requires immediate review.';
-  } else if (severity === 'medium') {
-    explanation += ' This flag is rated MEDIUM severity and should be reviewed promptly.';
-  } else {
-    explanation += ' This flag is rated LOW severity.';
-  }
-  return explanation;
+
+  return explanation + severitySuffix;
 };
 
 // GET /api/flags
