@@ -69,29 +69,54 @@ export interface PayEquityAnalysis {
 
 // Upload a CSV file and run pay equity analysis
 // Uses FormData — Content-Type is set by the browser automatically (with boundary)
-export async function uploadPayEquityFile(file: File): Promise<PayEquityAnalysis> {
+export async function uploadPayEquityFile(file: File): Promise<void> {
     const token = getAccessToken();
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append('file', file);
 
     const headers: Record<string, string> = {};
-    if (token) headers["Authorization"] = `Bearer ${token}`;
+    if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const res = await fetch(`${BASE}/payequity/upload`, {
-        method: "POST",
+    const res = await fetch(`${BASE}/payequity/upload/`, {
+        method: 'POST',
         headers,
         body: formData,
     });
 
     const data = await res.json();
-    if (!res.ok) throw new Error(data.message ?? "Upload failed");
-    return (data as { success: boolean; data: { analysis: PayEquityAnalysis } }).data.analysis;
+    if (!res.ok) throw new Error(data.message ?? 'Upload failed');
 }
 
 // List all pay equity analyses (newest first)
 export async function getPayEquityAnalyses(): Promise<PayEquityAnalysis[]> {
-    const response = await payEquityFetch<{ success: boolean; data: { analyses: PayEquityAnalysis[] } }>(
-        "/payequity"
-    );
-    return response.data.analyses;
+    const token = getAccessToken();
+    const res = await fetch(`${BASE}/payequity`, {
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message ?? 'Request failed');
+    const analyses: any[] = data.data?.analyses ?? data.analyses ?? [];
+    return analyses.map((a) => ({
+        _id: a.id,
+        fileName: a.fileName,
+        totalEmployees: a.uiSummary?.totalEmployees ?? 0,
+        departmentsAnalyzed: a.uiSummary?.departmentsAnalyzed ?? 0,
+        demographicGroupsCount: a.uiSummary?.demographicGroups ?? 0,
+        flagsGenerated: a.uiSummary?.flagsGenerated ?? 0,
+        departmentGaps: (a.uiSummary?.payGapsByDepartment ?? []).map((d: any) => ({
+            department: d.department,
+            gap: d.unadjustedGapPercent ?? 0,
+        })),
+        demographicGaps: (a.uiSummary?.demographicGapsOverall ?? []).map((d: any) => ({
+            group: d.demographicGroup,
+            unadjustedGap: d.unadjustedGapPercent ?? 0,
+            adjustedGap: d.adjustedGapPercent ?? 0,
+            flagged: d.flagged ?? false,
+        })),
+        createdAt: a.date,
+        updatedAt: a.date,
+    }));
 }
