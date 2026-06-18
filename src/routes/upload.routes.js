@@ -1,8 +1,15 @@
 const express = require('express');
-const { processCsvUpload } = require('../controllers/upload.controller');
+const { processCsvUpload, listAdverseImpactAnalyses } = require('../controllers/upload.controller');
 const { protect, requireRole } = require('../middleware/auth.middleware');
 
 const router = express.Router();
+
+router.get(
+  '/csv',
+  protect,
+  requireRole('analyst', 'reviewer', 'manager', 'director', 'admin'),
+  listAdverseImpactAnalyses
+);
 
 router.post(
   '/csv',

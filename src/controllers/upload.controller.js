@@ -1,5 +1,7 @@
+const AdverseImpactAnalysis = require('../models/AdverseImpactAnalysis');
 const { processAdverseImpactCsv } = require('../services/analytics/csvAdverseImpactProcessor');
 const { uploadCsvToCloudinary } = require('../services/storage/cloudinary.service');
+const { getUploadedBy, getUploaderLabel } = require('../utils/uploadedBy');
 const { sendSuccess, sendError } = require('../utils/response');
 
 const getBoundary = (contentType = '') => {
@@ -110,9 +112,24 @@ const processCsvUpload = async (req, res, next) => {
       fileName,
     });
 
+    const record = await AdverseImpactAnalysis.create({
+      fileName,
+      mimeType,
+      sizeBytes: Buffer.byteLength(csvText, 'utf8'),
+      storage,
+      uploadedBy: getUploadedBy(req.user),
+      companyName: req.user.companyName,
+      datasetType: result.datasetType,
+      summary: result.summary,
+      analysis: result.analysis,
+      warnings: result.warnings,
+      status: 'processed',
+    });
+
     return sendSuccess(res, {
       message: 'CSV processed and stored successfully.',
       data: {
+        analysisId: record._id,
         ...result,
         upload: {
           fileName,
@@ -126,6 +143,36 @@ const processCsvUpload = async (req, res, next) => {
   }
 };
 
+// GET /api/upload/csv
+const listAdverseImpactAnalyses = async (req, res, next) => {
+  try {
+    const records = await AdverseImpactAnalysis.find({ companyName: req.user.companyName })
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
+
+    return sendSuccess(res, {
+      message: 'Adverse impact analyses retrieved successfully.',
+      data: {
+        analyses: records.map((r) => ({
+          id: r._id,
+          fileName: r.fileName,
+          datasetType: r.datasetType,
+          status: r.status,
+          uploadedBy: getUploaderLabel(r.uploadedBy),
+          summary: r.summary,
+          warnings: r.warnings,
+          date: r.createdAt,
+        })),
+        total: records.length,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   processCsvUpload,
+  listAdverseImpactAnalyses,
 };

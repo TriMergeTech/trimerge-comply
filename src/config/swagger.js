@@ -383,13 +383,56 @@ All protected endpoints require a verified email and a valid Bearer token.`,
         },
       },
       '/api/upload/csv': {
+        get: {
+          tags: ['CSV Upload'],
+          summary: 'List adverse impact analyses',
+          description: 'Returns all adverse impact CSV analyses for the authenticated user\'s company, sorted newest first. Requires analyst role or above.',
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: {
+              description: 'Analyses retrieved successfully',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      analyses: {
+                        type: 'array',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            id: { type: 'string' },
+                            fileName: { type: 'string', example: 'q1-adverse-impact.csv' },
+                            datasetType: { type: 'string', example: 'grouped_adverse_impact' },
+                            status: { type: 'string', enum: ['processed', 'failed'] },
+                            uploadedBy: { type: 'string', example: 'analyst@trimerge.com' },
+                            summary: { type: 'object' },
+                            warnings: { type: 'array', items: { type: 'object' } },
+                            date: { type: 'string', format: 'date-time' },
+                          },
+                        },
+                      },
+                      total: { type: 'integer', example: 3 },
+                    },
+                  },
+                },
+              },
+            },
+            401: { description: 'Unauthorized' },
+          },
+        },
         post: {
           tags: ['CSV Upload'],
           summary: 'Process adverse impact CSV',
-          description: 'Upload a CSV file and run validation plus analytics processing. Requires analyst, manager, director, or admin role.',
+          description: 'Upload a CSV file and run validation plus analytics processing. Results are saved for later retrieval. Requires analyst, manager, director, or admin role.',
           security: [{ bearerAuth: [] }],
           requestBody: { required: true, content: { 'multipart/form-data': { schema: { type: 'object', required: ['file'], properties: { file: { type: 'string', format: 'binary', description: 'CSV file with columns: group, selected, total' } } } }, 'application/json': { schema: { type: 'object', required: ['csvText'], properties: { csvText: { type: 'string', example: 'group,selected,total\nMale,80,100\nFemale,30,50' } } } } } },
-          responses: { 200: { description: 'CSV processed successfully' }, 400: { description: 'Missing CSV content' }, 422: { description: 'CSV validation failed' }, 500: { description: 'CSV processing or Cloudinary storage failed' } },
+          responses: {
+            200: { description: 'CSV processed successfully — analysisId included in response' },
+            400: { description: 'Missing CSV content' },
+            422: { description: 'CSV validation failed' },
+            500: { description: 'CSV processing or Cloudinary storage failed' },
+          },
         },
       },
       '/api/position/upload': {
