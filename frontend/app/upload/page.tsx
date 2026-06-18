@@ -1,7 +1,12 @@
+'use client'
+
+import { useState } from 'react'
 import UploadZone from '@/components/upload/UploadZone'
 import RecentUploads from '@/components/upload/RecentUploads'
 
 export default function Upload() {
+  const [refreshKey, setRefreshKey] = useState(0)
+
   return (
     <div className="flex flex-col gap-6">
 
@@ -14,12 +19,12 @@ export default function Upload() {
           Adverse Impact Analysis
         </p>
       </div>
-      
+
       {/* Upload zone */}
-      <UploadZone />
+      <UploadZone onSuccess={() => setRefreshKey((k) => k + 1)} />
 
       {/* Recent uploads */}
-      <RecentUploads />
+      <RecentUploads refreshKey={refreshKey} />
 
     </div>
   )
