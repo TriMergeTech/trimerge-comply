@@ -2,6 +2,30 @@ const Flag = require('../models/Flag');
 const { chiSquarePValue1df } = require('../services/analytics/statisticalEngine');
 const { sendSuccess, sendError } = require('../utils/response');
 
+const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+
+// Normalizes a flag document to match the frontend FlagItem contract:
+// - severity title-cased ('critical' → 'Critical')
+// - CSV-based flags get top-level group/selectionRate/impactRatio/pValue
+//   backfilled from results so the frontend doesn't receive nulls
+const formatFlagForResponse = (flag) => {
+  const obj = flag.toObject ? flag.toObject() : { ...flag };
+
+  obj.severity = capitalize(obj.severity);
+
+  if (obj.results && obj.results.demographicGroup) {
+    obj.group         = obj.group         ?? obj.results.demographicGroup;
+    obj.referenceGroup= obj.referenceGroup?? 'Reference Group';
+    obj.selectionRate = obj.selectionRate  ?? obj.results.fourFifthsRule ?? null;
+    obj.impactRatio   = obj.impactRatio    ?? obj.results.fourFifthsRule ?? null;
+    obj.pValue        = obj.pValue         ?? obj.results.fishersExact   ?? null;
+    obj.selected      = obj.selected       ?? null;
+    obj.total         = obj.total          ?? null;
+  }
+
+  return obj;
+};
+
 const SEVERITY_SUFFIX = {
   critical: ' This flag is rated CRITICAL severity and requires immediate escalation.',
   high: ' This flag is rated HIGH severity and requires immediate review.',
@@ -68,7 +92,7 @@ const getFlags = async (req, res, next) => {
     const filter = { organizationId: req.user.organizationId };
     if (auditId) filter.auditId = auditId;
     if (status) filter.status = status;
-    if (severity) filter.severity = severity;
+    if (severity) filter.severity = severity.toLowerCase();
     if (testType) filter.testType = testType;
 
     const parsedPage = Math.max(parseInt(page) || 1, 1);
@@ -86,7 +110,8 @@ const getFlags = async (req, res, next) => {
     return sendSuccess(res, {
       message: 'Flags retrieved successfully',
       data: {
-        flags,
+        flags: flags.map(formatFlagForResponse),
+        total,
         pagination: {
           total,
           page: parsedPage,
@@ -115,7 +140,7 @@ const getFlagById = async (req, res, next) => {
     const explanation = generateExplanation(flag);
     return sendSuccess(res, {
       message: 'Flag retrieved successfully',
-      data: { flag, explanation },
+      data: { flag: formatFlagForResponse(flag), explanation },
     });
   } catch (err) {
     next(err);
