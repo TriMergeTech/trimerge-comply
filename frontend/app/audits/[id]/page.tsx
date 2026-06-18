@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import AuditDetail from '@/components/audits/AuditDetail'
+import DecisionPanel from '@/components/flags/DecisionPanel'
 import { getAuditById, Audit } from '@/lib/api/audits'
 
 export default function AuditDetailPage() {
@@ -50,7 +51,17 @@ export default function AuditDetailPage() {
                 </Link>
             </div>
 
-            <AuditDetail audit={audit} />
+            <div className="flex flex-col lg:flex-row gap-6">
+
+                <div className="flex-1">
+                    <AuditDetail audit={audit} />
+                </div>
+
+                <div className="lg:w-80">
+                    <DecisionPanel />
+                </div>
+
+            </div>
 
         </div>
     )

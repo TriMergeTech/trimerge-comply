@@ -10,7 +10,7 @@ const decisionMap: Record<string, DecisionValue> = {
 }
 
 type Props = {
-  flagId: string
+  flagId?: string
   onDecided?: (decision: string, rationale: string) => void
 }
 
@@ -24,7 +24,7 @@ export default function DecisionPanel({ flagId, onDecided }: Props) {
     if (!decision || !rationale || submitting) return
     setSubmitting(true)
     try {
-      await decideFlag(flagId, decisionMap[decision], rationale)
+      if (flagId) await decideFlag(flagId, decisionMap[decision], rationale)
       toast.success('Decision submitted successfully.')
       setDecided(true)
       onDecided?.(decision, rationale)
