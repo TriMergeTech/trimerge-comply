@@ -35,6 +35,7 @@ const handbookSchema = new mongoose.Schema(
     },
 
     companyName: { type: String, trim: true, default: null },
+    organizationId: { type: String, trim: true, default: null, index: true },
 
     textLength: { type: Number, default: 0 },
     chunkCount: { type: Number, default: 0 },

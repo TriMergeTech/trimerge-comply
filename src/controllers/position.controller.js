@@ -117,6 +117,7 @@ const uploadPositionDocument = async (req, res, next) => {
       storage,
       uploadedBy: getUploadedBy(req.user),
       companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
       textLength: extraction.text.length,
       extractedTextPreview: extraction.text.slice(0, 500),
       extractedText: extraction.text,
@@ -205,7 +206,7 @@ const createPositionStandardsReview = async (req, res, next) => {
 // GET /api/position
 const listPositionDocuments = async (req, res, next) => {
   try {
-    const documents = await PositionDocument.find({ companyName: req.user.companyName })
+    const documents = await PositionDocument.find({ organizationId: req.user.organizationId })
       .sort({ createdAt: -1 })
       .limit(100)
       .lean();
@@ -230,7 +231,7 @@ const getPositionDocumentDetail = async (req, res, next) => {
 
     const documentRecord = await PositionDocument.findOne({
       _id: req.params.id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
     }).lean();
 
     if (!documentRecord) {
@@ -291,7 +292,7 @@ const updatePositionDocumentReview = async (req, res, next) => {
     updates.reviewedAt = new Date();
 
     const documentRecord = await PositionDocument.findOneAndUpdate(
-      { _id: req.params.id, companyName: req.user.companyName },
+      { _id: req.params.id, organizationId: req.user.organizationId },
       { $set: updates },
       { new: true, runValidators: true }
     ).lean();
@@ -323,7 +324,7 @@ const getPositionDocumentReport = async (req, res, next) => {
 
     const documentRecord = await PositionDocument.findOne({
       _id: req.params.id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
     }).lean();
 
     if (!documentRecord) {

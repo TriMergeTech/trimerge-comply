@@ -48,6 +48,7 @@ const findingSchema = new mongoose.Schema(
     reviewedAt: { type: Date, default: null },
 
     companyName: { type: String, trim: true, default: null },
+    organizationId: { type: String, trim: true, default: null, index: true },
   },
   { timestamps: true }
 );

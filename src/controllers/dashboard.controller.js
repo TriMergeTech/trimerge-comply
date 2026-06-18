@@ -19,7 +19,7 @@ const toCSV = (headers, rows) => {
 // GET /api/dashboard/summary
 const getDashboardSummary = async (req, res, next) => {
   try {
-    const company = { companyName: req.user.companyName };
+    const company = { organizationId: req.user.organizationId };
 
     const [
       totalAudits,
@@ -115,7 +115,7 @@ const getDashboardSummary = async (req, res, next) => {
 // GET /api/dashboard/export
 const exportDashboard = async (req, res, next) => {
   try {
-    const company = { companyName: req.user.companyName };
+    const company = { organizationId: req.user.organizationId };
 
     const [audits, flags] = await Promise.all([
       Audit.find(company).sort({ createdAt: -1 }).populate('createdBy', 'name email role'),

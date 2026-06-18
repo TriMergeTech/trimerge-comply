@@ -6,7 +6,7 @@ const getActivityLogs = async (req, res, next) => {
   try {
     const { targetType, action, performedBy, auditId, page = 1, limit = 20 } = req.query;
 
-    const filter = { companyName: req.user.companyName };
+    const filter = { organizationId: req.user.organizationId };
     if (targetType) filter.targetType = targetType;
     if (action) filter.action = action;
     if (auditId) filter.auditId = auditId;

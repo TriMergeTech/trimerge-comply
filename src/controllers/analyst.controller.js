@@ -16,7 +16,7 @@ const decideFlag = async (req, res, next) => {
 
     const flag = await Flag.findOne({
       _id: req.params.id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
     });
 
     if (!flag) {
@@ -27,8 +27,13 @@ const decideFlag = async (req, res, next) => {
       return sendError(res, { statusCode: 400, message: 'Flag has already been reviewed.' });
     }
 
-    flag.status = decision === 'approved' ? 'reviewed' : 'dismissed';
-    await flag.save();
+    const newStatus = decision === 'approved' ? 'reviewed' : 'dismissed';
+
+    const updated = await Flag.findByIdAndUpdate(
+      flag._id,
+      { $set: { status: newStatus } },
+      { new: true }
+    );
 
     await ActivityLog.create({
       targetType: 'flag',
@@ -36,14 +41,14 @@ const decideFlag = async (req, res, next) => {
       flagId: flag._id,
       auditId: flag.auditId,
       performedBy: req.user._id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
       action: 'flag_decided',
       details: { decision, reason: reason || null },
     });
 
     return sendSuccess(res, {
       message: `Flag ${decision} successfully.`,
-      data: { flag },
+      data: { flag: updated },
     });
   } catch (err) {
     next(err);
@@ -59,17 +64,15 @@ const assignFlag = async (req, res, next) => {
       return sendError(res, { statusCode: 400, message: 'assignedTo user ID is required.' });
     }
 
-    const flag = await Flag.findOne({
-      _id: req.params.id,
-      companyName: req.user.companyName,
-    });
+    const flag = await Flag.findOneAndUpdate(
+      { _id: req.params.id, organizationId: req.user.organizationId },
+      { $set: { assignedTo } },
+      { new: true }
+    );
 
     if (!flag) {
       return sendError(res, { statusCode: 404, message: 'Flag not found' });
     }
-
-    flag.assignedTo = assignedTo;
-    await flag.save();
 
     await ActivityLog.create({
       targetType: 'flag',
@@ -77,7 +80,7 @@ const assignFlag = async (req, res, next) => {
       flagId: flag._id,
       auditId: flag.auditId,
       performedBy: req.user._id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
       action: 'flag_assigned',
       details: { assignedTo },
     });

@@ -15,7 +15,7 @@ const createAudit = async (req, res, next) => {
       clientName,
       auditType,
       createdBy: req.user._id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
     });
 
     await ActivityLog.create({
@@ -23,7 +23,7 @@ const createAudit = async (req, res, next) => {
       targetId: audit._id,
       auditId: audit._id,
       performedBy: req.user._id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
       action: 'audit_created',
       details: {
         name: audit.name,
@@ -48,7 +48,7 @@ const createAudit = async (req, res, next) => {
 const getAudits = async (req, res, next) => {
   try {
     const { clientName, auditType, auditName, status } = req.query;
-    const filter = { companyName: req.user.companyName };
+    const filter = { organizationId: req.user.organizationId };
 
     if (clientName) {
       filter.$or = [
@@ -78,7 +78,7 @@ const getAuditById = async (req, res, next) => {
   try {
     const audit = await Audit.findOne({
       _id: req.params.id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
     }).populate('createdBy', 'name email role companyName');
 
     if (!audit) {
@@ -99,7 +99,7 @@ const updateAudit = async (req, res, next) => {
     const { name, description, organization, status, clientName, auditType } = req.body;
     const audit = await Audit.findOne({
       _id: req.params.id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
     });
 
     if (!audit) {
@@ -126,7 +126,7 @@ const updateAudit = async (req, res, next) => {
       targetId: audit._id,
       auditId: audit._id,
       performedBy: req.user._id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
       action: 'audit_updated',
       details: { changes },
     });
@@ -145,7 +145,7 @@ const deleteAudit = async (req, res, next) => {
   try {
     const audit = await Audit.findOne({
       _id: req.params.id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
     });
 
     if (!audit) {
@@ -164,7 +164,7 @@ const deleteAudit = async (req, res, next) => {
       targetId: audit._id,
       auditId: audit._id,
       performedBy: req.user._id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
       action: 'audit_deleted',
       details: { name: audit.name, organization: audit.organization },
     });
@@ -179,7 +179,7 @@ const deleteAudit = async (req, res, next) => {
 const exportAudits = async (req, res, next) => {
   try {
     const { clientName, auditType, status, ids, auditName } = req.query;
-    const filter = { companyName: req.user.companyName };
+    const filter = { organizationId: req.user.organizationId };
 
     if (clientName) {
       filter.$or = [
@@ -237,7 +237,7 @@ const getAuditReport = async (req, res, next) => {
   try {
     const audit = await Audit.findOne({
       _id: req.params.id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
     }).populate('createdBy', 'name email');
 
     if (!audit) {

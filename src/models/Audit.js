@@ -39,6 +39,7 @@ const auditSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
+    organizationId: { type: String, trim: true, default: null, index: true },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

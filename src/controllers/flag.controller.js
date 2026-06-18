@@ -29,7 +29,7 @@ const getFlags = async (req, res, next) => {
   try {
     const { auditId, status, severity, testType, page = 1, limit = 20 } = req.query;
 
-    const filter = { companyName: req.user.companyName };
+    const filter = { organizationId: req.user.organizationId };
     if (auditId) filter.auditId = auditId;
     if (status) filter.status = status;
     if (severity) filter.severity = severity;
@@ -69,7 +69,7 @@ const getFlagById = async (req, res, next) => {
   try {
     const flag = await Flag.findOne({
       _id: req.params.id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
     }).populate('auditId', 'name organization status');
 
     if (!flag) {

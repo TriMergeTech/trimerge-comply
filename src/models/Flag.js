@@ -12,6 +12,7 @@ const flagSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
+    organizationId: { type: String, trim: true, default: null, index: true },
     group: {
       type: String,
       required: true,

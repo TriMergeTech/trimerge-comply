@@ -42,6 +42,7 @@ const activityLogSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
+    organizationId: { type: String, trim: true, default: null, index: true },
     action: {
       type: String,
       enum: [

@@ -69,10 +69,10 @@ const uploadHandbook = async (req, res, next) => {
       uploadedBy: {
         userId: req.user._id,
         email: req.user.email,
-        companyName: req.user.companyName,
+        organizationId: req.user.organizationId,
         role: req.user.role,
       },
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
       textLength: extraction.text.length,
       chunkCount: chunks.length,
       chunks,
@@ -84,7 +84,7 @@ const uploadHandbook = async (req, res, next) => {
       targetId: handbook._id,
       handbookId: handbook._id,
       performedBy: req.user._id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
       action: 'handbook_uploaded',
       details: {
         name: handbook.name,
@@ -115,7 +115,7 @@ const uploadHandbook = async (req, res, next) => {
 // GET /api/handbooks
 const listHandbooks = async (req, res, next) => {
   try {
-    const handbooks = await Handbook.find({ companyName: req.user.companyName })
+    const handbooks = await Handbook.find({ organizationId: req.user.organizationId })
       .select('-chunks')
       .sort({ createdAt: -1 })
       .lean();
@@ -134,7 +134,7 @@ const getHandbookById = async (req, res, next) => {
   try {
     const handbook = await Handbook.findOne({
       _id: req.params.id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
     })
       .select('-chunks')
       .lean();
@@ -155,7 +155,7 @@ const deleteHandbook = async (req, res, next) => {
   try {
     const handbook = await Handbook.findOne({
       _id: req.params.id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
     });
     if (!handbook) return sendError(res, { statusCode: 404, message: 'Handbook not found.' });
 
@@ -166,7 +166,7 @@ const deleteHandbook = async (req, res, next) => {
       targetId: handbook._id,
       handbookId: handbook._id,
       performedBy: req.user._id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
       action: 'handbook_deleted',
       details: { name: handbook.name, fileName: handbook.fileName },
     });

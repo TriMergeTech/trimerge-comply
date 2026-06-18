@@ -63,6 +63,7 @@ const userSchema = new mongoose.Schema(
     passwordResetExpires: { type: Date, select: false },
     pendingPasswordHash: { type: String, select: false },
     pendingPasswordHashExpires: { type: Date, select: false },
+    organizationId: { type: String, trim: true, default: null, index: true },
     refreshToken: { type: String, select: false },
     lastLoginAt: { type: Date, default: null },
     failedLoginAttempts: { type: Number, default: 0 },
@@ -97,6 +98,7 @@ userSchema.methods.toPublicJSON = function () {
     isVerified: this.isVerified,
     role: this.role,
     roleName: ROLE_LABELS[this.role] || this.role,
+    organizationId: this.organizationId,
     createdAt: this.createdAt,
   };
 };

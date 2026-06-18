@@ -41,7 +41,7 @@ const createFinding = async (req, res, next) => {
       return sendError(res, { statusCode: 400, message: 'observation is required.' });
     }
 
-    const audit = await Audit.findOne({ _id: auditId, companyName: req.user.companyName });
+    const audit = await Audit.findOne({ _id: auditId, organizationId: req.user.organizationId });
     if (!audit) return sendError(res, { statusCode: 404, message: 'Audit not found.' });
 
     let flag = null;
@@ -56,7 +56,7 @@ const createFinding = async (req, res, next) => {
     // Search all ready handbooks for relevant sections
     const handbooks = await Handbook.find({
       status: 'ready',
-      $or: [{ companyName: req.user.companyName }, { companyName: null }],
+      organizationId: req.user.organizationId,
     })
       .select('_id name chunks')
       .lean();
@@ -110,7 +110,7 @@ const createFinding = async (req, res, next) => {
       aiDrafted,
       analystNotes: analystNotes || '',
       createdBy: req.user._id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
     });
 
     await ActivityLog.create({
@@ -119,7 +119,7 @@ const createFinding = async (req, res, next) => {
       auditId,
       findingId: finding._id,
       performedBy: req.user._id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
       action: 'finding_created',
       details: {
         observation: finding.observation,
@@ -147,7 +147,7 @@ const listFindings = async (req, res, next) => {
     // Support both /api/findings?auditId=xxx and /api/audits/:auditId/findings
     const auditId = req.params.auditId || req.query.auditId;
 
-    const filter = { companyName: req.user.companyName };
+    const filter = { organizationId: req.user.organizationId };
     if (auditId) filter.auditId = auditId;
     if (status) filter.status = status;
     if (riskLevel) filter['risk.level'] = riskLevel;
@@ -189,7 +189,7 @@ const getFindingById = async (req, res, next) => {
   try {
     const finding = await Finding.findOne({
       _id: req.params.id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
     })
       .populate('auditId', 'name organization clientName auditType status')
       .populate('flagId', 'group referenceGroup severity testType pValue selectionRate impactRatio threshold')
@@ -213,7 +213,7 @@ const updateFinding = async (req, res, next) => {
 
     const finding = await Finding.findOne({
       _id: req.params.id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
     });
     if (!finding) return sendError(res, { statusCode: 404, message: 'Finding not found.' });
 
@@ -247,7 +247,7 @@ const updateFinding = async (req, res, next) => {
       auditId: finding.auditId,
       findingId: finding._id,
       performedBy: req.user._id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
       action: 'finding_updated',
       details: { changes },
     });
@@ -269,7 +269,7 @@ const updateFindingStatus = async (req, res, next) => {
 
     const finding = await Finding.findOne({
       _id: req.params.id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
     });
     if (!finding) return sendError(res, { statusCode: 404, message: 'Finding not found.' });
 
@@ -307,7 +307,7 @@ const updateFindingStatus = async (req, res, next) => {
       auditId: finding.auditId,
       findingId: finding._id,
       performedBy: req.user._id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
       action: 'finding_status_changed',
       details: { from: prevStatus, to: status, reason: reason || null },
     });
@@ -327,7 +327,7 @@ const regenerateDraft = async (req, res, next) => {
   try {
     const finding = await Finding.findOne({
       _id: req.params.id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
     });
     if (!finding) return sendError(res, { statusCode: 404, message: 'Finding not found.' });
 
@@ -340,7 +340,7 @@ const regenerateDraft = async (req, res, next) => {
 
     const handbooks = await Handbook.find({
       status: 'ready',
-      $or: [{ companyName: req.user.companyName }, { companyName: null }],
+      organizationId: req.user.organizationId,
     })
       .select('chunks name')
       .lean();
@@ -379,7 +379,7 @@ const regenerateDraft = async (req, res, next) => {
       auditId: finding.auditId,
       findingId: finding._id,
       performedBy: req.user._id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
       action: 'finding_updated',
       details: { regeneratedAiDraft: true },
     });

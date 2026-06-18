@@ -109,6 +109,7 @@ const positionDocumentSchema = new mongoose.Schema(
       trim: true,
       index: true,
     },
+    organizationId: { type: String, trim: true, default: null, index: true },
   },
   { timestamps: true }
 );

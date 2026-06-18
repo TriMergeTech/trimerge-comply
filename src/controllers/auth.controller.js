@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const { randomUUID } = require('crypto');
 const User = require('../models/User');
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/jwt');
 const { generateOTP, hashOTP, verifyOTP, getOTPExpiry, isOTPExpired } = require('../utils/otp');
@@ -21,7 +22,13 @@ const signup = async (req, res, next) => {
     if (existing) {
       return sendError(res, { statusCode: 409, message: 'Email already registered' });
     }
-    const user = await User.create({ email, password, phone, name, companyName });
+    // Inherit org ID from an existing user with the same company, or create a new one
+    let organizationId = null;
+    if (companyName?.trim()) {
+      const orgPeer = await User.findOne({ companyName: companyName.trim(), organizationId: { $ne: null } }).select('organizationId');
+      organizationId = orgPeer?.organizationId ?? randomUUID();
+    }
+    const user = await User.create({ email, password, phone, name, companyName, organizationId });
     const otp = generateOTP();
     const hashedOtp = await hashOTP(otp);
     user.otpCode = hashedOtp;
@@ -264,7 +271,7 @@ const updateUserRole = async (req, res, next) => {
     }
     const user = await User.findOne({
       _id: req.params.id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
     });
     if (!user) {
       return sendError(res, { statusCode: 404, message: 'User not found.' });
@@ -393,8 +400,8 @@ const changeName = async (req, res, next) => {
 // Scoped to same company
 const getUsers = async (req, res, next) => {
   try {
-    const users = await User.find({ companyName: req.user.companyName })
-      .select('_id name email role companyName isVerified createdAt')
+    const users = await User.find({ organizationId: req.user.organizationId })
+      .select('_id name email role companyName organizationId isVerified createdAt')
       .sort({ createdAt: -1 });
     return sendSuccess(res, {
       message: 'Users retrieved successfully',

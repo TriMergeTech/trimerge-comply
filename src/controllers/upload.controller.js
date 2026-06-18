@@ -119,6 +119,7 @@ const processCsvUpload = async (req, res, next) => {
       storage,
       uploadedBy: getUploadedBy(req.user),
       companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
       datasetType: result.datasetType,
       summary: result.summary,
       analysis: result.analysis,
@@ -146,7 +147,7 @@ const processCsvUpload = async (req, res, next) => {
 // GET /api/upload/csv
 const listAdverseImpactAnalyses = async (req, res, next) => {
   try {
-    const records = await AdverseImpactAnalysis.find({ companyName: req.user.companyName })
+    const records = await AdverseImpactAnalysis.find({ organizationId: req.user.organizationId })
       .sort({ createdAt: -1 })
       .limit(100)
       .lean();

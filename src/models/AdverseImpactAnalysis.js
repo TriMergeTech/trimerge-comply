@@ -21,6 +21,7 @@ const adverseImpactAnalysisSchema = new mongoose.Schema(
       role: { type: String, default: null },
     },
     companyName: { type: String, required: true, trim: true, index: true },
+    organizationId: { type: String, trim: true, default: null, index: true },
     datasetType: { type: String, default: 'grouped_adverse_impact' },
     summary: { type: mongoose.Schema.Types.Mixed, default: {} },
     analysis: { type: mongoose.Schema.Types.Mixed, default: {} },
