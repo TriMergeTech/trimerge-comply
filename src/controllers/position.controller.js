@@ -157,7 +157,10 @@ const createPositionStandardsReview = async (req, res, next) => {
       return null;
     }
 
-    const documentRecord = await PositionDocument.findById(req.params.id);
+    const documentRecord = await PositionDocument.findOne({
+      _id: req.params.id,
+      companyName: req.user.companyName,
+    });
 
     if (!documentRecord) {
       return sendError(res, {
