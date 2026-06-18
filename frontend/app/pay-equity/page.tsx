@@ -16,12 +16,13 @@ export default function PayEquity() {
   const [analysis, setAnalysis] = useState<PayEquityAnalysis | null>(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   // Load most recent analysis on mount
   useEffect(() => {
     getPayEquityAnalyses()
       .then((data) => setAnalysis(data[0] ?? null))
-      .catch((err) => console.error('Failed to load pay equity analyses:', err))
+      .catch((err) => setLoadError(err instanceof Error ? err.message : 'Failed to load analyses.'))
   }, [])
 
   // Triggered when user picks a file
@@ -33,8 +34,9 @@ export default function PayEquity() {
     setError(null)
 
     try {
-      const result = await uploadPayEquityFile(file)
-      setAnalysis(result)
+      await uploadPayEquityFile(file)
+      const analyses = await getPayEquityAnalyses()
+      setAnalysis(analyses[0] ?? null)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Upload failed. Please try again.')
     } finally {
@@ -78,7 +80,12 @@ export default function PayEquity() {
         </button>
       </div>
 
-      {/* Error message */}
+      {/* Error messages */}
+      {loadError && (
+        <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">
+          {loadError}
+        </div>
+      )}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">
           {error}
