@@ -29,6 +29,15 @@ type Props = {
   decisionSummary?: DecisionSummary | null
 }
 
+const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s
+
+const formatDate = (iso: string) =>
+  new Date(iso).toLocaleString('en-US', {
+    month: 'long', day: 'numeric', year: 'numeric',
+    hour: 'numeric', minute: '2-digit', hour12: true,
+    timeZoneName: 'short',
+  })
+
 export default function FlagDetail({ flag, decisionSummary }: Props) {
   const { results } = flag
   const fourFifths = results?.fourFifthsRule
@@ -57,7 +66,7 @@ export default function FlagDetail({ flag, decisionSummary }: Props) {
 
         <div>
           <p className="text-slate-400">Status</p>
-          <p className="text-slate-700 font-medium mt-0.5">{flag.status}</p>
+          <p className="text-slate-700 font-medium mt-0.5">{capitalize(flag.status)}</p>
         </div>
 
         <div>
@@ -96,13 +105,13 @@ export default function FlagDetail({ flag, decisionSummary }: Props) {
         </div>
 
         <div className="bg-slate-50 rounded-lg p-4 text-center">
-          <p className="text-xs text-slate-400 mb-1">Chi-Square</p>
+          <p className="text-xs text-slate-400 mb-1">Chi&apos;s-Square</p>
           <p className="text-2xl font-bold text-slate-800">
             {results?.chiSquare !== undefined && results.chiSquare !== null
               ? results.chiSquare.toFixed(4)
               : '—'}
           </p>
-          <p className="text-xs text-slate-400 mt-1">statistic</p>
+          <p className="text-xs text-slate-400 mt-1">Statistic</p>
         </div>
 
         <div className="bg-slate-50 rounded-lg p-4 text-center">
@@ -112,7 +121,7 @@ export default function FlagDetail({ flag, decisionSummary }: Props) {
               ? results.fishersExact.toFixed(4)
               : '—'}
           </p>
-          <p className="text-xs text-slate-400 mt-1">p-value</p>
+          <p className="text-xs text-slate-400 mt-1">P-value</p>
         </div>
 
       </div>
@@ -122,6 +131,7 @@ export default function FlagDetail({ flag, decisionSummary }: Props) {
         <p className="text-sm font-medium text-slate-700">Summary</p>
 
         {decisionSummary ? (
+          // Decided this session — full details available
           <>
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-400">Decision</span>
@@ -129,23 +139,29 @@ export default function FlagDetail({ flag, decisionSummary }: Props) {
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-400">Decided</span>
-              <span className="text-slate-700">
-                {new Date(decisionSummary.decidedAt).toLocaleString('en-US', {
-                  month: 'short', day: 'numeric', year: 'numeric',
-                  hour: 'numeric', minute: '2-digit', hour12: true,
-                })}
+              <span className="text-slate-700">{formatDate(decisionSummary.decidedAt)}</span>
+            </div>
+            {decisionSummary.rationale && (
+              <div className="flex flex-col gap-1 text-sm">
+                <span className="text-slate-400">Rationale</span>
+                <p className="text-slate-700 bg-slate-50 rounded-lg p-3 leading-relaxed">{decisionSummary.rationale}</p>
+              </div>
+            )}
+          </>
+        ) : flag.status === 'reviewed' || flag.status === 'dismissed' ? (
+          // Already reviewed before this session — derive from flag fields
+          <>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-400">Decision</span>
+              <span className="font-medium text-slate-700">
+                {flag.status === 'reviewed' ? 'Approved' : 'Dismissed'}
               </span>
             </div>
-            <div className="flex flex-col gap-1 text-sm">
-              <span className="text-slate-400">Rationale</span>
-              <p className="text-slate-700 bg-slate-50 rounded-lg p-3 leading-relaxed">{decisionSummary.rationale}</p>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-400">Decided</span>
+              <span className="text-slate-700">{formatDate(flag.updatedAt)}</span>
             </div>
           </>
-        ) : flag.status.toLowerCase() !== 'pending' ? (
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-400">Status</span>
-            <span className="font-medium text-slate-700 capitalize">{flag.status}</span>
-          </div>
         ) : (
           <p className="text-sm text-slate-400">No decision has been made yet.</p>
         )}

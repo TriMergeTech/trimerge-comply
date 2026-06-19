@@ -9,6 +9,13 @@ const engineLabel: Record<string, string> = {
   pay_equity: 'Pay Equity',
 }
 
+const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s
+
+const formatDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  })
+
 function getSeverityColor(severity: string) {
   switch (severity) {
     case 'Critical': return 'bg-red-100 text-red-600'
@@ -43,8 +50,8 @@ export default function FlagQueueTable({ flags, loading, page, totalPages, total
               <th className="pb-3 font-medium">Audit</th>
               <th className="pb-3 font-medium">Severity</th>
               <th className="pb-3 font-medium">Status</th>
-              <th className="pb-3 font-medium">Assigned To</th>
-              <th className="pb-3 font-medium">Date</th>
+              <th className="pb-3 font-medium whitespace-nowrap w-28">Assigned To</th>
+              <th className="pb-3 font-medium whitespace-nowrap w-32">Date</th>
             </tr>
           </thead>
 
@@ -88,13 +95,11 @@ export default function FlagQueueTable({ flags, loading, page, totalPages, total
                   </td>
                   <td className="py-3">
                     <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-500">
-                      {flag.status}
+                      {capitalize(flag.status)}
                     </span>
                   </td>
-                  <td className="py-3 text-slate-500">{flag.assignedTo}</td>
-                  <td className="py-3 text-slate-500">
-                    {new Date(flag.createdAt).toLocaleDateString()}
-                  </td>
+                  <td className="py-3 text-slate-500 whitespace-nowrap">{flag.assignedTo ?? '—'}</td>
+                  <td className="py-3 text-slate-500 whitespace-nowrap">{formatDate(flag.createdAt)}</td>
                 </tr>
               ))
             )}
