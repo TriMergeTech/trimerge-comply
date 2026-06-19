@@ -55,7 +55,7 @@ export default function LandingNav() {
             Log In
           </Link>
           <Link
-            href="/login"
+            href="/request-demo"
             className="bg-[#4f46e5] hover:bg-[#4338ca] text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors"
           >
             Request Demo
@@ -85,7 +85,7 @@ export default function LandingNav() {
           <div className="flex flex-col gap-2 pt-2">
             <Link href="/login" className="text-sm font-semibold text-white/80">Log In</Link>
             <Link
-              href="/login"
+              href="/request-demo"
               className="bg-[#4f46e5] text-white text-sm font-semibold px-5 py-2.5 rounded-lg text-center"
             >
               Request Demo
