@@ -140,21 +140,24 @@ const updateAudit = async (req, res, next) => {
   }
 };
 
-// DELETE /api/audits/:id
+// DELETE /api/audits/:id — director and admin only, mandatory deletionNotes
 const deleteAudit = async (req, res, next) => {
   try {
+    const { deletionNotes } = req.body;
+
+    if (!deletionNotes?.trim()) {
+      return sendError(res, { statusCode: 400, message: 'Deletion notes are required.' });
+    }
+    if (deletionNotes.trim().length < 10) {
+      return sendError(res, { statusCode: 400, message: 'Deletion notes must be at least 10 characters.' });
+    }
+
     const audit = await Audit.findOne({
       _id: req.params.id,
       organizationId: req.user.organizationId,
     });
-
     if (!audit) {
-      return sendError(res, { statusCode: 404, message: 'Audit not found' });
-    }
-
-    const ownerOnlyRoles = new Set(['analyst', 'manager']);
-    if (ownerOnlyRoles.has(req.user.role) && audit.createdBy.toString() !== req.user._id.toString()) {
-      return sendError(res, { statusCode: 403, message: 'You can only delete audits you created.' });
+      return sendError(res, { statusCode: 404, message: 'Audit not found.' });
     }
 
     await Audit.findByIdAndDelete(req.params.id);
@@ -166,10 +169,15 @@ const deleteAudit = async (req, res, next) => {
       performedBy: req.user._id,
       organizationId: req.user.organizationId,
       action: 'audit_deleted',
-      details: { name: audit.name, organization: audit.organization },
+      details: {
+        deletedVia: 'direct',
+        deletionNotes: deletionNotes.trim(),
+        name: audit.name,
+        organization: audit.organization,
+      },
     });
 
-    return sendSuccess(res, { message: 'Audit deleted successfully' });
+    return sendSuccess(res, { message: 'Audit deleted successfully.' });
   } catch (err) {
     next(err);
   }

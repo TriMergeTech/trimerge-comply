@@ -50,6 +50,9 @@ const activityLogSchema = new mongoose.Schema(
         'audit_created',
         'audit_updated',
         'audit_deleted',
+        'deletion_requested',
+        'deletion_approved',
+        'deletion_rejected',
         // Flag
         'flag_decided',
         'flag_assigned',

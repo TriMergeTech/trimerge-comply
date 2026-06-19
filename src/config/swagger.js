@@ -855,11 +855,148 @@ All protected endpoints require a verified email and a valid Bearer token.`,
         },
         delete: {
           tags: ['Audits'],
-          summary: 'Delete audit',
-          description: 'Analysts can only delete their own audits. Admins can delete any.',
+          summary: 'Delete audit (direct)',
+          description: 'Permanently deletes an audit. Engagement Director and Platform Admin only. Requires mandatory deletionNotes in the request body for compliance trail.',
           security: [{ bearerAuth: [] }],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '64f1a2b3c4d5e6f7a8b9c0d1' }],
-          responses: { 200: { description: 'Audit deleted successfully' }, 401: { description: 'Unauthorized' }, 403: { description: 'Forbidden — not your audit' }, 404: { description: 'Audit not found' } },
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['deletionNotes'],
+                  properties: {
+                    deletionNotes: { type: 'string', minLength: 10, example: 'Audit closed after client engagement ended. All findings archived separately.' },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: 'Audit deleted successfully' },
+            400: { description: 'deletionNotes missing or too short' },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Forbidden — director or admin only' },
+            404: { description: 'Audit not found' },
+          },
+        },
+      },
+      '/api/audits/{id}/deletion-request': {
+        post: {
+          tags: ['Audit Deletion Workflow'],
+          summary: 'Submit deletion request',
+          description: 'Project Managers, Analysts, and SME Reviewers submit a deletion request that is routed to a selected Engagement Director for approval. Client Read-Only users and Platform Admins cannot use this endpoint — admins and directors delete directly. Requires mandatory deletionNotes (min 10 chars) and a valid directorId.',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' }, description: 'Audit ID to request deletion for' }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['deletionNotes', 'directorId'],
+                  properties: {
+                    deletionNotes: { type: 'string', minLength: 10, example: 'Client requested all data be removed after project closure.' },
+                    directorId: { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1', description: 'User ID of the Engagement Director to review this request' },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            201: { description: 'Deletion request submitted and routed to selected Engagement Director' },
+            400: { description: 'Missing or invalid deletionNotes / directorId' },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Forbidden — manager, analyst, or reviewer only' },
+            404: { description: 'Audit not found' },
+            409: { description: 'A pending deletion request already exists for this audit' },
+          },
+        },
+      },
+      '/api/audits/deletion-requests': {
+        get: {
+          tags: ['Audit Deletion Workflow'],
+          summary: 'List deletion requests',
+          description: 'Engagement Directors see only requests routed to them. Platform Admins see all requests in the organization. Filter by status.',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'status', in: 'query', schema: { type: 'string', enum: ['pending', 'approved', 'rejected'] }, description: 'Filter by request status' },
+          ],
+          responses: {
+            200: {
+              description: 'Deletion requests retrieved successfully',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      data: {
+                        type: 'object',
+                        properties: {
+                          requests: {
+                            type: 'array',
+                            items: {
+                              type: 'object',
+                              properties: {
+                                _id: { type: 'string' },
+                                auditId: { type: 'object', properties: { _id: { type: 'string' }, name: { type: 'string' }, status: { type: 'string' } } },
+                                auditSnapshot: { type: 'object', description: 'Audit state captured at time of request' },
+                                requestedBy: { type: 'object', properties: { name: { type: 'string' }, email: { type: 'string' }, role: { type: 'string' } } },
+                                deletionNotes: { type: 'string' },
+                                directorId: { type: 'object', properties: { name: { type: 'string' }, email: { type: 'string' } } },
+                                status: { type: 'string', enum: ['pending', 'approved', 'rejected'] },
+                                reviewedBy: { type: 'object', nullable: true },
+                                reviewedAt: { type: 'string', format: 'date-time', nullable: true },
+                                approvalNotes: { type: 'string', nullable: true },
+                                createdAt: { type: 'string', format: 'date-time' },
+                              },
+                            },
+                          },
+                          total: { type: 'integer', example: 3 },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Forbidden — director or admin only' },
+          },
+        },
+      },
+      '/api/audits/deletion-requests/{requestId}/review': {
+        patch: {
+          tags: ['Audit Deletion Workflow'],
+          summary: 'Approve or reject deletion request',
+          description: 'Engagement Director approves or rejects a deletion request assigned to them. Mandatory approvalNotes required on both decisions. On approval the audit is permanently deleted and the full audit trail is logged.',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'requestId', in: 'path', required: true, schema: { type: 'string' }, description: 'AuditDeletionRequest ID' }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['decision', 'approvalNotes'],
+                  properties: {
+                    decision: { type: 'string', enum: ['approved', 'rejected'], example: 'approved' },
+                    approvalNotes: { type: 'string', minLength: 10, example: 'Confirmed with client. All deliverables have been handed over. Proceeding with deletion.' },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: 'Request approved (audit deleted) or rejected' },
+            400: { description: 'Invalid decision or approvalNotes missing/too short' },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Forbidden — director only' },
+            404: { description: 'Deletion request not found or not assigned to this director' },
+            409: { description: 'Request already approved or rejected' },
+          },
         },
       },
       '/api/flags': {
