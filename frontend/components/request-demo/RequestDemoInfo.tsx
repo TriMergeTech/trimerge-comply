@@ -9,9 +9,9 @@ export default function RequestDemoInfo() {
           <div className="w-10 h-10 rounded-lg bg-[#eef2ff] flex items-center justify-center">
             <CalendarDays className="w-5 h-5 text-[#4f46e5]" />
           </div>
-          <h3 className="text-slate-800 font-bold text-sm">What to Expect</h3>
+          <h3 className="text-slate-800 font-bold text-sm">What to Expect ?</h3>
           <p className="text-slate-500 text-sm leading-relaxed">
-            A 30–45 minute interactive demo tailored to your organization's needs. We'll walk you through real use cases and answer all your questions.
+            A interactive demo tailored to your organization's needs. We will walk you through real use cases and answer your questions.
           </p>
         </div>
 
@@ -19,9 +19,9 @@ export default function RequestDemoInfo() {
           <div className="w-10 h-10 rounded-lg bg-[#eef2ff] flex items-center justify-center">
             <BarChart2 className="w-5 h-5 text-[#4f46e5]" />
           </div>
-          <h3 className="text-slate-800 font-bold text-sm">See Real Results</h3>
+          <h3 className="text-slate-800 font-bold text-sm"> Real Results</h3>
           <p className="text-slate-500 text-sm leading-relaxed">
-            Explore how TriMerge Comply identifies risks, streamlines audits, and helps drive better outcomes across your workforce.
+            Explore how TriMerge Comply identifies risks, streamlines audits, and helps drive better outcomes across your Organization.
           </p>
         </div>
 
@@ -36,7 +36,7 @@ export default function RequestDemoInfo() {
         </div>
 
         <div className="bg-[#0d0f2b] rounded-xl border border-white/10 shadow-sm p-6 flex flex-col gap-3">
-          <h3 className="text-white font-bold text-sm">Prefer to talk now?</h3>
+          <h3 className="text-white font-bold text-sm">Contact Us</h3>
           <p className="text-white/60 text-sm leading-relaxed">
             Speak with our compliance experts to learn how we can help.
           </p>
@@ -45,7 +45,7 @@ export default function RequestDemoInfo() {
             className="mt-auto flex items-center gap-2 border border-white/20 hover:border-white/40 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors w-fit"
           >
             <Phone className="w-4 h-4" />
-            (888) 123-4567
+            (305) 940-5344
           </a>
         </div>
 

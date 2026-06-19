@@ -28,8 +28,8 @@ export default function RequestDemoHero() {
     <div className="flex flex-col gap-8">
       <div>
         <p className="text-[#4f46e5] text-xs font-bold tracking-widest uppercase mb-3">Request a Demo</p>
-        <h1 className="text-4xl font-extrabold text-slate-900 leading-tight mb-4">
-          See TriMerge Comply<br />in Action
+        <h1 className="text-3xl font-extrabold text-slate-900 leading-tight mb-4">
+           TriMerge Comply in Action
         </h1>
         <p className="text-slate-500 text-base leading-relaxed max-w-md">
           Discover how our AI-powered compliance platform helps organizations identify risks, ensure fairness, and build stronger, more equitable workplaces—faster.
