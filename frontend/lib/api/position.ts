@@ -56,6 +56,24 @@ export interface PositionDocumentDetail {
   textPreview: string;
 }
 
+// Standards review issue item
+export interface StandardsReviewIssue {
+  section: string;
+  severity: string;
+  issue: string;
+  recommendation: string;
+}
+
+// Full standards review result
+export interface StandardsReview {
+  standardId: string;
+  standardName: string;
+  overallReadiness: string;
+  score: number;
+  summary: string;
+  issues: StandardsReviewIssue[];
+}
+
 // Upload response type
 export interface PositionUploadResponse {
   message: string;
@@ -89,6 +107,15 @@ export async function getPositionDocuments(): Promise<PositionDocument[]> {
 export async function getPositionDocumentById(id: string): Promise<PositionDocumentDetail> {
   const res = await positionFetch<{ success: boolean; data: { document: PositionDocumentDetail } }>(`/position/${id}`);
   return res.data.document;
+}
+
+// Run government posting standards review for a position document
+export async function runStandardsReview(id: string): Promise<StandardsReview> {
+  const res = await positionFetch<{ success: boolean; data: { standardsReview: StandardsReview } }>(
+    `/position/${id}/standards-review`,
+    { method: 'POST' }
+  );
+  return res.data.standardsReview;
 }
 
 // Upload a position description file for AI analysis

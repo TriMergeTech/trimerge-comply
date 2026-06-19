@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { X, ExternalLink } from 'lucide-react'
-import { getPositionDocumentById, type PositionDocumentDetail } from '@/lib/api/position'
+import { getPositionDocumentById, runStandardsReview, type PositionDocumentDetail, type StandardsReview } from '@/lib/api/position'
 
 // ── Helpers ────────────────────────────────────────────────────
 
@@ -33,6 +33,15 @@ function riskBadgeColors(risk: string) {
   }
 }
 
+function readinessBadgeColors(readiness: string) {
+  switch (readiness.toLowerCase()) {
+    case 'ready':          return 'bg-green-100 text-green-700'
+    case 'needs_revision': return 'bg-amber-100 text-amber-700'
+    case 'not_ready':      return 'bg-red-100 text-red-700'
+    default:               return 'bg-slate-100 text-slate-500'
+  }
+}
+
 function statusBadgeColors(status: string) {
   switch (status.toLowerCase()) {
     case 'completed':  return 'bg-green-100 text-green-700'
@@ -49,6 +58,24 @@ export default function PositionDetailPage() {
   const [doc, setDoc] = useState<PositionDocumentDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+
+  const [standardsReview, setStandardsReview] = useState<StandardsReview | null>(null)
+  const [standardsLoading, setStandardsLoading] = useState(false)
+  const [standardsError, setStandardsError] = useState<string | null>(null)
+
+  async function handleRunStandardsReview() {
+    if (!id) return
+    setStandardsLoading(true)
+    setStandardsError(null)
+    try {
+      const result = await runStandardsReview(id)
+      setStandardsReview(result)
+    } catch (err) {
+      setStandardsError(err instanceof Error ? err.message : 'Standards review failed.')
+    } finally {
+      setStandardsLoading(false)
+    }
+  }
 
   useEffect(() => {
     if (!id) return
@@ -256,32 +283,99 @@ export default function PositionDetailPage() {
             </div>
           </div>
 
-          {/* AI Recommendations card */}
-          {doc.aiRecommendations && doc.aiRecommendations.length > 0 && (
-            <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
-              <h3 className="text-slate-800 font-semibold text-base mb-3">AI Recommendations</h3>
-              <ul className="flex flex-col gap-2">
-                {doc.aiRecommendations.map((rec, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
-                    <span className="mt-1.5 shrink-0 w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                    {rec}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          {/* Bottom row: AI Rec + Doc Preview (left) | Standards Review (right) */}
+          <div className="flex flex-col lg:flex-row gap-5">
 
-          {/* Document Preview card */}
-          {doc.textPreview && (
-            <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
-              <h3 className="text-slate-800 font-semibold text-base mb-3">Document Preview</h3>
-              <div className="bg-slate-50 rounded-lg border border-slate-100 p-4">
-                <pre className="text-xs text-slate-600 whitespace-pre-wrap font-sans leading-relaxed">
-                  {doc.textPreview}
-                </pre>
-              </div>
+            {/* Left sub-column: existing cards */}
+            <div className="flex-1 flex flex-col gap-5">
+
+              {/* AI Recommendations card */}
+              {doc.aiRecommendations && doc.aiRecommendations.length > 0 && (
+                <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
+                  <h3 className="text-slate-800 font-semibold text-base mb-3">AI Recommendations</h3>
+                  <ul className="flex flex-col gap-2">
+                    {doc.aiRecommendations.map((rec, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
+                        <span className="mt-1.5 shrink-0 w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                        {rec}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Document Preview card */}
+              {doc.textPreview && (
+                <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
+                  <h3 className="text-slate-800 font-semibold text-base mb-3">Document Preview</h3>
+                  <div className="bg-slate-50 rounded-lg border border-slate-100 p-4">
+                    <pre className="text-xs text-slate-600 whitespace-pre-wrap font-sans leading-relaxed">
+                      {doc.textPreview}
+                    </pre>
+                  </div>
+                </div>
+              )}
+
             </div>
-          )}
+
+            {/* Right sub-column: Standards Review */}
+            <div className="lg:w-80 shrink-0 bg-white rounded-xl border border-slate-100 shadow-sm p-5 flex flex-col gap-4">
+
+              <div className="flex items-center justify-between">
+                <h3 className="text-slate-800 font-semibold text-base">Standards Review</h3>
+                {!standardsReview && (
+                  <button
+                    onClick={handleRunStandardsReview}
+                    disabled={standardsLoading}
+                    className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {standardsLoading ? 'Running…' : 'Run Review'}
+                  </button>
+                )}
+              </div>
+
+              {!standardsReview && !standardsLoading && !standardsError && (
+                <p className="text-xs text-slate-400">
+                  Click "Run Review" to check this document against USAJOBS government posting standards.
+                </p>
+              )}
+
+              {standardsError && (
+                <p className="text-xs text-red-500">{standardsError}</p>
+              )}
+
+              {standardsReview && (
+                <>
+                  <p className="text-xs text-slate-500">{standardsReview.standardName}</p>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${readinessBadgeColors(standardsReview.overallReadiness)}`}>
+                      {standardsReview.overallReadiness.replace(/_/g, ' ')}
+                    </span>
+                    <span className="text-xs text-slate-500">Score: {standardsReview.score}/100</span>
+                  </div>
+
+                  <p className="text-xs text-slate-600 leading-relaxed">{standardsReview.summary}</p>
+
+                  {standardsReview.issues.length > 0 && (
+                    <div className="flex flex-col gap-3">
+                      {standardsReview.issues.map((issue, i) => (
+                        <div key={i} className={`rounded-lg border p-3 flex flex-col gap-1 ${severityColors(issue.severity).light}`}>
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-xs font-semibold text-slate-700">{issue.section}</p>
+                            <span className="text-xs capitalize text-slate-500">{issue.severity}</span>
+                          </div>
+                          <p className="text-xs text-slate-600">{issue.issue}</p>
+                          <p className="text-xs text-slate-500 italic">{issue.recommendation}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+
+            </div>
+          </div>
 
         </div>
       </div>
