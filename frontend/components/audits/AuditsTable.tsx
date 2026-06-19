@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getAudits, deleteAudit, Audit, AuditFilters } from '@/lib/api/audits'
 import AuditModal from '@/components/audits/AuditModal'
+import DeleteRequestModal from '@/components/audits/DeleteRequestModal'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,6 +51,10 @@ export default function AuditsTable({ filters, refreshKey }: AuditsTableProps) {
   // Modal state
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedAudit, setSelectedAudit] = useState<Audit | undefined>(undefined)
+
+  // Delete request modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [auditToDelete, setAuditToDelete] = useState<string | null>(null)
 
   // Fetch audits when component mounts
   async function fetchAudits() {
@@ -163,6 +168,12 @@ export default function AuditsTable({ filters, refreshKey }: AuditsTableProps) {
 
   return (
     <>
+      {/* Delete request modal */}
+      <DeleteRequestModal
+        open={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+      />
+
       {/* Audit modal — used for both create and edit */}
       <AuditModal
         open={modalOpen}
@@ -230,7 +241,7 @@ export default function AuditsTable({ filters, refreshKey }: AuditsTableProps) {
 
                         {/* Delete option */}
                         <DropdownMenuItem
-                          onClick={() => handleDelete(audit._id)}
+                          onClick={() => { setAuditToDelete(audit._id); setDeleteModalOpen(true) }}
                           className="cursor-pointer text-red-500 focus:text-red-500"
                         >
                           Delete
