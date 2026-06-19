@@ -4,7 +4,7 @@ import Sidebar from "@/components/sharedComponents/Sidebar";
 import { UserProvider } from "@/lib/context/UserContext";
 
 const AUTH_PATHS = ["/login", "/signup", "/forgot-password", "/reset-password", "/verify-otp", "/security"];
-const PUBLIC_PATHS = ["/", "/landing-page", "/about"];
+const PUBLIC_PATHS = ["/", "/landing-page", "/about", "/request-demo"];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
