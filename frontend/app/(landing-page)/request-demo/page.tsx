@@ -2,7 +2,7 @@ import LandingNav from '@/components/landing-page/LandingNav'
 import RequestDemoHero from '@/components/request-demo/RequestDemoHero'
 import RequestDemoForm from '@/components/request-demo/RequestDemoForm'
 import TrustedSection from '@/components/landing-page/TrustedSection'
-import RequestDemoInfo from '@/components/landing-page/RequestDemoInfo'
+import RequestDemoInfo from '@/components/request-demo/RequestDemoInfo'
 
 export default function RequestDemoPage() {
   return (
