@@ -34,3 +34,14 @@ Flag thresholds:
 - High: adjusted negative gap of at least 7%
 
 The engine is statistical only. It does not call the LLM.
+
+## PDF Report
+
+- Endpoint: `GET /api/payequity/:id/report`
+- Returns a compact two-page PDF scoped to the authenticated user's company.
+- Uses saved deterministic dataset, regression, pay-gap, warning, and summary results.
+- Uses OpenAI only for 3-5 concise recommended actions.
+- Falls back to deterministic recommendations when OpenAI is unavailable.
+- Does not include employee-level compensation rows.
+- Includes a plain-language "What This Means" section for non-technical readers.
+- Preserves model metrics and definitions in a separate "Technical Notes" section.

@@ -1,12 +1,30 @@
+const mongoose = require('mongoose');
 const PayEquityAnalysis = require('../models/PayEquityAnalysis');
+const { generatePayEquityReportRecommendations } = require('../services/ai/openai.service');
 const { extractPayEquityCsvFromFile } = require('../services/payequity/payEquityFile.service');
 const { processPayEquityCsv } = require('../services/payequity/payEquityProcessor');
+const {
+  buildFallbackPayEquityRecommendations,
+  buildFallbackPayEquityPlainLanguageSummary,
+  buildPayEquityReportView,
+} = require('../services/payequity/payEquityReport.service');
+const { renderPayEquityReportPdf } = require('../services/payequity/payEquityReportPdf.service');
 const { uploadRawToCloudinary } = require('../services/storage/cloudinary.service');
 const { extractFileFromMultipart } = require('../utils/multipart');
 const { getUploadedBy, getUploaderLabel } = require('../utils/uploadedBy');
 const { sendSuccess, sendError } = require('../utils/response');
 
 const PAY_EQUITY_FOLDER = 'trimerge-comply/pay-equity-uploads';
+
+const buildReportFileName = (fileName = 'pay-equity-analysis') => {
+  const baseName = fileName
+    .replace(/\.[^/.]+$/, '')
+    .replace(/[^a-z0-9-_]+/gi, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase();
+
+  return `${baseName || 'pay-equity-analysis'}-report.pdf`;
+};
 
 const buildPayEquityListItem = (analysis) => {
   const flaggedPayGaps = analysis.payGaps?.filter((gap) => gap.flagged).length || 0;
@@ -190,7 +208,65 @@ const listPayEquityAnalyses = async (req, res, next) => {
   }
 };
 
+// GET /api/payequity/:id/report
+const getPayEquityReport = async (req, res, next) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return sendError(res, {
+        statusCode: 400,
+        message: 'Invalid pay equity analysis id.',
+      });
+    }
+
+    const analysis = await PayEquityAnalysis.findOne({
+      _id: req.params.id,
+      companyName: req.user.companyName,
+    }).lean();
+
+    if (!analysis) {
+      return sendError(res, {
+        statusCode: 404,
+        message: 'Pay equity analysis not found.',
+      });
+    }
+
+    const reportView = buildPayEquityReportView(analysis);
+    let plainLanguageSummary = buildFallbackPayEquityPlainLanguageSummary(reportView);
+    let recommendations = buildFallbackPayEquityRecommendations(reportView);
+
+    try {
+      const aiResult = await generatePayEquityReportRecommendations({ reportView });
+
+      if (aiResult.recommendations?.length >= 3) {
+        recommendations = aiResult.recommendations;
+      }
+
+      if (aiResult.plainLanguageSummary?.length === 3) {
+        plainLanguageSummary = aiResult.plainLanguageSummary;
+      }
+    } catch (err) {
+      console.warn('[PAY EQUITY REPORT] AI recommendations unavailable:', err.message);
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${buildReportFileName(analysis.fileName)}"`
+    );
+
+    return renderPayEquityReportPdf({
+      outputStream: res,
+      reportView,
+      plainLanguageSummary,
+      recommendations,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
+  getPayEquityReport,
   listPayEquityAnalyses,
   uploadPayEquityCsv,
 };

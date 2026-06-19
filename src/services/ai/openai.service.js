@@ -10,6 +10,10 @@ const {
   buildPositionStandardsSystemPrompt,
   buildPositionStandardsUserPrompt,
 } = require('../position/positionStandardsPrompt.service');
+const {
+  buildPayEquityReportSystemPrompt,
+  buildPayEquityReportUserPrompt,
+} = require('../payequity/payEquityReportPrompt.service');
 
 const OPENAI_CHAT_COMPLETIONS_URL = 'https://api.openai.com/v1/chat/completions';
 
@@ -202,9 +206,71 @@ const analyzePositionStandards = async ({ text, fileName, standard }) => {
   };
 };
 
+const generatePayEquityReportRecommendations = async ({ reportView }) => {
+  if (!isOpenAIConfigured()) {
+    return {
+      configured: false,
+      skipped: true,
+      plainLanguageSummary: null,
+      recommendations: null,
+    };
+  }
+
+  const response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: buildPayEquityReportSystemPrompt() },
+        { role: 'user', content: buildPayEquityReportUserPrompt({ reportView }) },
+      ],
+      response_format: { type: 'json_object' },
+      temperature: 0.15,
+    }),
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.error?.message || 'OpenAI pay equity report recommendations failed.');
+  }
+
+  const content = result.choices?.[0]?.message?.content;
+
+  if (!content) {
+    throw new Error('OpenAI response did not include pay equity report recommendations.');
+  }
+
+  const parsed = parseJsonResponse(content);
+  const plainLanguageSummary = Array.isArray(parsed?.plainLanguageSummary)
+    ? parsed.plainLanguageSummary
+        .map((item) => String(item || '').replace(/\s+/g, ' ').trim())
+        .filter(Boolean)
+        .slice(0, 3)
+    : [];
+  const recommendations = Array.isArray(parsed?.recommendations)
+    ? parsed.recommendations
+        .map((recommendation) => String(recommendation || '').replace(/\s+/g, ' ').trim())
+        .filter(Boolean)
+        .slice(0, 5)
+    : [];
+
+  return {
+    configured: true,
+    skipped: false,
+    plainLanguageSummary,
+    recommendations,
+  };
+};
+
 module.exports = {
   analyzePositionDescription,
   analyzePositionStandards,
+  generatePayEquityReportRecommendations,
   generatePositionReportDraft,
   isOpenAIConfigured,
 };

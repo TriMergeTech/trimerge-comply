@@ -595,6 +595,34 @@ All protected endpoints require a verified email and a valid Bearer token.`,
           responses: { 200: { description: 'Pay equity analyses retrieved successfully' }, 401: { description: 'Unauthorized' }, 403: { description: 'Forbidden — viewer cannot access pay equity data' } },
         },
       },
+      '/api/payequity/{id}/report': {
+        get: {
+          tags: ['Pay Equity'],
+          summary: 'Download pay equity PDF report',
+          description: 'Downloads a two-page statistical pay equity report with deterministic analysis results, concise AI recommendations when available, and deterministic fallback recommendations. Scoped to the authenticated user\'s company.',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a0f1185927a7ccf9ab71252' },
+          ],
+          responses: {
+            200: {
+              description: 'Pay equity PDF report downloaded successfully',
+              content: {
+                'application/pdf': {
+                  schema: {
+                    type: 'string',
+                    format: 'binary',
+                  },
+                },
+              },
+            },
+            400: { description: 'Invalid pay equity analysis id' },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Forbidden - insufficient role' },
+            404: { description: 'Pay equity analysis not found' },
+          },
+        },
+      },
       '/api/audits': {
         post: {
           tags: ['Audits'],

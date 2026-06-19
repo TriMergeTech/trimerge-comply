@@ -1,10 +1,20 @@
 const express = require('express');
-const { listPayEquityAnalyses, uploadPayEquityCsv } = require('../controllers/payequity.controller');
+const {
+  getPayEquityReport,
+  listPayEquityAnalyses,
+  uploadPayEquityCsv,
+} = require('../controllers/payequity.controller');
 const { protect, requireRole } = require('../middleware/auth.middleware');
 
 const router = express.Router();
 
 router.get('/', protect, requireRole('analyst', 'reviewer', 'manager', 'director', 'admin'), listPayEquityAnalyses);
+router.get(
+  '/:id/report',
+  protect,
+  requireRole('analyst', 'reviewer', 'manager', 'director', 'admin'),
+  getPayEquityReport
+);
 
 router.post(
   '/upload',
