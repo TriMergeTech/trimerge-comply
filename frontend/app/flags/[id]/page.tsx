@@ -6,7 +6,9 @@ import Link from 'next/link'
 import FlagDetail from '@/components/flags/FlagDetail'
 import DecisionPanel from '@/components/flags/DecisionPanel'
 import { getFlagById, FlagItem } from '@/lib/api/flags'
+import { getActivityLogs } from '@/lib/api/activity'
 
+type DecisionSummary = { decision: string; rationale: string; decidedAt: string }
 
 export default function FlagDetailPage() {
     const { id } = useParams<{ id: string }>()
@@ -14,13 +16,34 @@ export default function FlagDetailPage() {
     const [flag, setFlag] = useState<FlagItem | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string>('')
-    const [decisionSummary, setDecisionSummary] = useState<{ decision: string; rationale: string; decidedAt: string } | null>(null)
+    const [decisionSummary, setDecisionSummary] = useState<DecisionSummary | null>(null)
 
     useEffect(() => {
         if (!id) return
         getFlagById(id)
-            .then((res) => {
-                setFlag(res.flag)
+            .then(async (res) => {
+                const f = res.flag
+                setFlag(f)
+
+                if (f.status === 'reviewed' || f.status === 'dismissed') {
+                    try {
+                        const { logs } = await getActivityLogs({ action: 'flag_decided', targetType: 'flag', limit: 200 })
+                        const match = logs.find((l) => {
+                            const t = l.target as { flag?: { id: string } }
+                            return t.flag?.id === f._id
+                        })
+                        if (match) {
+                            const details = match.details as { decision?: string; reason?: string }
+                            setDecisionSummary({
+                                decision: details.decision ?? f.status,
+                                rationale: details.reason ?? '',
+                                decidedAt: match.date,
+                            })
+                        }
+                    } catch {
+                        // activity log unavailable — summary falls back to status + updatedAt
+                    }
+                }
             })
             .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load flag.'))
             .finally(() => setLoading(false))
@@ -68,7 +91,7 @@ export default function FlagDetailPage() {
 
                 {/* Decision panel — only shown for pending flags */}
                 <div className="lg:w-80">
-                    {flag.status.toLowerCase() === 'pending' ? (
+                    {flag.status.toLowerCase() === 'open' ? (
                         <DecisionPanel
                             flagId={flag._id}
                             onDecided={(decision, rationale) =>

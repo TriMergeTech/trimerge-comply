@@ -11,7 +11,7 @@ export default function FlagResults() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    getFlags({ testType: 'adverse_impact', limit: 100 })
+    getFlags({ limit: 100 })
       .then((res) => {
         setResults(res.flags)
         setStats({
@@ -32,10 +32,10 @@ export default function FlagResults() {
       {/* Page header */}
       <div>
         <h2 className="text-slate-800 font-semibold text-xl">
-          Adverse Impact – Flag Results
+          Flag Results
         </h2>
         <p className="text-slate-400 text-sm mt-0.5">
-          City of Springfield – Applicant Flow Analysis
+          All compliance flags across engines.
         </p>
       </div>
 

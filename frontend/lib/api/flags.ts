@@ -59,14 +59,18 @@ async function flagFetch<T>(path: string, options?: RequestInit): Promise<T> {
   return data as T;
 }
 
-export async function getFlags(params: GetFlagsParams = {}): Promise<{ flags: FlagItem[]; total: number }> {
+export async function getFlags(params: GetFlagsParams = {}): Promise<{ flags: FlagItem[]; total: number; totalPages: number }> {
   const qs = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
     if (v !== undefined) qs.set(k, String(v));
   });
 
-  const res = await flagFetch<{ data: { flags: FlagItem[]; total: number } }>(`/flags?${qs}`);
-  return res.data;
+  const res = await flagFetch<{ data: { flags: FlagItem[]; total: number; pagination: { totalPages: number } } }>(`/flags?${qs}`);
+  return {
+    flags: res.data.flags,
+    total: res.data.total,
+    totalPages: res.data.pagination?.totalPages ?? 1,
+  };
 }
 
 export interface FlagDetail {
