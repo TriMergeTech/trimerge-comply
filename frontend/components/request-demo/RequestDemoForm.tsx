@@ -9,8 +9,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { submitDemoRequest } from '@/lib/api/demoRequests'
 
-const companySizes = ['1–10', '11–50', '51–200', '201–500', '500+']
+const companySizes = ['1-10', '11-50', '51-200', '201-500', '500+']
 
 const roles = [
   'HR Director',
@@ -42,7 +43,15 @@ export default function RequestDemoForm() {
     notes: '',
   })
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const interestKeyMap: Record<string, string> = {
+    'Adverse Impact Analysis': 'adverse_impact_analysis',
+    'Pay Equity Analysis': 'pay_equity_analysis',
+    'Position Description Review': 'position_description_review',
+    'All of the Above': 'all_of_the_above',
+  }
 
   const toggle = (interest: string) => {
     setForm((prev) => ({
@@ -53,7 +62,7 @@ export default function RequestDemoForm() {
     }))
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const newErrors: Record<string, string> = {}
     if (!form.firstName) newErrors.firstName = 'Required'
     if (!form.lastName) newErrors.lastName = 'Required'
@@ -63,7 +72,27 @@ export default function RequestDemoForm() {
     if (!form.companySize) newErrors.companySize = 'Required'
     if (!form.role) newErrors.role = 'Required'
     if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return }
-    setSubmitted(true)
+
+    setSubmitting(true)
+    try {
+      await submitDemoRequest({
+        firstName: form.firstName,
+        lastName: form.lastName,
+        workEmail: form.email,
+        organization: form.organization,
+        jobTitle: form.jobTitle,
+        phoneNumber: form.phone || undefined,
+        companySize: form.companySize,
+        role: form.role,
+        interests: form.interests.map((i) => interestKeyMap[i] ?? i),
+        additionalDetails: form.notes || undefined,
+      })
+      setSubmitted(true)
+    } catch (err) {
+      setErrors({ submit: err instanceof Error ? err.message : 'Submission failed. Please try again.' })
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   if (submitted) {
@@ -259,14 +288,19 @@ export default function RequestDemoForm() {
           />
         </div>
 
+        {errors.submit && (
+          <p className="text-xs text-red-500 text-center">{errors.submit}</p>
+        )}
+
         {/* Submit */}
         <button
           type="button"
           onClick={handleSubmit}
-          className="flex items-center justify-center gap-2 bg-[#4f46e5] hover:bg-[#4338ca] text-white font-semibold text-sm py-3 rounded-lg transition-colors mt-1"
+          disabled={submitting}
+          className="flex items-center justify-center gap-2 bg-[#4f46e5] hover:bg-[#4338ca] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold text-sm py-3 rounded-lg transition-colors mt-1"
         >
           <Calendar className="w-4 h-4" />
-          Request Demo
+          {submitting ? 'Submitting…' : 'Request Demo'}
         </button>
 
         <p className="flex items-center justify-center gap-1.5 text-xs text-slate-400">
