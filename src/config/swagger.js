@@ -31,6 +31,43 @@ All protected endpoints require a verified email and a valid Bearer token.`,
         bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
       },
       schemas: {
+        DemoRequest: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1' },
+            firstName: { type: 'string', example: 'Jordan' },
+            lastName: { type: 'string', example: 'Lee' },
+            workEmail: { type: 'string', format: 'email', example: 'jordan.lee@example.com' },
+            organization: { type: 'string', example: 'Example Corporation' },
+            jobTitle: { type: 'string', example: 'HR Director' },
+            phoneNumber: { type: 'string', example: '+1 305 555 0123' },
+            companySize: { type: 'string', example: '201-500 employees' },
+            role: { type: 'string', example: 'Human Resources' },
+            interests: {
+              type: 'array',
+              items: {
+                type: 'string',
+                enum: [
+                  'adverse_impact_analysis',
+                  'pay_equity_analysis',
+                  'position_description_review',
+                  'all_of_the_above',
+                ],
+              },
+            },
+            additionalDetails: {
+              type: 'string',
+              example: 'We want to review our hiring and compensation processes.',
+            },
+            status: {
+              type: 'string',
+              enum: ['new', 'contacted', 'scheduled', 'closed'],
+              example: 'new',
+            },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
         User: {
           type: 'object',
           properties: {
@@ -192,6 +229,138 @@ All protected endpoints require a verified email and a valid Bearer token.`,
     paths: {
       '/health': {
         get: { tags: ['Health'], summary: 'Health check', responses: { 200: { description: 'Server is running' } } },
+      },
+      '/api/demo-requests': {
+        post: {
+          tags: ['Demo Requests'],
+          summary: 'Submit a demo request',
+          description: 'Public endpoint used by the Request Demo website form. Limited to 10 submissions per hour per client.',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: [
+                    'firstName',
+                    'lastName',
+                    'workEmail',
+                    'organization',
+                    'jobTitle',
+                    'companySize',
+                    'role',
+                  ],
+                  properties: {
+                    firstName: { type: 'string', maxLength: 80, example: 'Jordan' },
+                    lastName: { type: 'string', maxLength: 80, example: 'Lee' },
+                    workEmail: { type: 'string', format: 'email', example: 'jordan.lee@example.com' },
+                    organization: { type: 'string', maxLength: 160, example: 'Example Corporation' },
+                    jobTitle: { type: 'string', maxLength: 120, example: 'HR Director' },
+                    phoneNumber: { type: 'string', maxLength: 40, example: '+1 305 555 0123' },
+                    companySize: { type: 'string', maxLength: 80, example: '201-500 employees' },
+                    role: { type: 'string', maxLength: 100, example: 'Human Resources' },
+                    interests: {
+                      type: 'array',
+                      maxItems: 4,
+                      items: {
+                        type: 'string',
+                        enum: [
+                          'adverse_impact_analysis',
+                          'pay_equity_analysis',
+                          'position_description_review',
+                          'all_of_the_above',
+                        ],
+                      },
+                    },
+                    additionalDetails: {
+                      type: 'string',
+                      maxLength: 2000,
+                      example: 'We want to review our hiring and compensation processes.',
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            201: { description: 'Demo request submitted successfully' },
+            422: { description: 'Validation failed' },
+            429: { description: 'Too many demo requests submitted' },
+          },
+        },
+        get: {
+          tags: ['Demo Requests'],
+          summary: 'List demo requests',
+          description: 'Returns demo requests newest first. Requires manager, director, or admin role.',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: 'status',
+              in: 'query',
+              schema: { type: 'string', enum: ['new', 'contacted', 'scheduled', 'closed'] },
+              description: 'Filter by request status.',
+            },
+            {
+              name: 'page',
+              in: 'query',
+              schema: { type: 'integer', minimum: 1, default: 1 },
+            },
+            {
+              name: 'limit',
+              in: 'query',
+              schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
+            },
+          ],
+          responses: {
+            200: { description: 'Demo requests retrieved successfully' },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Forbidden - manager, director, or admin required' },
+            422: { description: 'Invalid status filter' },
+          },
+        },
+      },
+      '/api/demo-requests/{id}/status': {
+        patch: {
+          tags: ['Demo Requests'],
+          summary: 'Update demo request status',
+          description: 'Moves a demo request through the forward workflow: new to contacted, contacted to scheduled, and scheduled to closed. Requires manager, director, or admin role.',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: 'id',
+              in: 'path',
+              required: true,
+              schema: { type: 'string' },
+              example: '64f1a2b3c4d5e6f7a8b9c0d1',
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['status'],
+                  properties: {
+                    status: {
+                      type: 'string',
+                      enum: ['new', 'contacted', 'scheduled', 'closed'],
+                      example: 'contacted',
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: 'Demo request status updated successfully' },
+            400: { description: 'Invalid id or invalid status transition' },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Forbidden - manager, director, or admin required' },
+            404: { description: 'Demo request not found' },
+            422: { description: 'Status validation failed' },
+          },
+        },
       },
       '/api/auth/signup': {
         post: {

@@ -20,6 +20,7 @@ const dashboardRoutes = require('./routes/dashboard.routes');
 const activityRoutes = require('./routes/activity.routes');
 const findingRoutes = require('./routes/finding.routes');
 const handbookRoutes = require('./routes/handbook.routes');
+const demoRequestRoutes = require('./routes/demoRequest.routes');
 
 const app = express();
 
@@ -100,6 +101,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/activity', activityRoutes);
 app.use('/api/findings', findingRoutes);
 app.use('/api/handbooks', handbookRoutes);
+app.use('/api/demo-requests', demoRequestRoutes);
 
 setupSwagger(app);
 
