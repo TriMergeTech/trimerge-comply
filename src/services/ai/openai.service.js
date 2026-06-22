@@ -211,7 +211,9 @@ const generatePayEquityReportRecommendations = async ({ reportView }) => {
     return {
       configured: false,
       skipped: true,
+      executiveSummary: null,
       plainLanguageSummary: null,
+      keyInsights: null,
       recommendations: null,
     };
   }
@@ -246,10 +248,23 @@ const generatePayEquityReportRecommendations = async ({ reportView }) => {
   }
 
   const parsed = parseJsonResponse(content);
+  const executiveSummary = String(parsed?.executiveSummary || '')
+    .replace(/\s+/g, ' ')
+    .trim();
   const plainLanguageSummary = Array.isArray(parsed?.plainLanguageSummary)
     ? parsed.plainLanguageSummary
         .map((item) => String(item || '').replace(/\s+/g, ' ').trim())
         .filter(Boolean)
+        .slice(0, 3)
+    : [];
+  const keyInsights = Array.isArray(parsed?.keyInsights)
+    ? parsed.keyInsights
+        .map((insight) => ({
+          finding: String(insight?.finding || '').replace(/\s+/g, ' ').trim(),
+          whyItMatters: String(insight?.whyItMatters || '').replace(/\s+/g, ' ').trim(),
+          nextStep: String(insight?.nextStep || '').replace(/\s+/g, ' ').trim(),
+        }))
+        .filter((insight) => insight.finding && insight.whyItMatters && insight.nextStep)
         .slice(0, 3)
     : [];
   const recommendations = Array.isArray(parsed?.recommendations)
@@ -262,7 +277,9 @@ const generatePayEquityReportRecommendations = async ({ reportView }) => {
   return {
     configured: true,
     skipped: false,
+    executiveSummary,
     plainLanguageSummary,
+    keyInsights,
     recommendations,
   };
 };

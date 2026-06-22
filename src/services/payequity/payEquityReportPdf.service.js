@@ -69,7 +69,7 @@ const drawFooter = (doc, pageNumber) => {
     .fontSize(7)
     .fillColor(MUTED_COLOR)
     .text(
-      `TriMerge Comply | Pay equity statistical review | Page ${pageNumber} of 2`,
+      `TriMerge Comply | Pay equity advisory report | Page ${pageNumber} of 3`,
       PAGE_LEFT,
       742,
       { width: CONTENT_WIDTH, align: 'center' }
@@ -146,10 +146,99 @@ const drawTableRow = (doc, columns, row, y, index, options = {}) => {
   });
 };
 
+const drawInsight = (doc, insight, index) => {
+  const y = doc.y;
+  doc.roundedRect(PAGE_LEFT, y, CONTENT_WIDTH, 55, 4).strokeColor(BORDER_COLOR).lineWidth(0.7).stroke();
+  doc
+    .roundedRect(PAGE_LEFT + 8, y + 8, 22, 22, 3)
+    .fill(BRAND_COLOR);
+  doc
+    .font('Helvetica-Bold')
+    .fontSize(9)
+    .fillColor('#ffffff')
+    .text(String(index + 1), PAGE_LEFT + 8, y + 14, { width: 22, align: 'center' });
+  doc
+    .font('Helvetica-Bold')
+    .fontSize(7.7)
+    .fillColor(TEXT_COLOR)
+    .text(truncate(insight.finding, 105), PAGE_LEFT + 38, y + 7, { width: CONTENT_WIDTH - 46 });
+  doc
+    .font('Helvetica')
+    .fontSize(7)
+    .fillColor(MUTED_COLOR)
+    .text(`Why it matters: ${truncate(insight.whyItMatters, 115)}`, PAGE_LEFT + 38, y + 23, {
+      width: CONTENT_WIDTH - 46,
+    });
+  doc
+    .font('Helvetica')
+    .fontSize(7)
+    .fillColor(TEXT_COLOR)
+    .text(`Review next: ${truncate(insight.nextStep, 115)}`, PAGE_LEFT + 38, y + 38, {
+      width: CONTENT_WIDTH - 46,
+    });
+  doc.y = y + 62;
+};
+
+const drawGapChart = (doc, title, rows, labelValue, y, maxRows = 5) => {
+  const chartRows = rows.slice(0, maxRows);
+  const chartHeight = 34 + chartRows.length * 29;
+  const labelWidth = 142;
+  const chartX = PAGE_LEFT + labelWidth;
+  const chartWidth = CONTENT_WIDTH - labelWidth - 34;
+  const zeroX = chartX + chartWidth / 2;
+  const maxMagnitude = Math.max(
+    5,
+    ...chartRows.map((row) => Math.abs(Number(row.gapPercent) || 0))
+  );
+
+  doc.font('Helvetica-Bold').fontSize(10).fillColor(TEXT_COLOR).text(title, PAGE_LEFT, y);
+  doc
+    .font('Helvetica')
+    .fontSize(6.8)
+    .fillColor(MUTED_COLOR)
+    .text('Negative values appear left of zero; positive values appear right.', PAGE_LEFT, y + 15);
+  doc
+    .moveTo(zeroX, y + 30)
+    .lineTo(zeroX, y + chartHeight - 3)
+    .strokeColor('#9ca3af')
+    .lineWidth(0.6)
+    .stroke();
+
+  chartRows.forEach((row, index) => {
+    const rowY = y + 34 + index * 29;
+    const gap = Number(row.gapPercent) || 0;
+    const barWidth = Math.min((Math.abs(gap) / maxMagnitude) * (chartWidth / 2 - 8), chartWidth / 2 - 8);
+    const color = row.flagged ? SEVERITY_COLORS.high : gap < 0 ? '#f59e0b' : '#2563eb';
+    const barX = gap < 0 ? zeroX - barWidth : zeroX;
+
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(7)
+      .fillColor(TEXT_COLOR)
+      .text(truncate(labelValue(row), 34), PAGE_LEFT, rowY + 3, { width: labelWidth - 8 });
+    doc.roundedRect(barX, rowY, Math.max(barWidth, 1), 13, 2).fill(color);
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(7)
+      .fillColor(color)
+      .text(formatPercent(gap), PAGE_RIGHT - 48, rowY + 2, { width: 48, align: 'right' });
+  });
+
+  return y + chartHeight;
+};
+
+const dataQualityColor = (assessment) => ({
+  strong: SEVERITY_COLORS.low,
+  moderate: SEVERITY_COLORS.medium,
+  limited: SEVERITY_COLORS.high,
+}[assessment] || BRAND_COLOR);
+
 const renderPayEquityReportPdf = ({
   outputStream,
   reportView,
+  executiveSummary,
   plainLanguageSummary,
+  keyInsights,
   recommendations,
 }) => {
   const doc = new PDFDocument({
@@ -206,7 +295,17 @@ const renderPayEquityReportPdf = ({
     riskColor
   );
 
-  drawSectionTitle(doc, 'What This Means', 230);
+  drawSectionTitle(doc, 'Executive Summary', 230);
+  doc
+    .font('Helvetica')
+    .fontSize(8.4)
+    .fillColor(TEXT_COLOR)
+    .text(truncate(executiveSummary, 520), PAGE_LEFT, doc.y, {
+      width: CONTENT_WIDTH,
+      lineGap: 1.5,
+    });
+
+  drawSectionTitle(doc, 'What This Means', doc.y + 12);
   (plainLanguageSummary || []).slice(0, 3).forEach((summary) => {
     doc
       .font('Helvetica')
@@ -218,10 +317,74 @@ const renderPayEquityReportPdf = ({
       });
   });
 
-  drawSectionTitle(doc, 'Adjusted Pay Gap Findings', doc.y + 10);
+  drawSectionTitle(doc, 'Key Insights', doc.y + 12);
+  (keyInsights || []).slice(0, 3).forEach((insight, index) => drawInsight(doc, insight, index));
+
+  drawFooter(doc, 1);
+
+  doc.addPage();
+  drawHeader(doc, 'Pay Equity Analysis', 'Visual Summary, Data Quality, and Recommended Actions');
+
+  let y = drawGapChart(
+    doc,
+    'Adjusted Demographic Pay Gaps',
+    reportView.adjustedGaps,
+    (row) => `${labelForValue(row.field)}: ${row.group}`,
+    92,
+    5
+  );
+  y = drawGapChart(
+    doc,
+    'Unadjusted Department Pay Gaps',
+    reportView.departmentGaps,
+    (row) => row.department,
+    y + 12,
+    4
+  );
+
+  drawSectionTitle(doc, 'Data Quality and Limitations', y + 10);
+  const quality = reportView.dataQuality;
+  doc
+    .font('Helvetica-Bold')
+    .fontSize(9)
+    .fillColor(dataQualityColor(quality.assessment))
+    .text(`Assessment: ${labelForValue(quality.assessment)}`, PAGE_LEFT, doc.y);
   doc
     .font('Helvetica')
-    .fontSize(7.5)
+    .fontSize(7.4)
+    .fillColor(TEXT_COLOR)
+    .text(
+      `${quality.rowsAnalyzed} employees, ${quality.columnsAnalyzed} data fields, and ${quality.protectedFields.length} protected-group fields were analyzed.`,
+      PAGE_LEFT,
+      doc.y + 3,
+      { width: CONTENT_WIDTH }
+    );
+  const qualityConcerns = quality.concerns.length
+    ? quality.concerns
+    : ['No material data-quality limitations were identified by the current checks.'];
+  qualityConcerns.slice(0, 4).forEach((concern) => {
+    doc.font('Helvetica').fontSize(7.2).fillColor(MUTED_COLOR).text(`- ${truncate(concern, 145)}`, PAGE_LEFT, doc.y, {
+      width: CONTENT_WIDTH,
+    });
+  });
+
+  drawSectionTitle(doc, 'Recommended Actions', doc.y + 10);
+  recommendations.slice(0, 5).forEach((recommendation) => {
+    doc.font('Helvetica').fontSize(7.7).fillColor(TEXT_COLOR).text(`- ${truncate(recommendation, 165)}`, PAGE_LEFT, doc.y, {
+      width: CONTENT_WIDTH,
+      lineGap: 1,
+    });
+  });
+
+  drawFooter(doc, 2);
+
+  doc.addPage();
+  drawHeader(doc, 'Pay Equity Analysis', 'Detailed Statistical Support');
+
+  drawSectionTitle(doc, 'Adjusted Pay Gap Findings', 92);
+  doc
+    .font('Helvetica')
+    .fontSize(7.3)
     .fillColor(MUTED_COLOR)
     .text(
       'Adjusted results compare estimated pay after accounting for the available job and employee factors.',
@@ -229,7 +392,6 @@ const renderPayEquityReportPdf = ({
       doc.y,
       { width: CONTENT_WIDTH }
     );
-
   const adjustedColumns = [
     { label: 'Field / Group', x: 8, width: 150, value: (row) => `${labelForValue(row.field)}: ${row.group}`, bold: true },
     { label: 'Comparison', x: 166, width: 105, value: 'comparisonGroup' },
@@ -245,43 +407,15 @@ const renderPayEquityReportPdf = ({
       bold: true,
     },
   ];
-  let adjustedY = doc.y + 20;
-  drawTableHeader(doc, adjustedColumns, adjustedY);
-  adjustedY += 20;
-
-  if (reportView.adjustedGaps.length) {
-    reportView.adjustedGaps.forEach((row, index) => {
-      drawTableRow(doc, adjustedColumns, row, adjustedY, index);
-      adjustedY += 24;
-    });
-  } else {
-    doc.font('Helvetica').fontSize(8).fillColor(MUTED_COLOR).text(
-      'No adjusted demographic pay gap rows were available.',
-      PAGE_LEFT + 8,
-      adjustedY + 8
-    );
-    adjustedY += 28;
-  }
-
-  drawSectionTitle(doc, 'Analysis Scope', adjustedY + 12);
-  const scopeLines = [
-    `Protected fields: ${reportView.dataset.protectedFields.map(labelForValue).join(', ') || 'None detected'}`,
-    `Factors considered: ${reportView.dataset.predictorsUsed.map(labelForValue).join(', ') || 'None reported'}`,
-    `Departments analyzed: ${reportView.dataset.departmentsAnalyzed} | Demographic comparisons: ${reportView.dataset.demographicGroups}`,
-  ];
-  scopeLines.forEach((line) => {
-    doc.font('Helvetica').fontSize(7.6).fillColor(TEXT_COLOR).text(`- ${truncate(line, 150)}`, PAGE_LEFT, doc.y, {
-      width: CONTENT_WIDTH,
-      lineGap: 1,
-    });
+  y = doc.y + 18;
+  drawTableHeader(doc, adjustedColumns, y);
+  y += 20;
+  reportView.adjustedGaps.forEach((row, index) => {
+    drawTableRow(doc, adjustedColumns, row, y, index);
+    y += 24;
   });
 
-  drawFooter(doc, 1);
-
-  doc.addPage();
-  drawHeader(doc, 'Pay Equity Analysis', 'Detailed Findings and Recommended Actions');
-
-  drawSectionTitle(doc, 'Unadjusted Department Gaps', 92);
+  drawSectionTitle(doc, 'Unadjusted Department Gaps', y + 10);
   const departmentColumns = [
     { label: 'Department', x: 8, width: 130, value: 'department', bold: true },
     { label: 'Comparison', x: 145, width: 115, value: 'comparisonGroup' },
@@ -297,7 +431,7 @@ const renderPayEquityReportPdf = ({
       bold: true,
     },
   ];
-  let y = doc.y;
+  y = doc.y;
   drawTableHeader(doc, departmentColumns, y);
   y += 20;
   if (reportView.departmentGaps.length) {
@@ -339,7 +473,7 @@ const renderPayEquityReportPdf = ({
     y += 24;
   }
 
-  drawSectionTitle(doc, 'Technical Notes', y + 10);
+  drawSectionTitle(doc, 'Technical Notes and Analysis Scope', y + 10);
   doc
     .font('Helvetica')
     .fontSize(7.6)
@@ -360,23 +494,16 @@ const renderPayEquityReportPdf = ({
       doc.y + 2,
       { width: CONTENT_WIDTH }
     );
-
-  const warnings = reportView.warnings.length
-    ? reportView.warnings
-    : ['No data-quality warnings were reported by the analysis engine.'];
-  warnings.forEach((warning) => {
-    doc.font('Helvetica').fontSize(7.4).fillColor(MUTED_COLOR).text(`- ${truncate(warning, 145)}`, PAGE_LEFT, doc.y, {
-      width: CONTENT_WIDTH,
-    });
-  });
-
-  drawSectionTitle(doc, 'Recommended Actions', doc.y + 10);
-  recommendations.slice(0, 5).forEach((recommendation) => {
-    doc.font('Helvetica').fontSize(7.7).fillColor(TEXT_COLOR).text(`- ${truncate(recommendation, 165)}`, PAGE_LEFT, doc.y, {
-      width: CONTENT_WIDTH,
-      lineGap: 1,
-    });
-  });
+  doc
+    .font('Helvetica')
+    .fontSize(7.2)
+    .fillColor(TEXT_COLOR)
+    .text(
+      `Factors considered: ${reportView.dataset.predictorsUsed.map(labelForValue).join(', ') || 'None reported'}`,
+      PAGE_LEFT,
+      doc.y + 3,
+      { width: CONTENT_WIDTH }
+    );
 
   doc
     .font('Helvetica-Oblique')
@@ -385,11 +512,11 @@ const renderPayEquityReportPdf = ({
     .text(
       'This report is a statistical review aid, not a legal conclusion. Unadjusted gaps are descriptive; adjusted estimates depend on the quality and completeness of the supplied data and model factors.',
       PAGE_LEFT,
-      710,
+      708,
       { width: CONTENT_WIDTH, align: 'center' }
     );
 
-  drawFooter(doc, 2);
+  drawFooter(doc, 3);
   doc.end();
 };
 

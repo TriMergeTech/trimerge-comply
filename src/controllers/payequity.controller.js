@@ -4,6 +4,8 @@ const { generatePayEquityReportRecommendations } = require('../services/ai/opena
 const { extractPayEquityCsvFromFile } = require('../services/payequity/payEquityFile.service');
 const { processPayEquityCsv } = require('../services/payequity/payEquityProcessor');
 const {
+  buildFallbackPayEquityExecutiveSummary,
+  buildFallbackPayEquityKeyInsights,
   buildFallbackPayEquityRecommendations,
   buildFallbackPayEquityPlainLanguageSummary,
   buildPayEquityReportView,
@@ -220,7 +222,7 @@ const getPayEquityReport = async (req, res, next) => {
 
     const analysis = await PayEquityAnalysis.findOne({
       _id: req.params.id,
-      companyName: req.user.companyName,
+      organizationId: req.user.organizationId,
     }).lean();
 
     if (!analysis) {
@@ -231,7 +233,9 @@ const getPayEquityReport = async (req, res, next) => {
     }
 
     const reportView = buildPayEquityReportView(analysis);
+    let executiveSummary = buildFallbackPayEquityExecutiveSummary(reportView);
     let plainLanguageSummary = buildFallbackPayEquityPlainLanguageSummary(reportView);
+    let keyInsights = buildFallbackPayEquityKeyInsights(reportView);
     let recommendations = buildFallbackPayEquityRecommendations(reportView);
 
     try {
@@ -243,6 +247,14 @@ const getPayEquityReport = async (req, res, next) => {
 
       if (aiResult.plainLanguageSummary?.length === 3) {
         plainLanguageSummary = aiResult.plainLanguageSummary;
+      }
+
+      if (aiResult.executiveSummary) {
+        executiveSummary = aiResult.executiveSummary;
+      }
+
+      if (aiResult.keyInsights?.length) {
+        keyInsights = aiResult.keyInsights;
       }
     } catch (err) {
       console.warn('[PAY EQUITY REPORT] AI recommendations unavailable:', err.message);
@@ -257,7 +269,9 @@ const getPayEquityReport = async (req, res, next) => {
     return renderPayEquityReportPdf({
       outputStream: res,
       reportView,
+      executiveSummary,
       plainLanguageSummary,
+      keyInsights,
       recommendations,
     });
   } catch (err) {

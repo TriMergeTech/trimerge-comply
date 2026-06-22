@@ -768,7 +768,7 @@ All protected endpoints require a verified email and a valid Bearer token.`,
         get: {
           tags: ['Pay Equity'],
           summary: 'Download pay equity PDF report',
-          description: 'Downloads a two-page statistical pay equity report with deterministic analysis results, concise AI recommendations when available, and deterministic fallback recommendations. Scoped to the authenticated user\'s company.',
+          description: 'Downloads a three-page pay equity advisory report with an executive summary, key insights, visual gap charts, data-quality limitations, recommended actions, and detailed statistical support. AI narrative uses deterministic fallbacks when unavailable. Scoped to the authenticated user\'s organization.',
           security: [{ bearerAuth: [] }],
           parameters: [
             { name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a0f1185927a7ccf9ab71252' },
