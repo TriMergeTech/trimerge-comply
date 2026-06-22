@@ -38,7 +38,7 @@ export default function LandingNav() {
               <ChevronDown className="w-3.5 h-3.5" />
             </button>
           ))}
-          <Link href="#" className="text-sm font-medium text-white/70 hover:text-white transition-colors">
+          <Link href="/pricing" className="text-sm font-medium text-white/70 hover:text-white transition-colors">
             Pricing
           </Link>
           <Link href="/about" className="text-sm font-medium text-white/70 hover:text-white transition-colors">
@@ -74,11 +74,14 @@ export default function LandingNav() {
       {/* Mobile Menu */}
       {mobileOpen && (
         <div className="md:hidden bg-[#0d0f2b] border-t border-white/10 px-6 py-4 space-y-4">
-          {["Product", "Solutions", "Resources", "Pricing"].map((item) => (
+          {["Product", "Solutions", "Resources"].map((item) => (
             <Link key={item} href="#" className="block text-sm font-medium text-white/70">
               {item}
             </Link>
           ))}
+          <Link href="/pricing" className="block text-sm font-medium text-white/70">
+            Pricing
+          </Link>
           <Link href="/about" className="block text-sm font-medium text-white/70">
             About Us
           </Link>
