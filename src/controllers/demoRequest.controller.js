@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const DemoRequest = require('../models/DemoRequest');
+const { sendDemoRequestEmail } = require('../services/email.service');
 const { sendSuccess, sendError } = require('../utils/response');
 
 const DEMO_STATUSES = new Set(['new', 'contacted', 'scheduled', 'closed']);
@@ -38,6 +39,10 @@ const createDemoRequest = async (req, res, next) => {
       interests: Array.from(new Set(interests)),
       additionalDetails,
     });
+
+    sendDemoRequestEmail(demoRequest).catch((err) =>
+      console.error('[EMAIL] Failed to send demo request notification:', err.message)
+    );
 
     return sendSuccess(res, {
       statusCode: 201,
