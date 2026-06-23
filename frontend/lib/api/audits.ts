@@ -105,3 +105,36 @@ export function deleteAudit(id: string) {
     method: "DELETE",
   });
 }
+
+export interface DeletionRequest {
+  _id: string;
+  auditId: { _id: string; name: string; status: string };
+  auditSnapshot: unknown;
+  requestedBy: { name: string; email: string; role: string };
+  deletionNotes: string;
+  directorId: { name: string; email: string };
+  status: 'pending' | 'approved' | 'rejected';
+  reviewedBy: unknown;
+  reviewedAt: string;
+  approvalNotes: string;
+  createdAt: string;
+}
+
+export function submitDeletionRequest(auditId: string, data: { deletionNotes: string; directorId: string }) {
+  return auditFetch<{ success: boolean }>(`/audits/${auditId}/deletion-request`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export function getDeletionRequests(status?: 'pending' | 'approved' | 'rejected') {
+  const qs = status ? `?status=${status}` : '';
+  return auditFetch<{ success: boolean; data: { requests: DeletionRequest[]; total: number } }>(`/audits/deletion-requests${qs}`);
+}
+
+export function reviewDeletionRequest(requestId: string, data: { decision: 'approved' | 'rejected'; approvalNotes: string }) {
+  return auditFetch<{ success: boolean }>(`/audits/deletion-requests/${requestId}/review`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}

@@ -1,21 +1,20 @@
 'use client'
 
-import { useRef, useState, useEffect } from 'react'
-import { Upload } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Download } from 'lucide-react'
 import PayEquityStats from '@/components/pay-equity/PayEquityStats'
 import PayGapsChart from '@/components/pay-equity/PayGapsChart'
 import DemographicGapsTable from '@/components/pay-equity/DemographicGapsTable'
 import {
   getPayEquityAnalyses,
-  uploadPayEquityFile,
+  downloadPayEquityReport,
   type PayEquityAnalysis,
 } from '@/lib/api/payequity'
 
 export default function PayEquity() {
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const [analysis, setAnalysis] = useState<PayEquityAnalysis | null>(null)
-  const [uploading, setUploading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
 
   // Load most recent analysis on mount
@@ -25,24 +24,22 @@ export default function PayEquity() {
       .catch((err) => setLoadError(err instanceof Error ? err.message : 'Failed to load analyses.'))
   }, [])
 
-  // Triggered when user picks a file
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    setUploading(true)
-    setError(null)
-
+  async function handleExport() {
+    if (!analysis) return
+    setExporting(true)
+    setExportError(null)
     try {
-      await uploadPayEquityFile(file)
-      const analyses = await getPayEquityAnalyses()
-      setAnalysis(analyses[0] ?? null)
+      const blob = await downloadPayEquityReport(analysis._id)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'pay-equity-report.pdf'
+      a.click()
+      URL.revokeObjectURL(url)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Upload failed. Please try again.')
+      setExportError(err instanceof Error ? err.message : 'Failed to download report.')
     } finally {
-      setUploading(false)
-      // Reset the input so the same file can be re-uploaded if needed
-      if (fileInputRef.current) fileInputRef.current.value = ''
+      setExporting(false)
     }
   }
 
@@ -60,23 +57,14 @@ export default function PayEquity() {
           </p>
         </div>
 
-        {/* Hidden file input — triggered by the button below */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".csv"
-          className="hidden"
-          onChange={handleFileChange}
-        />
-
-        {/* Upload data button */}
+        {/* Export report button */}
         <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
+          onClick={handleExport}
+          disabled={!analysis || exporting}
           className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors w-fit"
         >
-          <Upload size={16} />
-          {uploading ? 'Analyzing…' : 'Upload Data'}
+          <Download size={16} />
+          {exporting ? 'Exporting…' : 'Export Data'}
         </button>
       </div>
 
@@ -86,9 +74,9 @@ export default function PayEquity() {
           {loadError}
         </div>
       )}
-      {error && (
+      {exportError && (
         <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">
-          {error}
+          {exportError}
         </div>
       )}
 

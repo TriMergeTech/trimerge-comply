@@ -139,3 +139,8 @@ export function updateUserRole(
 export function getUsers(token: string) {
   return get<{ users: { _id: string; name: string; email: string; role: string; companyName?: string; isVerified: boolean; createdAt: string }[] }>('/auth/users', token)
 }
+
+// Get directors list — accessible to analysts, reviewers, and managers
+export function getDirectors(token: string) {
+  return get<{ directors: { _id: string; name: string; email: string }[]; total: number }>('/users/directors', token)
+}
