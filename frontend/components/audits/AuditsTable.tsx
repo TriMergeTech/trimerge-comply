@@ -5,7 +5,7 @@
 // Supports creating, editing and deleting audits
 
 import { useEffect, useMemo, useState } from 'react'
-import { getAudits, deleteAudit, Audit, AuditFilters } from '@/lib/api/audits'
+import { getAudits, Audit, AuditFilters } from '@/lib/api/audits'
 import AuditModal from '@/components/audits/AuditModal'
 import DeleteRequestModal from '@/components/audits/DeleteRequestModal'
 import {
@@ -14,7 +14,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { toast } from 'sonner'
 
 interface AuditsTableProps {
   filters?: AuditFilters;
@@ -125,20 +124,6 @@ export default function AuditsTable({ filters, refreshKey }: AuditsTableProps) {
     setModalOpen(true)
   }
 
-  // Handle delete audit
-  async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to delete this audit?')) return
-    try {
-      await deleteAudit(id)
-      toast.success('Audit deleted successfully')
-      fetchAudits()
-    } catch (err) {
-      toast.error('Failed to delete audit. Please try again.')
-      console.error(err)
-    }
-  }
-
-
   // Loading state
   if (loading) {
     return (
@@ -171,7 +156,9 @@ export default function AuditsTable({ filters, refreshKey }: AuditsTableProps) {
       {/* Delete request modal */}
       <DeleteRequestModal
         open={deleteModalOpen}
+        auditId={auditToDelete ?? ''}
         onClose={() => setDeleteModalOpen(false)}
+        onSuccess={() => { setDeleteModalOpen(false); fetchAudits() }}
       />
 
       {/* Audit modal — used for both create and edit */}

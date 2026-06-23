@@ -87,6 +87,19 @@ export async function uploadPayEquityFile(file: File): Promise<void> {
     if (!res.ok) throw new Error(data.message ?? 'Upload failed');
 }
 
+// Download the PDF report for a pay equity analysis
+export async function downloadPayEquityReport(id: string): Promise<Blob> {
+  const token = getAccessToken();
+  const res = await fetch(`${BASE}/payequity/${id}/report`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error((data as any).message ?? 'Failed to download report');
+  }
+  return res.blob();
+}
+
 // List all pay equity analyses (newest first)
 export async function getPayEquityAnalyses(): Promise<PayEquityAnalysis[]> {
     const token = getAccessToken();
