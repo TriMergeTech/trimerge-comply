@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   BarChart2,
   ClipboardList,
+  Search,
 } from 'lucide-react'
 import { clearTokens } from '@/lib/authTokens'
 import { useUser } from '@/lib/context/UserContext'
@@ -26,6 +27,7 @@ const navLinks: { label: string; href: string; icon: React.ElementType; adminOnl
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Compliance', href: '/compliance', icon: ShieldCheck },
   { label: 'Audits', href: '/audits', icon: FileText },
+  { label: 'Findings', href: '/findings', icon: Search },
   { label: 'Upload Data', href: '/upload', icon: Upload },
   { label: 'Flags', href: '/flags', icon: Flag },
   { label: 'Position Analysis', href: '/position-analysis', icon: BriefcaseBusiness },
