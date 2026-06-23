@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
@@ -15,20 +16,24 @@ import {
   X as CloseIcon,
   ShieldCheck,
   BarChart2,
+  ClipboardList,
+  Search,
 } from 'lucide-react'
 import { clearTokens } from '@/lib/authTokens'
 import { useUser } from '@/lib/context/UserContext'
 
 // Navigation links configuration
-const navLinks = [
+const navLinks: { label: string; href: string; icon: React.ElementType; adminOnly?: boolean }[] = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Compliance', href: '/compliance', icon: ShieldCheck },
   { label: 'Audits', href: '/audits', icon: FileText },
+  { label: 'Findings', href: '/findings', icon: Search },
   { label: 'Upload Data', href: '/upload', icon: Upload },
   { label: 'Flags', href: '/flags', icon: Flag },
   { label: 'Position Analysis', href: '/position-analysis', icon: BriefcaseBusiness },
   { label: 'Pay Equity', href: '/pay-equity', icon: DollarSign },
   { label: 'Reports', href: '/reports', icon: BarChart2 },
+  { label: 'Waitlist', href: '/waitlist', icon: ClipboardList, adminOnly: true },
 ]
 
 export default function Sidebar() {
@@ -83,7 +88,7 @@ export default function Sidebar() {
 
           {/* Navigation links */}
           <nav className="flex flex-col gap-1">
-            {navLinks.filter(({ href }) => href !== '/upload' || isAdmin).map(({ label, href, icon: Icon }) => {
+            {navLinks.filter(({ href, adminOnly }) => (href !== '/upload' || isAdmin) && (!adminOnly || isAdmin)).map(({ label, href, icon: Icon }) => {
               const isActive = pathname === href
               return (
                 <Link

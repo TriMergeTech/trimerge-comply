@@ -27,7 +27,7 @@ export default function CTASection() {
           </div>
         </div>
         <Link
-          href="/login"
+          href="/request-demo"
           className="flex-shrink-0 bg-[#4f46e5] hover:bg-[#4338ca] text-white font-bold px-8 py-4 rounded-lg flex items-center gap-2 transition-colors text-sm whitespace-nowrap shadow-lg"
         >
           Request Demo →

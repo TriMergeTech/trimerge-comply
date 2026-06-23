@@ -20,14 +20,17 @@ const engineMap: Record<string, string> = {
 export default function FlagQueue() {
   const [selectedEngine, setSelectedEngine] = useState('All Engines')
   const [selectedSeverity, setSelectedSeverity] = useState('All Severities')
-  const [selectedStatus, setSelectedStatus] = useState('Pending')
+  const [selectedStatus, setSelectedStatus] = useState('open')
 
   const [flags, setFlags] = useState<FlagItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
 
   const engineOptions = ['All Engines', 'Adverse Impact', 'Position Description', 'Pay Equity']
   const severityOptions = ['All Severities', 'Critical', 'High', 'Medium', 'Low']
-  const statusOptions = ['Pending', 'Confirmed', 'Dismissed', 'Escalated']
+  const statusOptions = ['open', 'reviewed']
 
   useEffect(() => {
     setLoading(true)
@@ -35,10 +38,22 @@ export default function FlagQueue() {
       status: selectedStatus,
       severity: selectedSeverity !== 'All Severities' ? selectedSeverity : undefined,
       testType: selectedEngine !== 'All Engines' ? engineMap[selectedEngine] : undefined,
+      page,
+      limit: 20,
     })
-      .then((res) => { setFlags(res.flags); setLoading(false) })
+      .then((res) => {
+        setFlags(res.flags)
+        setTotal(res.total)
+        setTotalPages(res.totalPages)
+        setLoading(false)
+      })
       .catch(() => setLoading(false))
-  }, [selectedEngine, selectedSeverity, selectedStatus])
+  }, [selectedEngine, selectedSeverity, selectedStatus, page])
+
+  // Reset to page 1 when filters change
+  const handleEngineChange = (engine: string) => { setSelectedEngine(engine); setPage(1) }
+  const handleSeverityChange = (severity: string) => { setSelectedSeverity(severity); setPage(1) }
+  const handleStatusChange = (status: string) => { setSelectedStatus(status); setPage(1) }
 
   return (
     <div className="flex flex-col gap-6">
@@ -71,7 +86,7 @@ export default function FlagQueue() {
             {engineOptions.map((engine) => (
               <DropdownMenuItem
                 key={engine}
-                onClick={() => setSelectedEngine(engine)}
+                onClick={() => handleEngineChange(engine)}
                 className="cursor-pointer"
               >
                 {engine}
@@ -90,7 +105,7 @@ export default function FlagQueue() {
             {severityOptions.map((severity) => (
               <DropdownMenuItem
                 key={severity}
-                onClick={() => setSelectedSeverity(severity)}
+                onClick={() => handleSeverityChange(severity)}
                 className="cursor-pointer"
               >
                 {severity}
@@ -109,7 +124,7 @@ export default function FlagQueue() {
             {statusOptions.map((status) => (
               <DropdownMenuItem
                 key={status}
-                onClick={() => setSelectedStatus(status)}
+                onClick={() => handleStatusChange(status)}
                 className="cursor-pointer"
               >
                 {status}
@@ -131,7 +146,15 @@ export default function FlagQueue() {
       </div>
 
       {/* Flag queue table */}
-      <FlagQueueTable flags={flags} loading={loading} />
+      <FlagQueueTable
+        flags={flags}
+        loading={loading}
+        page={page}
+        totalPages={totalPages}
+        total={total}
+        onPrevious={() => setPage((p) => Math.max(1, p - 1))}
+        onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+      />
 
     </div>
   )

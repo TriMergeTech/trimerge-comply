@@ -31,7 +31,7 @@ export default function HeroSection() {
 
           <div className="flex flex-wrap gap-4 mb-12">
             <Link
-              href="/login"
+              href="/request-demo"
               className="bg-[#4f46e5] hover:bg-[#4338ca] text-white font-semibold px-6 py-3 rounded-lg flex items-center gap-2 transition-colors text-sm"
             >
               Request Demo →

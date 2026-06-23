@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { FlagItem } from '@/lib/api/flags'
 
@@ -10,55 +9,40 @@ const engineLabel: Record<string, string> = {
   pay_equity: 'Pay Equity',
 }
 
-type Props = {
-  flags: FlagItem[]
-  loading?: boolean
-}
+const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s
 
-// Number of results to show per page
-const ITEMS_PER_PAGE = 10
+const formatDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  })
 
 function getSeverityColor(severity: string) {
   switch (severity) {
     case 'Critical': return 'bg-red-100 text-red-600'
-    case 'High': return 'bg-orange-100 text-orange-500'
-    case 'Medium': return 'bg-yellow-100 text-yellow-600'
-    case 'Low': return 'bg-green-100 text-green-600'
-    default: return 'bg-slate-100 text-slate-500'
+    case 'High':     return 'bg-orange-100 text-orange-500'
+    case 'Medium':   return 'bg-yellow-100 text-yellow-600'
+    case 'Low':      return 'bg-green-100 text-green-600'
+    default:         return 'bg-slate-100 text-slate-500'
   }
 }
 
-export default function FlagQueueTable({ flags, loading }: Props) {
-  // Track current page
-  const [currentPage, setCurrentPage] = useState(1)
+type Props = {
+  flags: FlagItem[]
+  loading?: boolean
+  page: number
+  totalPages: number
+  total: number
+  onPrevious: () => void
+  onNext: () => void
+}
 
-  // Calculate total pages
-  const totalPages = Math.ceil(flags.length / ITEMS_PER_PAGE)
-
-  // Slice flags for current page
-  const paginatedFlags = flags.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  )
-
-  // Go to previous page
-  function handlePrevious() {
-    setCurrentPage((prev) => Math.max(prev - 1, 1))
-  }
-
-  // Go to next page
-  function handleNext() {
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-  }
-
+export default function FlagQueueTable({ flags, loading, page, totalPages, total, onPrevious, onNext }: Props) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
 
-      {/* Scrollable wrapper for mobile */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
 
-          {/* Table headers */}
           <thead>
             <tr className="text-slate-400 text-left border-b border-slate-100">
               <th className="pb-3 font-medium">Flag</th>
@@ -66,12 +50,11 @@ export default function FlagQueueTable({ flags, loading }: Props) {
               <th className="pb-3 font-medium">Audit</th>
               <th className="pb-3 font-medium">Severity</th>
               <th className="pb-3 font-medium">Status</th>
-              <th className="pb-3 font-medium">Assigned To</th>
-              <th className="pb-3 font-medium">Date</th>
+              <th className="pb-3 font-medium whitespace-nowrap w-28">Assigned To</th>
+              <th className="pb-3 font-medium whitespace-nowrap w-32">Date</th>
             </tr>
           </thead>
 
-          {/* Table rows */}
           <tbody>
             {loading ? (
               <tr>
@@ -86,7 +69,7 @@ export default function FlagQueueTable({ flags, loading }: Props) {
                 </td>
               </tr>
             ) : (
-              paginatedFlags.map((flag) => (
+              flags.map((flag) => (
                 <tr
                   key={flag._id}
                   className="border-b border-slate-50 hover:bg-slate-50 transition-colors"
@@ -103,7 +86,7 @@ export default function FlagQueueTable({ flags, loading }: Props) {
                     {engineLabel[flag.testType] ?? flag.testType}
                   </td>
                   <td className="py-3 text-slate-500">
-                    {flag.auditId ?? '—'}
+                    {typeof flag.auditId === 'object' ? flag.auditId?.name : flag.auditId ?? '—'}
                   </td>
                   <td className="py-3">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getSeverityColor(flag.severity)}`}>
@@ -112,13 +95,11 @@ export default function FlagQueueTable({ flags, loading }: Props) {
                   </td>
                   <td className="py-3">
                     <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-500">
-                      {flag.status}
+                      {capitalize(flag.status)}
                     </span>
                   </td>
-                  <td className="py-3 text-slate-500">{flag.assignedTo}</td>
-                  <td className="py-3 text-slate-500">
-                    {new Date(flag.createdAt).toLocaleDateString()}
-                  </td>
+                  <td className="py-3 text-slate-500 whitespace-nowrap">{flag.assignedTo ?? '—'}</td>
+                  <td className="py-3 text-slate-500 whitespace-nowrap">{formatDate(flag.createdAt)}</td>
                 </tr>
               ))
             )}
@@ -127,37 +108,32 @@ export default function FlagQueueTable({ flags, loading }: Props) {
         </table>
       </div>
 
-      {/* Pagination controls — only show when there are more than 10 results */}
-      {flags.length > ITEMS_PER_PAGE && (
+      {/* Pagination controls */}
+      {totalPages > 1 && (
         <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
 
-          {/* Results count */}
           <p className="text-sm text-slate-400">
-            Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, flags.length)} of {flags.length} results
+            Page {page} of {totalPages} · {total} total
           </p>
 
-          {/* Page navigation */}
           <div className="flex items-center gap-2">
 
-            {/* Previous button */}
             <button
-              onClick={handlePrevious}
-              disabled={currentPage === 1}
+              onClick={onPrevious}
+              disabled={page === 1}
               className="flex items-center gap-1 px-3 py-1.5 text-sm border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft size={14} />
               Previous
             </button>
 
-            {/* Page indicator */}
             <span className="text-sm text-slate-500 px-2">
-              Page {currentPage} of {totalPages}
+              Page {page} of {totalPages}
             </span>
 
-            {/* Next button */}
             <button
-              onClick={handleNext}
-              disabled={currentPage === totalPages}
+              onClick={onNext}
+              disabled={page === totalPages}
               className="flex items-center gap-1 px-3 py-1.5 text-sm border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Next
