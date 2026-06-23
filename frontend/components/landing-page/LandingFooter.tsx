@@ -1,7 +1,15 @@
 import Link from "next/link";
 import Image from "next/image";
 
-const footerLinks = ["Product", "Solutions", "Resources", "About Us", "Contact", "Privacy Policy", "Terms of Service"];
+const footerLinks = [
+  { label: "Product",          href: "#" },
+  { label: "Solutions",        href: "#" },
+  { label: "Resources",        href: "#" },
+  { label: "About Us",         href: "/about" },
+  { label: "Contact",          href: "#" },
+  { label: "Privacy Policy",   href: "/terms#data-privacy" },
+  { label: "Terms of Service", href: "/terms" },
+];
 
 export default function LandingFooter() {
   return (
@@ -24,13 +32,13 @@ export default function LandingFooter() {
 
         {/* Links */}
         <nav className="flex flex-wrap items-center justify-center gap-5">
-          {footerLinks.map((link) => (
+          {footerLinks.map(({ label, href }) => (
             <Link
-              key={link}
-              href="#"
+              key={label}
+              href={href}
               className="text-white/50 hover:text-white/80 text-xs transition-colors"
             >
-              {link}
+              {label}
             </Link>
           ))}
         </nav>

@@ -7,6 +7,7 @@ import { uploadCsv } from '@/lib/api/upload'
 export default function UploadZone({ onSuccess }: { onSuccess?: () => void }) {
   const [isDragging, setIsDragging] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [certified, setCertified] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [uploadSuccess, setUploadSuccess] = useState(false)
@@ -29,7 +30,7 @@ export default function UploadZone({ onSuccess }: { onSuccess?: () => void }) {
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    if (file) { setSelectedFile(file); setUploadError(null); setUploadSuccess(false) }
+    if (file) { setSelectedFile(file); setUploadError(null); setUploadSuccess(false); setCertified(false) }
   }
 
   async function handleUpload() {
@@ -41,6 +42,7 @@ export default function UploadZone({ onSuccess }: { onSuccess?: () => void }) {
       await uploadCsv(selectedFile)
       setUploadSuccess(true)
       setSelectedFile(null)
+      setCertified(false)
       onSuccess?.()
     } catch (err: unknown) {
       setUploadError(err instanceof Error ? err.message : 'Upload failed')
@@ -93,10 +95,24 @@ export default function UploadZone({ onSuccess }: { onSuccess?: () => void }) {
           )}
 
           {selectedFile && !uploadSuccess && (
+            <label className="flex items-start gap-2.5 cursor-pointer max-w-sm text-left">
+              <input
+                type="checkbox"
+                checked={certified}
+                onChange={(e) => setCertified(e.target.checked)}
+                className="mt-0.5 accent-indigo-600 w-4 h-4 flex-shrink-0"
+              />
+              <span className="text-xs text-slate-500 leading-relaxed">
+                I certify that this data is current, accurate, and that I am authorized to submit it for analysis.
+              </span>
+            </label>
+          )}
+
+          {selectedFile && !uploadSuccess && (
             <button
               onClick={handleUpload}
-              disabled={uploading}
-              className="bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white text-sm font-medium px-6 py-2 rounded-lg transition-colors"
+              disabled={uploading || !certified}
+              className="bg-green-600 hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium px-6 py-2 rounded-lg transition-colors"
             >
               {uploading ? 'Uploading...' : 'Upload & Analyze'}
             </button>

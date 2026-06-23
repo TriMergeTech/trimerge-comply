@@ -6,7 +6,7 @@ function isAuthPath(pathname: string) {
   return AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
 
-const PUBLIC_PATHS = ["/", "/landing-page", "/about", "/request-demo", "/pricing"];
+const PUBLIC_PATHS = ["/", "/landing-page", "/about", "/request-demo", "/pricing", "/terms"];
 
 function isProtectedPath(pathname: string) {
   return !isAuthPath(pathname) && !PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));

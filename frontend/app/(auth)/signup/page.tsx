@@ -239,8 +239,8 @@ export default function SignupPage() {
               onChange={(e) => setAgreed(e.target.checked)}
             />
             <span>
-              I agree to the <a href="#">Terms of Service</a> and{" "}
-              <a href="#">Privacy Policy</a>
+              I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a> and{" "}
+              <a href="/terms#data-privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
             </span>
           </label>
 
