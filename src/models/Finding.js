@@ -50,8 +50,14 @@ const findingSchema = new mongoose.Schema(
     companyName: { type: String, trim: true, default: null },
     organizationId: { type: String, trim: true, default: null, index: true },
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
+
+// Alias so consumers can use `findingId` directly in evidence sub-resource URLs
+// without having to know that `_id` is the right field to copy
+findingSchema.virtual('findingId').get(function () {
+  return this._id;
+});
 
 findingSchema.index({ auditId: 1 });
 findingSchema.index({ flagId: 1 });

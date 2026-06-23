@@ -144,7 +144,8 @@ All protected endpoints require a verified email and a valid Bearer token.`,
         Finding: {
           type: 'object',
           properties: {
-            _id: { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1' },
+            _id:       { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1' },
+            findingId: { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1', description: 'Alias for _id — use this as the {findingId} path parameter in evidence endpoints.' },
             auditId: { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1' },
             flagId: { type: 'string', nullable: true, example: '64f1a2b3c4d5e6f7a8b9c0d1' },
             observation: { type: 'string', example: 'Female applicants selected at a rate of 60% vs 80% for males (impact ratio 0.75).' },
@@ -197,6 +198,46 @@ All protected endpoints require a verified email and a valid Bearer token.`,
             },
             storage: { type: 'object', properties: { secureUrl: { type: 'string' }, publicId: { type: 'string' } } },
             createdAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        Evidence: {
+          type: 'object',
+          properties: {
+            _id:          { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1' },
+            findingId:    { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1' },
+            auditId:      { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1' },
+            type: {
+              type: 'string',
+              enum: ['document', 'statistical_result', 'interview_note', 'policy_excerpt', 'data_extract', 'observation_note'],
+              example: 'statistical_result',
+              description: '"document" is set automatically on file uploads. All other types are for text-only entries.',
+            },
+            source: {
+              type: 'string',
+              enum: ['manual', 'flag', 'payequity', 'adverse_impact', 'position', 'handbook'],
+              example: 'flag',
+            },
+            sourceId:     { type: 'string', nullable: true, example: '64f1a2b3c4d5e6f7a8b9c0d1' },
+            title:        { type: 'string', example: 'Adverse Impact Flag: Position – Selection – Female' },
+            description:  { type: 'string', example: 'Auto-generated from flag at finding creation.' },
+            content:      { type: 'string', example: 'Group: Female\nReference Group: Male\nImpact Ratio: 75.0%\nP-Value: 0.0320' },
+            file: {
+              type: 'object',
+              nullable: true,
+              description: 'Populated on file-upload evidence items; null on text-only entries.',
+              properties: {
+                fileName:  { type: 'string', example: 'applicant-flow-data-q1-2026.pdf' },
+                fileUrl:   { type: 'string', example: 'https://res.cloudinary.com/trimerge/raw/upload/v1234/trimerge-comply/evidence/applicant-flow-data.pdf' },
+                publicId:  { type: 'string', example: 'trimerge-comply/evidence/applicant-flow-data-1719000000000' },
+                mimeType:  { type: 'string', example: 'application/pdf' },
+                sizeBytes: { type: 'integer', example: 245760 },
+              },
+            },
+            interviewee:  { type: 'string', nullable: true, example: 'Jane Smith, HR Director' },
+            interviewDate: { type: 'string', format: 'date', nullable: true, example: '2026-06-20' },
+            collectedBy:  { type: 'object', properties: { name: { type: 'string' }, email: { type: 'string' }, role: { type: 'string' } } },
+            collectedAt:  { type: 'string', format: 'date-time' },
+            createdAt:    { type: 'string', format: 'date-time' },
           },
         },
         Pagination: {
@@ -1160,7 +1201,7 @@ All protected endpoints require a verified email and a valid Bearer token.`,
           description: 'Returns all findings scoped to a specific audit. Supports pagination, status and risk level filters.',
           security: [{ bearerAuth: [] }],
           parameters: [
-            { name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '64f1a2b3c4d5e6f7a8b9c0d1', description: 'Audit ID' },
+            { name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: '6a3976cee30992398a97fc94', description: 'Audit ID' },
             { name: 'status', in: 'query', schema: { type: 'string', enum: ['new', 'under_review', 'additional_info_required', 'approved', 'rejected', 'closed'] } },
             { name: 'riskLevel', in: 'query', schema: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] } },
             { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
@@ -1333,6 +1374,146 @@ All protected endpoints require a verified email and a valid Bearer token.`,
             401: { description: 'Unauthorized' },
             404: { description: 'Finding not found' },
             503: { description: 'OPENAI_API_KEY not configured' },
+          },
+        },
+      },
+      '/api/findings/{findingId}/evidence': {
+        get: {
+          tags: ['Evidence'],
+          summary: 'List evidence for a finding',
+          description: 'Returns all evidence items attached to a finding. Includes auto-generated items (from flags, pay equity, position docs) and manually entered items.',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'findingId', in: 'path', required: true, schema: { type: 'string' }, description: 'Finding ID' }],
+          responses: {
+            200: {
+              description: 'Evidence retrieved',
+              content: { 'application/json': { schema: { type: 'object', properties: {
+                success: { type: 'boolean' },
+                data: { type: 'object', properties: {
+                  evidence: { type: 'array', items: { $ref: '#/components/schemas/Evidence' } },
+                  total: { type: 'integer' },
+                } },
+              } } } },
+            },
+            401: { description: 'Unauthorized' },
+            404: { description: 'Finding not found' },
+          },
+        },
+        post: {
+          tags: ['Evidence'],
+          summary: 'Add evidence to a finding',
+          description: 'Adds a new evidence item. Pass `source` + `sourceId` to auto-populate from an existing flag, pay equity analysis, or position document. For manual entries pass `type`, `title`, and `content` directly. Cannot add evidence to approved or closed findings.',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'findingId', in: 'path', required: true, schema: { type: 'string' } }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    source: { type: 'string', enum: ['manual', 'flag', 'payequity', 'adverse_impact', 'position', 'handbook'], default: 'manual' },
+                    sourceId: { type: 'string', description: 'ID of the source record (required when source is not "manual")' },
+                    gapIndex: { type: 'integer', description: 'Index into payGaps array — pay equity source only', example: 0 },
+                    type: { type: 'string', enum: ['statistical_result', 'interview_note', 'policy_excerpt', 'data_extract', 'observation_note'], description: 'Required for manual entries; auto-set for sourced entries' },
+                    title: { type: 'string', example: 'Interview with HR Director', description: 'Override auto-generated title if needed' },
+                    description: { type: 'string', example: 'Confirms the selection process was not documented prior to 2024.' },
+                    content: { type: 'string', example: 'HR Director stated that structured interview guides were not introduced until Q1 2024...' },
+                    interviewee: { type: 'string', example: 'Jane Smith, HR Director', description: 'interview_note only' },
+                    interviewDate: { type: 'string', format: 'date', example: '2026-06-20', description: 'interview_note only' },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            201: { description: 'Evidence added' },
+            400: { description: 'Validation error or finding is locked (approved/closed)' },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Insufficient role' },
+            404: { description: 'Finding or source record not found' },
+          },
+        },
+      },
+      '/api/findings/{findingId}/evidence/{evidenceId}': {
+        delete: {
+          tags: ['Evidence'],
+          summary: 'Remove an evidence item',
+          description: 'Deletes a single evidence item. Analysts may only remove evidence they added. Managers, directors, and admins may remove any item. Cannot remove evidence from approved or closed findings.',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'findingId',  in: 'path', required: true, schema: { type: 'string' } },
+            { name: 'evidenceId', in: 'path', required: true, schema: { type: 'string' } },
+          ],
+          responses: {
+            200: { description: 'Evidence removed' },
+            400: { description: 'Finding is locked (approved/closed)' },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Can only remove evidence you added' },
+            404: { description: 'Finding or evidence not found' },
+          },
+        },
+      },
+      '/api/findings/{findingId}/evidence/upload': {
+        post: {
+          tags: ['Evidence'],
+          summary: 'Upload a document as evidence',
+          description: `Uploads a file to Cloudinary and attaches it to the finding as an evidence item.
+
+**Accepted formats:** PDF, Word (.doc/.docx), Excel (.xls/.xlsx), CSV, plain text, PNG, JPEG.
+**Size limit:** 10 MB.
+
+Send the file as \`multipart/form-data\` with a single \`file\` field. Pass metadata as **query parameters**:
+
+| Query param | Required | Description |
+|---|---|---|
+| \`title\` | No | Display name — defaults to the filename |
+| \`type\` | No | Evidence type — defaults to \`document\`. Options: \`policy_excerpt\`, \`data_extract\`, \`interview_note\`, \`observation_note\`, \`statistical_result\` |
+| \`description\` | No | Short summary of what the document shows |
+| \`content\` | No | Analyst notes about the file content |
+
+**Example:** \`POST /api/findings/{id}/evidence/upload?title=Applicant+Flow+Q1&type=data_extract\`
+
+The response includes a \`file.fileUrl\` (Cloudinary secure URL) that the frontend can use to display or download the document.
+
+Cannot upload to a finding with status \`approved\` or \`closed\`.`,
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'findingId',   in: 'path',  required: true,  schema: { type: 'string' }, description: 'Finding ID to attach the evidence to' },
+            { name: 'title',       in: 'query', required: false, schema: { type: 'string' }, description: 'Display title — defaults to filename if omitted', example: 'Applicant Flow Data Q1 2026' },
+            { name: 'type',        in: 'query', required: false, schema: { type: 'string', enum: ['document', 'statistical_result', 'interview_note', 'policy_excerpt', 'data_extract', 'observation_note'], default: 'document' }, description: 'Evidence type' },
+            { name: 'description', in: 'query', required: false, schema: { type: 'string' }, description: 'Short summary of what the document shows' },
+            { name: 'content',     in: 'query', required: false, schema: { type: 'string' }, description: 'Analyst notes about the file content' },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              'multipart/form-data': {
+                schema: {
+                  type: 'object',
+                  required: ['file'],
+                  properties: {
+                    file: { type: 'string', format: 'binary', description: 'Document file (PDF, Word, Excel, CSV, text, PNG, JPEG — max 10 MB)' },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            201: {
+              description: 'File uploaded and evidence record created',
+              content: { 'application/json': { schema: { type: 'object', properties: {
+                success: { type: 'boolean' },
+                message: { type: 'string', example: 'PDF uploaded and attached to finding.' },
+                data: { type: 'object', properties: { evidence: { $ref: '#/components/schemas/Evidence' } } },
+              } } } },
+            },
+            400: { description: 'No file provided, or finding is locked (approved/closed)' },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Insufficient role' },
+            404: { description: 'Finding not found' },
+            413: { description: 'File exceeds 10 MB limit' },
+            415: { description: 'Unsupported file type' },
           },
         },
       },

@@ -71,6 +71,9 @@ const activityLogSchema = new mongoose.Schema(
         'payequity_uploaded',
         // CSV adverse impact
         'csv_uploaded',
+        // Evidence
+        'evidence_added',
+        'evidence_removed',
       ],
       required: true,
     },

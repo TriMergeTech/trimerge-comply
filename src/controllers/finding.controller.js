@@ -1,11 +1,36 @@
-const Finding = require('../models/Finding');
-const Flag = require('../models/Flag');
-const Audit = require('../models/Audit');
-const Handbook = require('../models/Handbook');
+const Finding   = require('../models/Finding');
+const Flag      = require('../models/Flag');
+const Audit     = require('../models/Audit');
+const Handbook  = require('../models/Handbook');
+const Evidence  = require('../models/Evidence');
 const ActivityLog = require('../models/ActivityLog');
 const { draftFinding } = require('../services/ai/findingDraft.service');
 const { searchHandbookChunks } = require('../services/handbook/handbookSearch.service');
 const { sendSuccess, sendError } = require('../utils/response');
+
+// Formats a flag's statistical data into structured text for auto-evidence
+const flagEvidenceContent = (flag) => {
+  const lines = [];
+  if (flag.name)                  lines.push(`Flag: ${flag.name}`);
+  if (flag.group)                 lines.push(`Group: ${flag.group}`);
+  if (flag.referenceGroup)        lines.push(`Reference Group: ${flag.referenceGroup}`);
+  if (flag.selectionRate != null) lines.push(`Selection Rate: ${(flag.selectionRate * 100).toFixed(1)}%`);
+  if (flag.impactRatio   != null) lines.push(`Impact Ratio: ${(flag.impactRatio * 100).toFixed(1)}%`);
+  if (flag.threshold     != null) lines.push(`Threshold (Four-Fifths Rule): ${(flag.threshold * 100).toFixed(0)}%`);
+  if (flag.testType)              lines.push(`Statistical Test: ${flag.testType}`);
+  if (flag.pValue        != null) lines.push(`P-Value: ${flag.pValue.toFixed(4)}`);
+  if (flag.severity)              lines.push(`Severity: ${flag.severity}`);
+  const r = flag.results;
+  if (r) {
+    if (r.jobTitle)               lines.push(`Job Title: ${r.jobTitle}`);
+    if (r.stage)                  lines.push(`Selection Stage: ${r.stage}`);
+    if (r.demographicGroup)       lines.push(`Demographic Group: ${r.demographicGroup}`);
+    if (r.fourFifthsRule != null) lines.push(`Four-Fifths Rule Ratio: ${(r.fourFifthsRule * 100).toFixed(1)}%`);
+    if (r.chiSquare      != null) lines.push(`Chi-Square Statistic: ${r.chiSquare.toFixed(4)}`);
+    if (r.fishersExact   != null) lines.push(`Fisher's Exact P-Value: ${r.fishersExact.toFixed(4)}`);
+  }
+  return lines.join('\n');
+};
 
 const SEVERITY_TO_RISK = { low: 'low', medium: 'medium', high: 'high' };
 
@@ -129,6 +154,22 @@ const createFinding = async (req, res, next) => {
       },
     });
 
+    // Auto-evidence: when a flag is the source, immediately attach its statistical data
+    if (flag) {
+      await Evidence.create({
+        findingId:      finding._id,
+        auditId:        finding.auditId,
+        organizationId: req.user.organizationId,
+        type:           'statistical_result',
+        source:         'flag',
+        sourceId:       flag._id,
+        title:          `Adverse Impact Flag: ${flag.name || flag.group || 'Statistical Flag'}`,
+        content:        flagEvidenceContent(flag),
+        collectedBy:    req.user._id,
+        collectedAt:    new Date(),
+      });
+    }
+
     const message = aiDrafted
       ? 'Finding created with AI-drafted criteria and recommendation. Review before approving.'
       : 'Finding created. Add OPENAI_API_KEY to enable AI drafting of criteria and recommendation.';
@@ -167,10 +208,24 @@ const listFindings = async (req, res, next) => {
       Finding.countDocuments(filter),
     ]);
 
+    // Attach evidence counts without N+1 — one aggregation for the whole page
+    const findingIds = findings.map((f) => f._id);
+    const evidenceCounts = await Evidence.aggregate([
+      { $match: { findingId: { $in: findingIds } } },
+      { $group: { _id: '$findingId', count: { $sum: 1 } } },
+    ]);
+    const countMap = {};
+    evidenceCounts.forEach((e) => { countMap[e._id.toString()] = e.count; });
+
+    const findingsWithCount = findings.map((f) => ({
+      ...f.toObject(),
+      evidenceCount: countMap[f._id.toString()] || 0,
+    }));
+
     return sendSuccess(res, {
       message: 'Findings retrieved successfully.',
       data: {
-        findings,
+        findings: findingsWithCount,
         pagination: {
           total,
           page: parseInt(page),
@@ -200,7 +255,14 @@ const getFindingById = async (req, res, next) => {
 
     if (!finding) return sendError(res, { statusCode: 404, message: 'Finding not found.' });
 
-    return sendSuccess(res, { message: 'Finding retrieved successfully.', data: { finding } });
+    const evidence = await Evidence.find({ findingId: finding._id })
+      .populate('collectedBy', 'name email role')
+      .sort({ createdAt: 1 });
+
+    return sendSuccess(res, {
+      message: 'Finding retrieved successfully.',
+      data: { finding, evidence, evidenceCount: evidence.length },
+    });
   } catch (err) {
     next(err);
   }
@@ -281,12 +343,19 @@ const updateFindingStatus = async (req, res, next) => {
       });
     }
 
-    // Require criteria + recommendation before approval
+    // Governance gate: evidence + criteria + recommendation required before approval
     if (status === 'approved') {
       if (!finding.criteria?.trim() || !finding.recommendation?.trim()) {
         return sendError(res, {
           statusCode: 400,
           message: 'Criteria and recommendation must be filled in before a finding can be approved.',
+        });
+      }
+      const evidenceCount = await Evidence.countDocuments({ findingId: finding._id });
+      if (evidenceCount === 0) {
+        return sendError(res, {
+          statusCode: 400,
+          message: 'At least one piece of evidence must be attached before a finding can be approved.',
         });
       }
     }
