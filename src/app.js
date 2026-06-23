@@ -21,6 +21,7 @@ const activityRoutes = require('./routes/activity.routes');
 const findingRoutes = require('./routes/finding.routes');
 const handbookRoutes = require('./routes/handbook.routes');
 const demoRequestRoutes = require('./routes/demoRequest.routes');
+const userRoutes         = require('./routes/user.routes');
 
 const app = express();
 
@@ -102,6 +103,7 @@ app.use('/api/activity', activityRoutes);
 app.use('/api/findings', findingRoutes);
 app.use('/api/handbooks', handbookRoutes);
 app.use('/api/demo-requests', demoRequestRoutes);
+app.use('/api/users',        userRoutes);
 
 setupSwagger(app);
 

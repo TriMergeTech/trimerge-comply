@@ -403,6 +403,53 @@ All protected endpoints require a verified email and a valid Bearer token.`,
           },
         },
       },
+      '/api/users/directors': {
+        get: {
+          tags: ['Users'],
+          summary: 'List available directors',
+          description: `Returns all users with the \`director\` role. Used by analysts, reviewers, and managers to select a director when routing an audit deletion request for approval.
+
+If only one director exists the array will contain that single entry. If no directors exist the array is empty and the response message advises contacting an administrator.
+
+> **Note:** Organisation scoping is intentionally disabled during testing — all directors are returned regardless of org.`,
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: {
+              description: 'Directors retrieved successfully',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      message: { type: 'string', example: '1 director(s) available.' },
+                      data: {
+                        type: 'object',
+                        properties: {
+                          directors: {
+                            type: 'array',
+                            items: {
+                              type: 'object',
+                              properties: {
+                                _id:   { type: 'string', example: '6a32bb2e92b201e347f753ab' },
+                                name:  { type: 'string', example: 'QA Director' },
+                                email: { type: 'string', example: 'qa_director@trimerge.com' },
+                              },
+                            },
+                          },
+                          total: { type: 'integer', example: 1 },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Insufficient role' },
+          },
+        },
+      },
       '/api/auth/signup': {
         post: {
           tags: ['Authentication'],
