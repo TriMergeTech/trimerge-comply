@@ -202,6 +202,13 @@ export async function uploadEvidence(
   return data.data.evidence;
 }
 
+export async function getEvidenceFileUrl(findingId: string, evidenceId: string): Promise<string> {
+  const res = await findingsFetch<{ data: { url: string } }>(
+    `/findings/${findingId}/evidence/${evidenceId}/file`
+  );
+  return res.data.url;
+}
+
 export async function deleteEvidence(findingId: string, evidenceId: string): Promise<void> {
   await findingsFetch<unknown>(`/findings/${findingId}/evidence/${evidenceId}`, { method: 'DELETE' });
 }

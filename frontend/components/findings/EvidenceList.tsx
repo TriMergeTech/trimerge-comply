@@ -11,8 +11,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
-import { getAccessToken } from '@/lib/authTokens'
-import { Evidence } from '@/lib/api/findings'
+import { getEvidenceFileUrl, Evidence } from '@/lib/api/findings'
 
 const TYPE_LABEL: Record<string, string> = {
   document:          'Document',
@@ -53,22 +52,10 @@ type CardProps = {
   onDelete: (id: string) => void
 }
 
-async function openWithAuth(fileUrl: string, fileName: string) {
-  const token = getAccessToken()
+async function openEvidenceFile(findingId: string, evidenceId: string) {
   try {
-    const proxyUrl = `/api/evidence-file?url=${encodeURIComponent(fileUrl)}`
-    const res = await fetch(proxyUrl, {
-      headers: token ? { 'x-auth-token': token } : {},
-    })
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    const blob = await res.blob()
-    const objectUrl = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = objectUrl
-    a.target = '_blank'
-    a.download = fileName
-    a.click()
-    setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000)
+    const url = await getEvidenceFileUrl(findingId, evidenceId)
+    window.open(url, '_blank')
   } catch (err) {
     toast.error(`Could not open file: ${err instanceof Error ? err.message : 'unknown error'}`)
   }
@@ -144,7 +131,7 @@ function EvidenceCard({ item, canDelete, onDelete }: CardProps) {
           disabled={fileLoading}
           onClick={async () => {
             setFileLoading(true)
-            await openWithAuth(item.file!.fileUrl, item.file!.fileName)
+            await openEvidenceFile(item.findingId, item._id)
             setFileLoading(false)
           }}
           className="flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded-lg px-3 py-2 transition-colors w-fit disabled:opacity-60 disabled:cursor-not-allowed"
