@@ -116,9 +116,9 @@ const generateSignedDownloadUrl = (publicId, fileUrl) => {
   const versionMatch = fileUrl && fileUrl.match(/\/(v\d+)\//);
   const version = versionMatch ? versionMatch[1] : null;
 
-  // Cloudinary URL signature: SHA-256 of (publicId + apiSecret) → base64url → first 8 chars
+  // Cloudinary URL signature: SHA-1 of (publicId + apiSecret) → base64url → first 8 chars
   const rawDigest = crypto
-    .createHash('sha256')
+    .createHash('sha1')
     .update(publicId + apiSecret)
     .digest();
 
