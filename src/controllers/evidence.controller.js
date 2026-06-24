@@ -4,7 +4,7 @@ const Flag              = require('../models/Flag');
 const PayEquityAnalysis = require('../models/PayEquityAnalysis');
 const PositionDocument  = require('../models/PositionDocument');
 const ActivityLog       = require('../models/ActivityLog');
-const { uploadRawToCloudinary } = require('../services/storage/cloudinary.service');
+const { uploadRawToCloudinary, generateSignedDownloadUrl } = require('../services/storage/cloudinary.service');
 const { extractFileFromMultipart } = require('../utils/multipart');
 const { sendSuccess, sendError } = require('../utils/response');
 
@@ -353,4 +353,30 @@ const uploadEvidenceFile = async (req, res, next) => {
   }
 };
 
-module.exports = { addEvidence, listEvidence, deleteEvidence, uploadEvidenceFile };
+// GET /api/findings/:findingId/evidence/:evidenceId/file
+// Returns a short-lived (5-min) signed Cloudinary URL so the frontend can open/download the file.
+const getEvidenceDownloadUrl = async (req, res, next) => {
+  try {
+    const { findingId, evidenceId } = req.params;
+
+    const finding = await Finding.findOne({ _id: findingId, organizationId: req.user.organizationId });
+    if (!finding) return sendError(res, { statusCode: 404, message: 'Finding not found.' });
+
+    const evidence = await Evidence.findOne({ _id: evidenceId, findingId: finding._id });
+    if (!evidence) return sendError(res, { statusCode: 404, message: 'Evidence not found.' });
+    if (!evidence.file?.publicId) {
+      return sendError(res, { statusCode: 404, message: 'This evidence item has no attached file.' });
+    }
+
+    const { url, expiresAt } = generateSignedDownloadUrl(evidence.file.publicId);
+
+    return sendSuccess(res, {
+      message: 'Download URL generated.',
+      data: { url, expiresAt, fileName: evidence.file.fileName, mimeType: evidence.file.mimeType },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { addEvidence, listEvidence, deleteEvidence, uploadEvidenceFile, getEvidenceDownloadUrl };

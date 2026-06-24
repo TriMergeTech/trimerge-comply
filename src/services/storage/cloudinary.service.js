@@ -97,7 +97,39 @@ const uploadCsvToCloudinary = async ({ csvText, fileName = 'upload.csv' }) =>
     folder: CSV_CLOUDINARY_FOLDER,
   });
 
+/**
+ * Generate a short-lived signed delivery URL for a Cloudinary raw resource.
+ * Works for both type=upload and type=authenticated assets.
+ * @param {string} publicId  - e.g. "trimerge-comply/evidence/file-1234"
+ * @param {number} expiresInSeconds - default 300 (5 minutes)
+ */
+const generateSignedDownloadUrl = (publicId, expiresInSeconds = 300) => {
+  const { apiSecret, cloudName } = parseCloudinaryUrl();
+
+  const exp = Math.floor(Date.now() / 1000) + expiresInSeconds;
+
+  // Cloudinary signed URL: sign "exp=...&public_id=..." + apiSecret with SHA-256,
+  // base64url-encode the binary digest, take the first 8 chars.
+  const toSign = `exp=${exp}&public_id=${publicId}`;
+  const rawDigest = crypto
+    .createHash('sha256')
+    .update(`${toSign}${apiSecret}`)
+    .digest(); // Buffer (binary)
+
+  const signature = rawDigest
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '')
+    .substring(0, 8);
+
+  const url = `https://res.cloudinary.com/${cloudName}/raw/authenticated/s--${signature}--/${publicId}`;
+
+  return { url, expiresAt: new Date((exp) * 1000).toISOString() };
+};
+
 module.exports = {
   uploadRawToCloudinary,
   uploadCsvToCloudinary,
+  generateSignedDownloadUrl,
 };

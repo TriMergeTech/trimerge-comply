@@ -7,7 +7,7 @@ const {
   updateFindingStatus,
   regenerateDraft,
 } = require('../controllers/finding.controller');
-const { addEvidence, listEvidence, deleteEvidence, uploadEvidenceFile } = require('../controllers/evidence.controller');
+const { addEvidence, listEvidence, deleteEvidence, uploadEvidenceFile, getEvidenceDownloadUrl } = require('../controllers/evidence.controller');
 const { protect, requireRole } = require('../middleware/auth.middleware');
 
 const router = Router();
@@ -61,6 +61,10 @@ router.post(
   }),
   uploadEvidenceFile
 );
+
+// GET /api/findings/:findingId/evidence/:evidenceId/file — returns signed download URL (5-min expiry)
+// Must be before /:evidenceId to avoid "file" being captured as an evidenceId param
+router.get('/:findingId/evidence/:evidenceId/file', requireRole('analyst', 'reviewer', 'manager', 'director', 'admin', 'viewer'), getEvidenceDownloadUrl);
 
 // DELETE /api/findings/:findingId/evidence/:evidenceId — analyst (own) or manager+
 router.delete('/:findingId/evidence/:evidenceId', requireRole('analyst', 'manager', 'director', 'admin'), deleteEvidence);
