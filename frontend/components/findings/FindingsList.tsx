@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, BookOpen, Bot } from 'lucide-react'
+import Link from 'next/link'
+import { ChevronDown, BookOpen, Bot, ArrowRight } from 'lucide-react'
 import { Finding } from '@/lib/api/findings'
 
 const RISK_COLORS: Record<string, string> = {
@@ -129,6 +130,14 @@ function FindingCard({ finding }: { finding: Finding }) {
               )}
             </div>
           )}
+
+          {/* Link to detail page (evidence) */}
+          <Link
+            href={`/findings/${finding._id}`}
+            className="flex items-center gap-1.5 text-xs text-indigo-500 hover:text-indigo-700 font-medium transition-colors w-fit pt-1"
+          >
+            View evidence <ArrowRight size={12} />
+          </Link>
 
         </div>
       )}

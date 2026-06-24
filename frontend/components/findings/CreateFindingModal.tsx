@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { ChevronDown, Bot } from 'lucide-react'
 import {
   Dialog,
@@ -36,6 +37,7 @@ type Props = {
 }
 
 export default function CreateFindingModal({ open, onClose, onSuccess, audits, defaultAuditId }: Props) {
+  const router = useRouter()
   const [auditId, setAuditId] = useState('')
   const [observation, setObservation] = useState('')
   const [riskLevel, setRiskLevel] = useState('')
@@ -67,16 +69,17 @@ export default function CreateFindingModal({ open, onClose, onSuccess, audits, d
 
     setLoading(true)
     try {
-      await createFinding({
+      const finding = await createFinding({
         auditId,
         observation: observation.trim(),
         ...(riskLevel ? { risk: { level: riskLevel as 'low' | 'medium' | 'high' | 'critical', description: riskDescription.trim() || undefined } } : {}),
         ...(analystNotes.trim() ? { analystNotes: analystNotes.trim() } : {}),
         ...(flagId.trim() ? { flagId: flagId.trim() } : {}),
       })
-      toast.success('Finding created. AI is drafting criteria and recommendation.')
+      toast.success('Finding created. Add evidence or wait for AI to draft criteria.')
       onSuccess()
       onClose()
+      router.push(`/findings/${finding._id}`)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to create finding.')
     } finally {
