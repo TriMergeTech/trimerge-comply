@@ -368,11 +368,11 @@ const getEvidenceDownloadUrl = async (req, res, next) => {
       return sendError(res, { statusCode: 404, message: 'This evidence item has no attached file.' });
     }
 
-    const { url, expiresAt } = generateSignedDownloadUrl(evidence.file.publicId);
+    const { url } = generateSignedDownloadUrl(evidence.file.publicId, evidence.file.fileUrl);
 
     return sendSuccess(res, {
       message: 'Download URL generated.',
-      data: { url, expiresAt, fileName: evidence.file.fileName, mimeType: evidence.file.mimeType },
+      data: { url, fileName: evidence.file.fileName, mimeType: evidence.file.mimeType },
     });
   } catch (err) {
     next(err);
