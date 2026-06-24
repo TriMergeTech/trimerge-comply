@@ -4,7 +4,7 @@ const Flag              = require('../models/Flag');
 const PayEquityAnalysis = require('../models/PayEquityAnalysis');
 const PositionDocument  = require('../models/PositionDocument');
 const ActivityLog       = require('../models/ActivityLog');
-const { uploadRawToCloudinary, generateSignedDownloadUrl } = require('../services/storage/cloudinary.service');
+const { uploadRawToCloudinary } = require('../services/storage/cloudinary.service');
 const { extractFileFromMultipart } = require('../utils/multipart');
 const { sendSuccess, sendError } = require('../utils/response');
 
@@ -299,10 +299,11 @@ const uploadEvidenceFile = async (req, res, next) => {
     const type        = VALID_EVIDENCE_TYPES.includes(req.query.type) ? req.query.type : 'document';
 
     const storage = await uploadRawToCloudinary({
-      fileContent: fileBuffer,
+      fileContent:  fileBuffer,
       fileName,
-      mimeType:    normalizedMime,
-      folder:      EVIDENCE_FOLDER,
+      mimeType:     normalizedMime,
+      folder:       EVIDENCE_FOLDER,
+      publicAccess: true,
     });
 
     const evidence = await Evidence.create({
@@ -368,11 +369,13 @@ const getEvidenceDownloadUrl = async (req, res, next) => {
       return sendError(res, { statusCode: 404, message: 'This evidence item has no attached file.' });
     }
 
-    const { url } = generateSignedDownloadUrl(evidence.file.publicId, evidence.file.fileUrl);
-
     return sendSuccess(res, {
       message: 'Download URL generated.',
-      data: { url, fileName: evidence.file.fileName, mimeType: evidence.file.mimeType },
+      data: {
+        url:      evidence.file.fileUrl,
+        fileName: evidence.file.fileName,
+        mimeType: evidence.file.mimeType,
+      },
     });
   } catch (err) {
     next(err);

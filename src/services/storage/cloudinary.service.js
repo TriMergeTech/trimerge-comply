@@ -46,11 +46,16 @@ const uploadRawToCloudinary = async ({
   fileName = 'upload',
   mimeType = 'application/octet-stream',
   folder = DEFAULT_CLOUDINARY_FOLDER,
+  publicAccess = false,
 }) => {
   const { apiKey, apiSecret, cloudName } = parseCloudinaryUrl();
   const timestamp = Math.floor(Date.now() / 1000);
   const publicId = sanitizePublicId(fileName);
+
+  // access_control must be in the signed params when supplied
+  const accessControl = publicAccess ? '[{"access_type":"anonymous"}]' : null;
   const signedParams = {
+    ...(accessControl ? { access_control: accessControl } : {}),
     folder,
     public_id: publicId,
     timestamp,
@@ -65,6 +70,7 @@ const uploadRawToCloudinary = async ({
   formData.append('timestamp', String(timestamp));
   formData.append('folder', signedParams.folder);
   formData.append('public_id', signedParams.public_id);
+  if (accessControl) formData.append('access_control', accessControl);
   formData.append('signature', signature);
 
   const response = await fetch(uploadUrl, {
