@@ -98,34 +98,52 @@ const uploadCsvToCloudinary = async ({ csvText, fileName = 'upload.csv' }) =>
   });
 
 /**
- * Generate a short-lived signed delivery URL for a Cloudinary raw resource.
- * Works for both type=upload and type=authenticated assets.
- * @param {string} publicId  - e.g. "trimerge-comply/evidence/file-1234"
- * @param {number} expiresInSeconds - default 300 (5 minutes)
+ * Generate a browser-accessible private download URL for a Cloudinary raw resource.
+ *
+ * Uses Cloudinary's /raw/download API endpoint (equivalent to the SDK's
+ * private_download_url helper). The browser hits api.cloudinary.com which
+ * validates the signature + expiry server-side and serves the file directly —
+ * no /authenticated/ delivery type involved, so it works in a browser tab.
+ *
+ * @param {string} publicId        - e.g. "trimerge-comply/evidence/file-1234"
+ * @param {number} expiresInSeconds - default 3600 (1 hour)
  */
-const generateSignedDownloadUrl = (publicId, expiresInSeconds = 300) => {
-  const { apiSecret, cloudName } = parseCloudinaryUrl();
+const generateSignedDownloadUrl = (publicId, expiresInSeconds = 3600) => {
+  const { apiKey, apiSecret, cloudName } = parseCloudinaryUrl();
 
-  const exp = Math.floor(Date.now() / 1000) + expiresInSeconds;
+  const timestamp = Math.floor(Date.now() / 1000);
+  const expiresAt = timestamp + expiresInSeconds;
 
-  // Cloudinary signed URL: sign "exp=...&public_id=..." + apiSecret with SHA-256,
-  // base64url-encode the binary digest, take the first 8 chars.
-  const toSign = `exp=${exp}&public_id=${publicId}`;
-  const rawDigest = crypto
+  // Params to sign — must be sorted alphabetically before hashing
+  const paramsToSign = {
+    expires_at: expiresAt,
+    public_id:  publicId,
+    timestamp,
+    type:       'authenticated',
+  };
+
+  const signatureBase = Object.keys(paramsToSign)
+    .sort()
+    .map((k) => `${k}=${paramsToSign[k]}`)
+    .join('&');
+
+  const signature = crypto
     .createHash('sha256')
-    .update(`${toSign}${apiSecret}`)
-    .digest(); // Buffer (binary)
+    .update(`${signatureBase}${apiSecret}`)
+    .digest('hex');
 
-  const signature = rawDigest
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '')
-    .substring(0, 8);
+  const query = new URLSearchParams({
+    api_key:    apiKey,
+    expires_at: String(expiresAt),
+    public_id:  publicId,
+    signature,
+    timestamp:  String(timestamp),
+    type:       'authenticated',
+  });
 
-  const url = `https://res.cloudinary.com/${cloudName}/raw/authenticated/s--${signature}--/${publicId}`;
+  const url = `https://api.cloudinary.com/v1_1/${cloudName}/raw/download?${query.toString()}`;
 
-  return { url, expiresAt: new Date((exp) * 1000).toISOString() };
+  return { url, expiresAt: new Date(expiresAt * 1000).toISOString() };
 };
 
 module.exports = {
