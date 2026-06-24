@@ -119,7 +119,7 @@ const generateSignedDownloadUrl = (publicId, expiresInSeconds = 3600) => {
     expires_at: expiresAt,
     public_id:  publicId,
     timestamp,
-    type:       'authenticated',
+    type:       'upload',
   };
 
   const signatureBase = Object.keys(paramsToSign)
@@ -138,7 +138,7 @@ const generateSignedDownloadUrl = (publicId, expiresInSeconds = 3600) => {
     public_id:  publicId,
     signature,
     timestamp:  String(timestamp),
-    type:       'authenticated',
+    type:       'upload',
   });
 
   const url = `https://res.cloudinary.com/${cloudName}/raw/download?${query.toString()}`;
