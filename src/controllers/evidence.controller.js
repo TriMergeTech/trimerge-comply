@@ -4,7 +4,7 @@ const Flag              = require('../models/Flag');
 const PayEquityAnalysis = require('../models/PayEquityAnalysis');
 const PositionDocument  = require('../models/PositionDocument');
 const ActivityLog       = require('../models/ActivityLog');
-const { uploadRawToCloudinary } = require('../services/storage/cloudinary.service');
+const { uploadRawToCloudinary, generatePrivateDownloadUrl } = require('../services/storage/cloudinary.service');
 const { extractFileFromMultipart } = require('../utils/multipart');
 const { sendSuccess, sendError } = require('../utils/response');
 
@@ -355,7 +355,9 @@ const uploadEvidenceFile = async (req, res, next) => {
 };
 
 // GET /api/findings/:findingId/evidence/:evidenceId/file
-// Returns a short-lived (5-min) signed Cloudinary URL so the frontend can open/download the file.
+// Returns a time-limited (1-hour) download URL using Cloudinary's Admin API endpoint.
+// api.cloudinary.com/v1_1/.../raw/download authenticates via signed query params and
+// bypasses CDN-level ACL restrictions that block direct res.cloudinary.com delivery.
 const getEvidenceDownloadUrl = async (req, res, next) => {
   try {
     const { findingId, evidenceId } = req.params;
@@ -369,10 +371,12 @@ const getEvidenceDownloadUrl = async (req, res, next) => {
       return sendError(res, { statusCode: 404, message: 'This evidence item has no attached file.' });
     }
 
+    const url = generatePrivateDownloadUrl(evidence.file.publicId);
+
     return sendSuccess(res, {
       message: 'Download URL generated.',
       data: {
-        url:      evidence.file.fileUrl,
+        url,
         fileName: evidence.file.fileName,
         mimeType: evidence.file.mimeType,
       },
