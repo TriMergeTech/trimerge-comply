@@ -128,7 +128,7 @@ const generateSignedDownloadUrl = (publicId, expiresInSeconds = 3600) => {
     .join('&');
 
   const signature = crypto
-    .createHash('sha256')
+    .createHash('sha1')
     .update(`${signatureBase}${apiSecret}`)
     .digest('hex');
 
@@ -141,7 +141,7 @@ const generateSignedDownloadUrl = (publicId, expiresInSeconds = 3600) => {
     type:       'authenticated',
   });
 
-  const url = `https://api.cloudinary.com/v1_1/${cloudName}/raw/download?${query.toString()}`;
+  const url = `https://res.cloudinary.com/${cloudName}/raw/download?${query.toString()}`;
 
   return { url, expiresAt: new Date(expiresAt * 1000).toISOString() };
 };
