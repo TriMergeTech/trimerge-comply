@@ -116,13 +116,17 @@ const uploadCsvToCloudinary = async ({ csvText, fileName = 'upload.csv' }) =>
  */
 const generatePrivateDownloadUrl = (publicId) => {
   const { apiKey, apiSecret, cloudName } = parseCloudinaryUrl();
-  const expiresAt = Math.floor(Date.now() / 1000) + 3600;
+  const timestamp = Math.floor(Date.now() / 1000);
+  const expiresAt = timestamp + 3600;
 
-  // private_download_url signs only: attachment, expires_at, public_id, type — no timestamp
+  // Cloudinary Admin API requires timestamp in both the signature and the URL.
+  // All signed params must also appear in the query string — omitting any one
+  // causes the "parameter is signed but missing from URL" validation error.
   const paramsToSign = {
     attachment: 'false',
     expires_at: expiresAt,
     public_id: publicId,
+    timestamp,
     type: 'upload',
   };
 
@@ -139,6 +143,7 @@ const generatePrivateDownloadUrl = (publicId) => {
     expires_at: String(expiresAt),
     public_id: publicId,
     signature,
+    timestamp: String(timestamp),
     type: 'upload',
   });
 
