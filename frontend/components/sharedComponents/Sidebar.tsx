@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import {
   LayoutDashboard,
   FileText,
@@ -18,6 +18,7 @@ import {
   BarChart2,
   ClipboardList,
   Search,
+  BookOpen,
 } from 'lucide-react'
 import { clearTokens } from '@/lib/authTokens'
 import { useUser } from '@/lib/context/UserContext'
@@ -28,6 +29,7 @@ const navLinks: { label: string; href: string; icon: React.ElementType; adminOnl
   { label: 'Compliance', href: '/compliance', icon: ShieldCheck },
   { label: 'Audits', href: '/audits', icon: FileText },
   { label: 'Findings', href: '/findings', icon: Search },
+  { label: 'Handbooks', href: '/handbooks', icon: BookOpen },
   { label: 'Upload Data', href: '/upload', icon: Upload },
   { label: 'Flags', href: '/flags', icon: Flag },
   { label: 'Position Analysis', href: '/position-analysis', icon: BriefcaseBusiness },
@@ -38,6 +40,14 @@ const navLinks: { label: string; href: string; icon: React.ElementType; adminOnl
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false)
+  const [isScrolling, setIsScrolling] = useState(false)
+  const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function handleNavScroll() {
+    setIsScrolling(true)
+    if (scrollTimer.current) clearTimeout(scrollTimer.current)
+    scrollTimer.current = setTimeout(() => setIsScrolling(false), 800)
+  }
   const pathname = usePathname()
   const router = useRouter()
   const user = useUser()
@@ -69,49 +79,50 @@ export default function Sidebar() {
 
       {/* Sidebar */}
       <aside className={`
-        fixed top-0 left-0 z-40 h-full w-64 bg-[#0f1535] flex flex-col justify-between py-6 px-4
+        fixed top-0 left-0 z-40 h-full w-64 bg-[#0f1535] flex flex-col py-6 px-4
         transition-transform duration-300
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         md:relative md:translate-x-0 md:min-h-screen
       `}>
 
-        {/* Top section — logo and navigation */}
-        <div>
-
-          {/* Logo */}
-          <div className="mb-8 px-2">
-            <h1 className="text-white text-lg font-bold tracking-wide">
-              TRIME<span className="text-blue-400">RGE</span>
-            </h1>
-            <p className="text-blue-400 text-xs tracking-widest uppercase">Comply</p>
-          </div>
-
-          {/* Navigation links */}
-          <nav className="flex flex-col gap-1">
-            {navLinks.filter(({ href, adminOnly }) => (href !== '/upload' || isAdmin) && (!adminOnly || isAdmin)).map(({ label, href, icon: Icon }) => {
-              const isActive = pathname === href
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${isActive
-                    ? 'bg-indigo-600 text-white font-medium'
-                    : 'text-slate-400 hover:bg-white/10 hover:text-white'
-                    }`}
-                >
-                  <Icon size={18} />
-                  {label}
-                </Link>
-              )
-            })}
-          </nav>
+        {/* Logo — pinned at top, never scrolls */}
+        <div className="mb-8 px-2 flex-shrink-0">
+          <h1 className="text-white text-lg font-bold tracking-wide">
+            TRIME<span className="text-blue-400">RGE</span>
+          </h1>
+          <p className="text-blue-400 text-xs tracking-widest uppercase">Comply</p>
         </div>
 
-        {/* Bottom section — logout button */}
+        {/* Navigation links — scrollable */}
+        <nav
+          onScroll={handleNavScroll}
+          className={`flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-slate-400 ${
+            isScrolling ? '[&::-webkit-scrollbar-thumb]:bg-slate-600' : '[&::-webkit-scrollbar-thumb]:bg-transparent'
+          }`}
+        >
+          {navLinks.filter(({ href, adminOnly }) => (href !== '/upload' || isAdmin) && (!adminOnly || isAdmin)).map(({ label, href, icon: Icon }) => {
+            const isActive = pathname === href
+            return (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setIsOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${isActive
+                  ? 'bg-indigo-600 text-white font-medium'
+                  : 'text-slate-400 hover:bg-white/10 hover:text-white'
+                  }`}
+              >
+                <Icon size={18} />
+                {label}
+              </Link>
+            )
+          })}
+        </nav>
+
+        {/* Bottom section — logout button (pinned) */}
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-400 hover:bg-white/10 hover:text-white transition-colors w-full"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-400 hover:bg-white/10 hover:text-white transition-colors w-full flex-shrink-0 mt-2"
         >
           <LogOut size={18} />
           Logout
