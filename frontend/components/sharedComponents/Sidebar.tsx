@@ -19,9 +19,11 @@ import {
   ClipboardList,
   Search,
   BookOpen,
+  Sparkles,
 } from 'lucide-react'
 import { clearTokens } from '@/lib/authTokens'
 import { useUser } from '@/lib/context/UserContext'
+import { useChat } from '@/lib/context/ChatContext'
 
 // Navigation links configuration
 const navLinks: { label: string; href: string; icon: React.ElementType; adminOnly?: boolean }[] = [
@@ -41,6 +43,7 @@ const navLinks: { label: string; href: string; icon: React.ElementType; adminOnl
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false)
   const [isScrolling, setIsScrolling] = useState(false)
+  const { toggle: toggleChat, isOpen: chatOpen } = useChat()
   const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function handleNavScroll() {
@@ -119,14 +122,30 @@ export default function Sidebar() {
           })}
         </nav>
 
-        {/* Bottom section — logout button (pinned) */}
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-400 hover:bg-white/10 hover:text-white transition-colors w-full flex-shrink-0 mt-2"
-        >
-          <LogOut size={18} />
-          Logout
-        </button>
+        {/* Bottom section — pinned utilities */}
+        <div className="flex flex-col gap-1 flex-shrink-0 mt-2">
+          {/* TriMerge Assist */}
+          <button
+            onClick={toggleChat}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors w-full ${
+              chatOpen
+                ? 'bg-indigo-600 text-white'
+                : 'text-slate-400 hover:bg-white/10 hover:text-white'
+            }`}
+          >
+            <Sparkles size={18} />
+            TriMerge Assist
+          </button>
+
+          {/* Logout */}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-400 hover:bg-white/10 hover:text-white transition-colors w-full"
+          >
+            <LogOut size={18} />
+            Logout
+          </button>
+        </div>
 
       </aside>
     </>
