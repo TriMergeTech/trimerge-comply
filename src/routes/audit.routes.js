@@ -5,7 +5,11 @@ const {
   getAuditById,
   updateAudit,
   deleteAudit,
+  exportAudits,
+  getAuditReport,
 } = require('../controllers/audit.controller');
+const { requestDeletion, listDeletionRequests, reviewDeletionRequest } = require('../controllers/auditDeletion.controller');
+const { listFindings } = require('../controllers/finding.controller');
 const { protect, requireRole } = require('../middleware/auth.middleware');
 
 const router = Router();
@@ -13,19 +17,43 @@ const router = Router();
 // All audit routes require authentication
 router.use(protect);
 
-// POST /api/audits — analyst, admin
-router.post('/', requireRole('analyst', 'admin'), createAudit);
+// POST /api/audits — analyst and above (not reviewer or viewer)
+router.post('/', requireRole('analyst', 'manager', 'director', 'admin'), createAudit);
+
+// ── Static paths first (must come before /:id to avoid param capture) ──
+
+// GET /api/audits/export
+router.get('/export', requireRole('analyst', 'manager', 'director', 'admin'), exportAudits);
+
+// GET /api/audits/deletion-requests — director sees own, admin sees all
+router.get('/deletion-requests', requireRole('director', 'admin'), listDeletionRequests);
+
+// PATCH /api/audits/deletion-requests/:requestId/review — director only
+router.patch('/deletion-requests/:requestId/review', requireRole('director'), reviewDeletionRequest);
+
+// ── Collection routes ──
 
 // GET /api/audits — all roles
-router.get('/', requireRole('analyst', 'admin', 'viewer'), getAudits);
+router.get('/', requireRole('analyst', 'reviewer', 'manager', 'director', 'admin', 'viewer'), getAudits);
 
-// GET /api/audits/:id — all roles
-router.get('/:id', requireRole('analyst', 'admin', 'viewer'), getAuditById);
+// ── Param routes ──
 
-// PATCH /api/audits/:id — analyst, admin
-router.patch('/:id', requireRole('analyst', 'admin'), updateAudit);
+// GET /api/audits/:id
+router.get('/:id', requireRole('analyst', 'reviewer', 'manager', 'director', 'admin', 'viewer'), getAuditById);
 
-// DELETE /api/audits/:id — admin only
-router.delete('/:id', requireRole('admin'), deleteAudit);
+// PATCH /api/audits/:id
+router.patch('/:id', requireRole('analyst', 'manager', 'director', 'admin'), updateAudit);
+
+// DELETE /api/audits/:id — director and admin only, mandatory deletionNotes in body
+router.delete('/:id', requireRole('director', 'admin'), deleteAudit);
+
+// POST /api/audits/:id/deletion-request — manager, analyst, reviewer (not viewer, not director/admin who delete directly)
+router.post('/:id/deletion-request', requireRole('manager', 'analyst', 'reviewer'), requestDeletion);
+
+// GET /api/audits/:auditId/findings
+router.get('/:auditId/findings', requireRole('analyst', 'reviewer', 'manager', 'director', 'admin', 'viewer'), listFindings);
+
+// GET /api/audits/:id/report
+router.get('/:id/report', requireRole('analyst', 'reviewer', 'manager', 'director', 'admin'), getAuditReport);
 
 module.exports = router;

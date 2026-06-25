@@ -97,4 +97,82 @@ const sendPasswordResetEmail = async (email, resetUrl) => {
   return sendEmail({ to: email, subject, text, html });
 };
 
-module.exports = { sendEmail, sendOTPEmail, sendPasswordResetEmail };
+const escapeHtml = (value = '') =>
+  String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+
+const DEMO_INTEREST_LABELS = {
+  adverse_impact_analysis: 'Adverse Impact Analysis',
+  pay_equity_analysis: 'Pay Equity Analysis',
+  position_description_review: 'Position Description Review',
+  all_of_the_above: 'All of the Above',
+};
+
+const sendDemoRequestEmail = async (demoRequest) => {
+  const recipient = process.env.DEMO_REQUEST_RECIPIENT || 'tech@trimergeconsulting.com';
+  const interests = (demoRequest.interests || [])
+    .map((interest) => DEMO_INTEREST_LABELS[interest] || interest)
+    .join(', ') || 'None selected';
+  const submittedAt = demoRequest.createdAt
+    ? new Date(demoRequest.createdAt).toLocaleString('en-US')
+    : new Date().toLocaleString('en-US');
+  const subject = `New demo request from ${demoRequest.organization}`;
+  const text = [
+    'A new personalized demo request was submitted.',
+    '',
+    `Name: ${demoRequest.firstName} ${demoRequest.lastName}`,
+    `Work Email: ${demoRequest.workEmail}`,
+    `Organization: ${demoRequest.organization}`,
+    `Job Title: ${demoRequest.jobTitle}`,
+    `Phone Number: ${demoRequest.phoneNumber || 'Not provided'}`,
+    `Company Size: ${demoRequest.companySize}`,
+    `Role: ${demoRequest.role}`,
+    `Interests: ${interests}`,
+    `Additional Details: ${demoRequest.additionalDetails || 'Not provided'}`,
+    `Submitted At: ${submittedAt}`,
+    `Request ID: ${demoRequest._id}`,
+  ].join('\n');
+  const row = (label, value) => `
+    <tr>
+      <td style="padding:8px 12px;font-weight:bold;vertical-align:top;border-bottom:1px solid #e5e7eb;">${escapeHtml(label)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${escapeHtml(value)}</td>
+    </tr>
+  `;
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:680px;margin:auto;color:#111827;">
+      <h2 style="color:#11154a;">New Demo Request</h2>
+      <p>A new personalized demo request was submitted through TriMerge Comply.</p>
+      <table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;">
+        ${row('Name', `${demoRequest.firstName} ${demoRequest.lastName}`)}
+        ${row('Work Email', demoRequest.workEmail)}
+        ${row('Organization', demoRequest.organization)}
+        ${row('Job Title', demoRequest.jobTitle)}
+        ${row('Phone Number', demoRequest.phoneNumber || 'Not provided')}
+        ${row('Company Size', demoRequest.companySize)}
+        ${row('Role', demoRequest.role)}
+        ${row('Interests', interests)}
+        ${row('Additional Details', demoRequest.additionalDetails || 'Not provided')}
+        ${row('Submitted At', submittedAt)}
+        ${row('Request ID', String(demoRequest._id))}
+      </table>
+    </div>
+  `;
+
+  return sendEmail({
+    to: recipient,
+    subject,
+    text,
+    html,
+  });
+};
+
+module.exports = {
+  sendDemoRequestEmail,
+  sendEmail,
+  sendOTPEmail,
+  sendPasswordResetEmail,
+};

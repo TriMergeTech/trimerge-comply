@@ -1,4 +1,6 @@
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
+const { randomUUID } = require('crypto');
 const User = require('../models/User');
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/jwt');
 const { generateOTP, hashOTP, verifyOTP, getOTPExpiry, isOTPExpired } = require('../utils/otp');
@@ -12,12 +14,21 @@ const OTP_COOLDOWN_SECONDS = 60;
 
 const signup = async (req, res, next) => {
   try {
-    const { email, password, phone } = req.body;
+    const { email, password, phone, name, companyName } = req.body;
+    if (!name || !name.trim()) {
+      return sendError(res, { statusCode: 400, message: 'Name is required.' });
+    }
     const existing = await User.findOne({ email });
     if (existing) {
       return sendError(res, { statusCode: 409, message: 'Email already registered' });
     }
-    const user = await User.create({ email, password, phone });
+    // Inherit org ID from an existing user with the same company, or create a new one
+    let organizationId = null;
+    if (companyName?.trim()) {
+      const orgPeer = await User.findOne({ companyName: companyName.trim(), organizationId: { $ne: null } }).select('organizationId');
+      organizationId = orgPeer?.organizationId ?? randomUUID();
+    }
+    const user = await User.create({ email, password, phone, name, companyName, organizationId });
     const otp = generateOTP();
     const hashedOtp = await hashOTP(otp);
     user.otpCode = hashedOtp;
@@ -233,10 +244,8 @@ const logout = async (req, res, next) => {
   }
 };
 
-
 const getMe = async (req, res, next) => {
   try {
-    
     const user = await User.findById(req.user._id).select(
       '-password -refreshToken -passwordResetToken -passwordResetExpires -otpCode -otpExpiresAt -otpPurpose -otpAttempts -otpLastSentAt -failedLoginAttempts -lockedUntil -isActive -__v'
     );
@@ -248,6 +257,159 @@ const getMe = async (req, res, next) => {
     next(err);
   }
 };
-    
 
-module.exports = { signup, login, verifyOTPHandler, resendOTP, forgotPassword, resetPassword, refreshTokens, logout, getMe };
+// Admin only — scoped to same company
+const updateUserRole = async (req, res, next) => {
+  try {
+    const { role } = req.body;
+    const ASSIGNABLE_ROLES = ['admin', 'director', 'manager', 'analyst', 'reviewer', 'viewer'];
+    if (!ASSIGNABLE_ROLES.includes(role)) {
+      return sendError(res, {
+        statusCode: 400,
+        message: `Role must be one of: ${ASSIGNABLE_ROLES.join(', ')}.`,
+      });
+    }
+    const user = await User.findOne({
+      _id: req.params.id,
+      organizationId: req.user.organizationId,
+    });
+    if (!user) {
+      return sendError(res, { statusCode: 404, message: 'User not found.' });
+    }
+    user.role = role;
+    await user.save();
+    return sendSuccess(res, {
+      message: `User role updated to ${role}.`,
+      data: { user: user.toPublicJSON() },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const changePassword = async (req, res, next) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    if (!oldPassword || !newPassword) {
+      return sendError(res, { statusCode: 400, message: 'Old password and new password are required.' });
+    }
+    const user = await User.findById(req.user._id).select('+password +otpCode +otpExpiresAt +otpPurpose +otpAttempts +otpLastSentAt +pendingPasswordHash +pendingPasswordHashExpires');
+    if (!user) {
+      return sendError(res, { statusCode: 404, message: 'User not found.' });
+    }
+    const isMatch = await user.comparePassword(oldPassword);
+    if (!isMatch) {
+      return sendError(res, { statusCode: 401, message: 'Old password is incorrect.' });
+    }
+    if (user.otpLastSentAt) {
+      const secondsSinceLastSent = (Date.now() - new Date(user.otpLastSentAt).getTime()) / 1000;
+      if (secondsSinceLastSent < OTP_COOLDOWN_SECONDS) {
+        const retryAfter = Math.ceil(OTP_COOLDOWN_SECONDS - secondsSinceLastSent);
+        return sendError(res, { statusCode: 429, message: `Please wait ${retryAfter} second(s) before requesting another OTP.` });
+      }
+    }
+    const otp = generateOTP();
+    const hashedOtp = await hashOTP(otp);
+    const rounds = parseInt(process.env.BCRYPT_ROUNDS) || 10;
+    const hashedNewPassword = await bcrypt.hash(newPassword, rounds);
+    user.otpCode = hashedOtp;
+    user.otpExpiresAt = getOTPExpiry();
+    user.otpPurpose = 'password_change';
+    user.otpAttempts = 0;
+    user.otpLastSentAt = new Date();
+    user.pendingPasswordHash = hashedNewPassword;
+    user.pendingPasswordHashExpires = new Date(Date.now() + 10 * 60 * 1000);
+    await user.save();
+    sendOTPEmail(user.email, otp, 'password_change').catch((err) =>
+      console.error('[EMAIL] Failed to send password change OTP:', err.message)
+    );
+    return sendSuccess(res, { message: 'OTP sent to your email. Verify to complete password change.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const verifyChangePassword = async (req, res, next) => {
+  try {
+    const { otp } = req.body;
+    const user = await User.findById(req.user._id).select(
+      '+otpCode +otpExpiresAt +otpPurpose +otpAttempts +pendingPasswordHash +pendingPasswordHashExpires +refreshToken'
+    );
+    if (!user) {
+      return sendError(res, { statusCode: 404, message: 'User not found.' });
+    }
+    if (!user.otpCode) {
+      return sendError(res, { statusCode: 400, message: 'No OTP found. Please request a password change first.' });
+    }
+    if (isOTPExpired(user.otpExpiresAt)) {
+      return sendError(res, { statusCode: 410, message: 'OTP expired. Please request a new one.' });
+    }
+    if (user.otpPurpose !== 'password_change') {
+      return sendError(res, { statusCode: 400, message: 'Invalid OTP purpose.' });
+    }
+    if ((user.otpAttempts || 0) >= OTP_MAX_ATTEMPTS) {
+      return sendError(res, { statusCode: 429, message: 'Too many invalid OTP attempts. Please request a new OTP.' });
+    }
+    const isValid = await verifyOTP(otp, user.otpCode);
+    if (!isValid) {
+      user.otpAttempts = (user.otpAttempts || 0) + 1;
+      await user.save();
+      return sendError(res, { statusCode: 400, message: 'Invalid OTP.' });
+    }
+    if (!user.pendingPasswordHash || new Date() > user.pendingPasswordHashExpires) {
+      return sendError(res, { statusCode: 410, message: 'Password change session expired. Please start again.' });
+    }
+    await User.findByIdAndUpdate(user._id, {
+      password: user.pendingPasswordHash,
+      pendingPasswordHash: null,
+      pendingPasswordHashExpires: null,
+      otpCode: null,
+      otpExpiresAt: null,
+      otpPurpose: null,
+      otpAttempts: 0,
+      otpLastSentAt: null,
+      refreshToken: null,
+    });
+    return sendSuccess(res, { message: 'Password changed successfully. Please log in again.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const changeName = async (req, res, next) => {
+  try {
+    const { name } = req.body;
+    if (!name || !name.trim()) {
+      return sendError(res, { statusCode: 400, message: 'A name is required.' });
+    }
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return sendError(res, { statusCode: 404, message: 'User not found.' });
+    }
+    user.name = name.trim();
+    await user.save();
+    return sendSuccess(res, {
+      message: 'Profile updated successfully.',
+      data: { user: user.toPublicJSON() },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Scoped to same company
+const getUsers = async (req, res, next) => {
+  try {
+    const users = await User.find({ organizationId: req.user.organizationId })
+      .select('_id name email role companyName organizationId isVerified createdAt')
+      .sort({ createdAt: -1 });
+    return sendSuccess(res, {
+      message: 'Users retrieved successfully',
+      data: { users, total: users.length },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { signup, login, verifyOTPHandler, resendOTP, forgotPassword, resetPassword, refreshTokens, logout, getMe, updateUserRole, changePassword, verifyChangePassword, changeName, getUsers };

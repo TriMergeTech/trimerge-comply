@@ -1,6 +1,15 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+const ROLE_LABELS = {
+  admin: 'Platform Admin',
+  director: 'Engagement Director',
+  manager: 'Project Manager',
+  analyst: 'Analyst',
+  reviewer: 'SME Reviewer',
+  viewer: 'Client Read-Only',
+};
+
 const userSchema = new mongoose.Schema(
   {
     email: {
@@ -10,6 +19,16 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
       match: [/^\S+@\S+\.\S+$/, 'Invalid email format'],
+    },
+    name: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    companyName: {
+      type: String,
+      trim: true,
+      default: null,
     },
     phone: {
       type: String,
@@ -30,9 +49,9 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    role: {                                          
+    role: {
       type: String,
-      enum: ['admin', 'analyst', 'viewer'],
+      enum: ['admin', 'director', 'manager', 'analyst', 'reviewer', 'viewer'],
       default: 'viewer',
     },
     otpCode: { type: String, select: false },
@@ -42,6 +61,9 @@ const userSchema = new mongoose.Schema(
     otpLastSentAt: { type: Date, select: false },
     passwordResetToken: { type: String, select: false },
     passwordResetExpires: { type: Date, select: false },
+    pendingPasswordHash: { type: String, select: false },
+    pendingPasswordHashExpires: { type: Date, select: false },
+    organizationId: { type: String, trim: true, default: null, index: true },
     refreshToken: { type: String, select: false },
     lastLoginAt: { type: Date, default: null },
     failedLoginAttempts: { type: Number, default: 0 },
@@ -69,10 +91,14 @@ userSchema.methods.isLocked = function () {
 userSchema.methods.toPublicJSON = function () {
   return {
     id: this._id,
+    name: this.name,
+    companyName: this.companyName,
     email: this.email,
     phone: this.phone,
     isVerified: this.isVerified,
-    role: this.role,    
+    role: this.role,
+    roleName: ROLE_LABELS[this.role] || this.role,
+    organizationId: this.organizationId,
     createdAt: this.createdAt,
   };
 };

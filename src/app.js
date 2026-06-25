@@ -1,6 +1,7 @@
 require('dotenv').config();
 const setupSwagger = require('./config/swagger');
-    
+const mongoSanitize = require('express-mongo-sanitize');
+const hpp = require('hpp');    
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -9,8 +10,19 @@ const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth.routes');
 const auditRoutes = require('./routes/audit.routes');           // 👈 add
+const uploadRoutes = require('./routes/upload.routes');
+const flagRoutes = require('./routes/flag.routes');
+const positionRoutes = require('./routes/position.routes');
+const payEquityRoutes = require('./routes/payequity.routes');
 const { errorHandler, notFound } = require('./middleware/error.middleware');
 const { sendSuccess } = require('./utils/response');
+const dashboardRoutes = require('./routes/dashboard.routes');
+const activityRoutes = require('./routes/activity.routes');
+const findingRoutes = require('./routes/finding.routes');
+const handbookRoutes = require('./routes/handbook.routes');
+const demoRequestRoutes = require('./routes/demoRequest.routes');
+const userRoutes         = require('./routes/user.routes');
+const chatbotRoutes = require('./routes/chatbot.routes');
 
 const app = express();
 
@@ -20,10 +32,21 @@ connectDB();
 // ─── Security headers ────────────────────────────────────────
 app.use(helmet());
 
+// ─── MongoDB injection protection ────────────────────────────
+app.use(mongoSanitize());
+
+// ─── HTTP parameter pollution protection ─────────────────────
+app.use(hpp());
+
 // ─── CORS ────────────────────────────────────────────────────
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: [
+      'http://localhost:3000',
+      'https://trimerge-comply.onrender.com',
+      'https://trimerge-comply-m8p6.onrender.com',
+      process.env.CORS_ORIGIN,
+    ].filter(Boolean),
     credentials: true,
   })
 );
@@ -40,15 +63,16 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 // ─── Rate limiters ───────────────────────────────────────────
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 50,
+  max: 500,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests, please try again later.' },
 });
 
+// Auth routes get a tighter limit to slow credential-stuffing and OTP brute-force
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 30,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many auth attempts, please try again later.' },
@@ -70,7 +94,18 @@ app.get('/health', (req, res) => {
 
 // ─── API routes ──────────────────────────────────────────────
 app.use('/api/auth', authLimiter, authRoutes);
-app.use('/api/audits', auditRoutes);                           // 👈 add
+app.use('/api/audits', auditRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/flags', flagRoutes);
+app.use('/api/position', positionRoutes);
+app.use('/api/payequity', payEquityRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/activity', activityRoutes);
+app.use('/api/findings', findingRoutes);
+app.use('/api/handbooks', handbookRoutes);
+app.use('/api/demo-requests', demoRequestRoutes);
+app.use('/api/users',        userRoutes);
+app.use('/api/chatbots', chatbotRoutes);
 
 setupSwagger(app);
 

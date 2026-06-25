@@ -84,6 +84,76 @@ const refreshTokenRules = [
     .notEmpty().withMessage('Refresh token is required'),
 ];
 
+const DEMO_INTERESTS = [
+  'adverse_impact_analysis',
+  'pay_equity_analysis',
+  'position_description_review',
+  'all_of_the_above',
+];
+
+const demoRequestRules = [
+  body('firstName')
+    .trim()
+    .notEmpty().withMessage('First name is required')
+    .isLength({ max: 80 }).withMessage('First name must be 80 characters or fewer'),
+  body('lastName')
+    .trim()
+    .notEmpty().withMessage('Last name is required')
+    .isLength({ max: 80 }).withMessage('Last name must be 80 characters or fewer'),
+  body('workEmail')
+    .trim()
+    .notEmpty().withMessage('Work email is required')
+    .isEmail().withMessage('Must be a valid work email')
+    .normalizeEmail()
+    .isLength({ max: 254 }).withMessage('Work email must be 254 characters or fewer'),
+  body('organization')
+    .trim()
+    .notEmpty().withMessage('Organization is required')
+    .isLength({ max: 160 }).withMessage('Organization must be 160 characters or fewer'),
+  body('jobTitle')
+    .trim()
+    .notEmpty().withMessage('Job title is required')
+    .isLength({ max: 120 }).withMessage('Job title must be 120 characters or fewer'),
+  body('phoneNumber')
+    .optional({ values: 'falsy' })
+    .trim()
+    .isLength({ max: 40 }).withMessage('Phone number must be 40 characters or fewer')
+    .matches(/^[+()\-\s.\d]+$/).withMessage('Phone number contains invalid characters'),
+  body('companySize')
+    .trim()
+    .notEmpty().withMessage('Company size is required')
+    .isLength({ max: 80 }).withMessage('Company size must be 80 characters or fewer'),
+  body('role')
+    .trim()
+    .notEmpty().withMessage('Role is required')
+    .isLength({ max: 100 }).withMessage('Role must be 100 characters or fewer'),
+  body('interests')
+    .optional()
+    .isArray({ max: 4 }).withMessage('Interests must be an array with no more than 4 items'),
+  body('interests.*')
+    .isIn(DEMO_INTERESTS)
+    .withMessage('Interest must be one of: adverse_impact_analysis, pay_equity_analysis, position_description_review, all_of_the_above'),
+  body('additionalDetails')
+    .optional({ values: 'falsy' })
+    .trim()
+    .isLength({ max: 2000 }).withMessage('Additional details must be 2000 characters or fewer'),
+];
+
+const demoRequestStatusRules = [
+  body('status')
+    .trim()
+    .notEmpty().withMessage('Status is required')
+    .isIn(['new', 'contacted', 'scheduled', 'closed'])
+    .withMessage('Status must be one of: new, contacted, scheduled, closed'),
+];
+
+const chatbotAskRules = [
+  body('question')
+    .trim()
+    .notEmpty().withMessage('Question is required')
+    .isLength({ min: 3, max: 1000 }).withMessage('Question must be between 3 and 1000 characters'),
+];
+
 module.exports = {
   validate,
   signupRules,
@@ -92,4 +162,7 @@ module.exports = {
   forgotPasswordRules,
   resetPasswordRules,
   refreshTokenRules,
+  demoRequestRules,
+  demoRequestStatusRules,
+  chatbotAskRules,
 };
