@@ -68,6 +68,46 @@ All protected endpoints require a verified email and a valid Bearer token.`,
             updatedAt: { type: 'string', format: 'date-time' },
           },
         },
+        ChatbotSource: {
+          type: 'object',
+          properties: {
+            sourceNumber: { type: 'integer', example: 1 },
+            sourceName: { type: 'string', example: 'TriMerge_Comply_User_Admin_Manual.pdf' },
+            pageNumber: { type: 'integer', nullable: true, example: 8 },
+            sectionTitle: { type: 'string', example: 'Audit Management' },
+            excerpt: { type: 'string', example: 'Users can create and manage audits from the audit dashboard...' },
+            relevanceScore: { type: 'number', example: 0.8421 },
+          },
+        },
+        ChatbotAnswer: {
+          type: 'object',
+          properties: {
+            chatbotKey: { type: 'string', example: 'support' },
+            answer: { type: 'string', example: 'To create a new audit, open the audit area and use the create audit action.' },
+            confidence: { type: 'string', enum: ['low', 'medium', 'high'], example: 'high' },
+            nextSteps: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['Review the audit details before saving.'],
+            },
+            sources: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/ChatbotSource' },
+            },
+          },
+        },
+        ChatbotRagStatus: {
+          type: 'object',
+          properties: {
+            chatbotKey: { type: 'string', example: 'support' },
+            sourceName: { type: 'string', example: 'TriMerge_Comply_User_Admin_Manual.pdf' },
+            indexed: { type: 'boolean', example: true },
+            chunkCount: { type: 'integer', example: 42 },
+            sourceHash: { type: 'string', nullable: true },
+            embeddingModel: { type: 'string', nullable: true, example: 'text-embedding-3-small' },
+            lastIndexedAt: { type: 'string', format: 'date-time', nullable: true },
+          },
+        },
         User: {
           type: 'object',
           properties: {
@@ -270,6 +310,119 @@ All protected endpoints require a verified email and a valid Bearer token.`,
     paths: {
       '/health': {
         get: { tags: ['Health'], summary: 'Health check', responses: { 200: { description: 'Server is running' } } },
+      },
+      '/api/chatbots/support/ask': {
+        post: {
+          tags: ['Chatbots'],
+          summary: 'Ask the support manual chatbot',
+          description: 'Answers platform support questions using the indexed TriMerge Comply User & Administration Manual. Requires any verified platform role.',
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['question'],
+                  properties: {
+                    question: {
+                      type: 'string',
+                      minLength: 3,
+                      maxLength: 1000,
+                      example: 'How do I create a new audit?',
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: 'Support chatbot answer generated successfully',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      message: { type: 'string' },
+                      data: { $ref: '#/components/schemas/ChatbotAnswer' },
+                    },
+                  },
+                },
+              },
+            },
+            401: { description: 'Unauthorized' },
+            409: { description: 'Manual has not been indexed yet' },
+            422: { description: 'Validation failed' },
+            503: { description: 'OPENAI_API_KEY is not configured' },
+          },
+        },
+      },
+      '/api/chatbots/support/rag/status': {
+        get: {
+          tags: ['Chatbots'],
+          summary: 'Get support chatbot RAG status',
+          description: 'Returns whether the support manual has been indexed. Admin only.',
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: {
+              description: 'Support chatbot RAG status retrieved successfully',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      message: { type: 'string' },
+                      data: { $ref: '#/components/schemas/ChatbotRagStatus' },
+                    },
+                  },
+                },
+              },
+            },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Forbidden - admin required' },
+          },
+        },
+      },
+      '/api/chatbots/support/rag/reindex': {
+        post: {
+          tags: ['Chatbots'],
+          summary: 'Reindex the support manual',
+          description: 'Extracts text from the bundled TriMerge Comply User & Administration Manual PDF, chunks it, creates OpenAI embeddings, and stores the chunks in MongoDB. Admin only.',
+          security: [{ bearerAuth: [] }],
+          responses: {
+            201: {
+              description: 'Support chatbot manual indexed successfully',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      message: { type: 'string' },
+                      data: {
+                        type: 'object',
+                        properties: {
+                          chatbotKey: { type: 'string', example: 'support' },
+                          sourceName: { type: 'string', example: 'TriMerge_Comply_User_Admin_Manual.pdf' },
+                          sourceHash: { type: 'string' },
+                          pageCount: { type: 'integer', example: 31 },
+                          chunkCount: { type: 'integer', example: 42 },
+                          embeddingModel: { type: 'string', example: 'text-embedding-3-small' },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            401: { description: 'Unauthorized' },
+            403: { description: 'Forbidden - admin required' },
+            503: { description: 'OPENAI_API_KEY is not configured' },
+          },
+        },
       },
       '/api/demo-requests': {
         post: {

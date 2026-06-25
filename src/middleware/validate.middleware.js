@@ -147,6 +147,13 @@ const demoRequestStatusRules = [
     .withMessage('Status must be one of: new, contacted, scheduled, closed'),
 ];
 
+const chatbotAskRules = [
+  body('question')
+    .trim()
+    .notEmpty().withMessage('Question is required')
+    .isLength({ min: 3, max: 1000 }).withMessage('Question must be between 3 and 1000 characters'),
+];
+
 module.exports = {
   validate,
   signupRules,
@@ -157,4 +164,5 @@ module.exports = {
   refreshTokenRules,
   demoRequestRules,
   demoRequestStatusRules,
+  chatbotAskRules,
 };

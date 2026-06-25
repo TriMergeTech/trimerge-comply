@@ -21,7 +21,11 @@ const activityRoutes = require('./routes/activity.routes');
 const findingRoutes = require('./routes/finding.routes');
 const handbookRoutes = require('./routes/handbook.routes');
 const demoRequestRoutes = require('./routes/demoRequest.routes');
+<<<<<<< HEAD
 const userRoutes         = require('./routes/user.routes');
+=======
+const chatbotRoutes = require('./routes/chatbot.routes');
+>>>>>>> 47d9645 (Add support chatbot RAG)
 
 const app = express();
 
@@ -103,7 +107,11 @@ app.use('/api/activity', activityRoutes);
 app.use('/api/findings', findingRoutes);
 app.use('/api/handbooks', handbookRoutes);
 app.use('/api/demo-requests', demoRequestRoutes);
+<<<<<<< HEAD
 app.use('/api/users',        userRoutes);
+=======
+app.use('/api/chatbots', chatbotRoutes);
+>>>>>>> 47d9645 (Add support chatbot RAG)
 
 setupSwagger(app);
 

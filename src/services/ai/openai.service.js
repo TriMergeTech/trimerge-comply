@@ -14,8 +14,13 @@ const {
   buildPayEquityReportSystemPrompt,
   buildPayEquityReportUserPrompt,
 } = require('../payequity/payEquityReportPrompt.service');
+const {
+  buildSupportChatSystemPrompt,
+  buildSupportChatUserPrompt,
+} = require('../chatbots/support/supportPrompt.service');
 
 const OPENAI_CHAT_COMPLETIONS_URL = 'https://api.openai.com/v1/chat/completions';
+const OPENAI_EMBEDDINGS_URL = 'https://api.openai.com/v1/embeddings';
 
 const isOpenAIConfigured = () => Boolean(process.env.OPENAI_API_KEY);
 
@@ -25,6 +30,40 @@ const parseJsonResponse = (content) => {
   } catch (err) {
     throw new Error('OpenAI returned a response that was not valid JSON.');
   }
+};
+
+const createEmbedding = async (input) => {
+  if (!isOpenAIConfigured()) {
+    const err = new Error('OPENAI_API_KEY is not configured.');
+    err.statusCode = 503;
+    throw err;
+  }
+
+  const response = await fetch(OPENAI_EMBEDDINGS_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small',
+      input,
+    }),
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.error?.message || 'OpenAI embedding request failed.');
+  }
+
+  const embedding = result.data?.[0]?.embedding;
+
+  if (!Array.isArray(embedding) || !embedding.length) {
+    throw new Error('OpenAI embedding response did not include an embedding.');
+  }
+
+  return embedding;
 };
 
 const normalizePositionAnalysis = (analysis) => ({
@@ -284,9 +323,65 @@ const generatePayEquityReportRecommendations = async ({ reportView }) => {
   };
 };
 
+const normalizeSupportChatAnswer = (answer) => ({
+  answer: String(answer?.answer || 'The TriMerge Comply manual does not provide enough information to answer that question.')
+    .replace(/\s+/g, ' ')
+    .trim(),
+  confidence: ['low', 'medium', 'high'].includes(answer?.confidence)
+    ? answer.confidence
+    : 'medium',
+  nextSteps: Array.isArray(answer?.nextSteps)
+    ? answer.nextSteps
+        .map((step) => String(step || '').replace(/\s+/g, ' ').trim())
+        .filter(Boolean)
+        .slice(0, 3)
+    : [],
+});
+
+const generateSupportChatAnswer = async ({ question, chunks }) => {
+  if (!isOpenAIConfigured()) {
+    const err = new Error('OPENAI_API_KEY is not configured.');
+    err.statusCode = 503;
+    throw err;
+  }
+
+  const response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: buildSupportChatSystemPrompt() },
+        { role: 'user', content: buildSupportChatUserPrompt({ question, chunks }) },
+      ],
+      response_format: { type: 'json_object' },
+      temperature: 0.1,
+    }),
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.error?.message || 'OpenAI support chatbot request failed.');
+  }
+
+  const content = result.choices?.[0]?.message?.content;
+
+  if (!content) {
+    throw new Error('OpenAI response did not include support chatbot content.');
+  }
+
+  return normalizeSupportChatAnswer(parseJsonResponse(content));
+};
+
 module.exports = {
   analyzePositionDescription,
   analyzePositionStandards,
+  createEmbedding,
+  generateSupportChatAnswer,
   generatePayEquityReportRecommendations,
   generatePositionReportDraft,
   isOpenAIConfigured,
