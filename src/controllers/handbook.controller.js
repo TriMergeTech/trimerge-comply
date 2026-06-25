@@ -44,10 +44,11 @@ const uploadHandbook = async (req, res, next) => {
       return sendError(res, { statusCode: 415, message: extraction.reason });
     }
     if (!extraction.text?.trim()) {
-      return sendError(res, {
-        statusCode: 422,
-        message: 'Could not extract text from this handbook. Ensure it is not a scanned image PDF.',
-      });
+      const hint =
+        mimeType === 'application/pdf'
+          ? 'Ensure the PDF is not a scanned image — it must contain an embedded text layer.'
+          : 'The file appears to be empty or contains no readable text.';
+      return sendError(res, { statusCode: 422, message: `Could not extract text from this handbook. ${hint}` });
     }
 
     // Upload original file to Cloudinary for archival
@@ -69,7 +70,7 @@ const uploadHandbook = async (req, res, next) => {
       uploadedBy: {
         userId: req.user._id,
         email: req.user.email,
-        organizationId: req.user.organizationId,
+        companyName: req.user.companyName || null,
         role: req.user.role,
       },
       organizationId: req.user.organizationId,
