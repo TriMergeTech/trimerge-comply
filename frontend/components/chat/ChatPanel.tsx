@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState, KeyboardEvent } from 'react'
-import { X, Sparkles, Send, Trash2, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react'
+import { X, Sparkles, Send, Trash2, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
-import { useChat, ChatMessage, ChatbotSource } from '@/lib/context/ChatContext'
+import { useChat, ChatMessage } from '@/lib/context/ChatContext'
 import { getSupportRagStatus, reindexSupportManual, SupportRagStatus } from '@/lib/api/chatbot'
 import { useUser } from '@/lib/context/UserContext'
 
@@ -13,33 +13,6 @@ const CONFIDENCE_STYLES = {
   low: 'bg-red-100 text-red-700',
 }
 
-function SourcesSection({ sources }: { sources: ChatbotSource[] }) {
-  const [expanded, setExpanded] = useState(false)
-  return (
-    <div className="mt-2 border-t border-slate-200 pt-2">
-      <button
-        onClick={() => setExpanded((e) => !e)}
-        className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors"
-      >
-        {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-        {sources.length} source{sources.length !== 1 ? 's' : ''}
-      </button>
-      {expanded && (
-        <div className="mt-2 flex flex-col gap-2">
-          {sources.map((s) => (
-            <div key={s.sourceNumber} className="bg-slate-50 rounded-lg px-2.5 py-2 text-xs">
-              <p className="font-medium text-slate-700">{s.sectionTitle}</p>
-              <p className="text-slate-400 mt-0.5">
-                {s.sourceName}{s.pageNumber != null ? ` · p.${s.pageNumber}` : ''}
-              </p>
-              <p className="text-slate-500 mt-1 leading-relaxed italic">"{s.excerpt}"</p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
 
 function AssistantBubble({ msg }: { msg: ChatMessage }) {
   return (
@@ -73,10 +46,6 @@ function AssistantBubble({ msg }: { msg: ChatMessage }) {
           </div>
         )}
 
-        {/* Sources */}
-        {msg.sources && msg.sources.length > 0 && (
-          <SourcesSection sources={msg.sources} />
-        )}
       </div>
     </div>
   )
