@@ -4,6 +4,7 @@ import Sidebar from "@/components/sharedComponents/Sidebar";
 import { UserProvider } from "@/lib/context/UserContext";
 import { ChatProvider } from "@/lib/context/ChatContext";
 import ChatPanel from "@/components/chat/ChatPanel";
+import DisclaimerModal from "@/components/DisclaimerModal";
 
 const AUTH_PATHS = ["/login", "/signup", "/forgot-password", "/reset-password", "/verify-otp", "/security"];
 const PUBLIC_PATHS = ["/", "/landing-page", "/about", "/request-demo", "/pricing", "/terms"];
@@ -18,6 +19,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <UserProvider>
+      <DisclaimerModal />
       <ChatProvider>
         <div className="flex flex-row h-screen overflow-hidden bg-slate-50">
           <Sidebar />
