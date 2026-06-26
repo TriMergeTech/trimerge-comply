@@ -5,6 +5,7 @@ import { Search, ChevronDown } from 'lucide-react'
 import { useUser } from '@/lib/context/UserContext'
 import AuditsTable from '@/components/audits/AuditsTable'
 import AuditModal from '@/components/audits/AuditModal'
+import DeletionRequestsTable from '@/components/audits/DeletionRequestsTable'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +16,7 @@ import {
 export default function Audits() {
   const user = useUser()
   const isAdmin = user?.role === 'admin'
+  const [activeTab, setActiveTab] = useState<'audits' | 'deletion-requests'>('audits')
   const [modalOpen, setModalOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [selectedStatus, setSelectedStatus] = useState('All Status')
@@ -48,7 +50,7 @@ export default function Audits() {
         </div>
 
         {/* New Audit button — admin only */}
-        {isAdmin && (
+        {isAdmin && activeTab === 'audits' && (
           <button
             onClick={() => setModalOpen(true)}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors w-fit"
@@ -58,6 +60,23 @@ export default function Audits() {
         )}
       </div>
 
+      {/* Tab switcher */}
+      <div className="flex gap-1 border-b border-slate-200">
+        {(['audits', 'deletion-requests'] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
+              activeTab === tab
+                ? 'border-indigo-600 text-indigo-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {tab === 'audits' ? 'Audits' : 'Deletion Requests'}
+          </button>
+        ))}
+      </div>
+
       {/* New audit modal */}
       <AuditModal
         open={modalOpen}
@@ -65,63 +84,69 @@ export default function Audits() {
         onSuccess={handleSuccess}
       />
 
-      {/* Search and filters */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      {activeTab === 'audits' ? (
+        <>
+          {/* Search and filters */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
 
-        {/* Search bar */}
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search audits by client name..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
+            {/* Search bar */}
+            <div className="relative flex-1">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search audits by client name..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
 
-        {/* Status filter */}
-        <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-2 text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-600 hover:bg-slate-50 transition-colors">
-            {selectedStatus}
-            <ChevronDown size={14} className="text-slate-400" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            {statusOptions.map((status) => (
-              <DropdownMenuItem
-                key={status}
-                onClick={() => setSelectedStatus(status)}
-                className="cursor-pointer capitalize"
-              >
-                {status}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+            {/* Status filter */}
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-2 text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-600 hover:bg-slate-50 transition-colors">
+                {selectedStatus}
+                <ChevronDown size={14} className="text-slate-400" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {statusOptions.map((status) => (
+                  <DropdownMenuItem
+                    key={status}
+                    onClick={() => setSelectedStatus(status)}
+                    className="cursor-pointer capitalize"
+                  >
+                    {status}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-        {/* Type filter */}
-        <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-2 text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-600 hover:bg-slate-50 transition-colors">
-            {selectedType}
-            <ChevronDown size={14} className="text-slate-400" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            {typeOptions.map((type) => (
-              <DropdownMenuItem
-                key={type}
-                onClick={() => setSelectedType(type)}
-                className="cursor-pointer"
-              >
-                {type}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+            {/* Type filter */}
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-2 text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-600 hover:bg-slate-50 transition-colors">
+                {selectedType}
+                <ChevronDown size={14} className="text-slate-400" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {typeOptions.map((type) => (
+                  <DropdownMenuItem
+                    key={type}
+                    onClick={() => setSelectedType(type)}
+                    className="cursor-pointer"
+                  >
+                    {type}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-      </div>
+          </div>
 
-      {/* Audits table — passes filters and refresh trigger */}
-      <AuditsTable filters={filters} refreshKey={refreshKey} />
+          {/* Audits table — passes filters and refresh trigger */}
+          <AuditsTable filters={filters} refreshKey={refreshKey} />
+        </>
+      ) : (
+        <DeletionRequestsTable />
+      )}
 
     </div>
   )

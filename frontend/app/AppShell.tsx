@@ -2,6 +2,7 @@
 import { usePathname } from "next/navigation";
 import Sidebar from "@/components/sharedComponents/Sidebar";
 import { UserProvider } from "@/lib/context/UserContext";
+import DisclaimerModal from "@/components/DisclaimerModal";
 
 const AUTH_PATHS = ["/login", "/signup", "/forgot-password", "/reset-password", "/verify-otp", "/security"];
 const PUBLIC_PATHS = ["/", "/landing-page", "/about"];
@@ -17,6 +18,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <UserProvider>
+      <DisclaimerModal />
       <div className="flex flex-row h-screen overflow-hidden bg-slate-50">
         <Sidebar />
         <main className="flex-1 flex flex-col overflow-y-auto">
